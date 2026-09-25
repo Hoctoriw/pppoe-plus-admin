@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { Activity, Bell, ChevronRight, CircleDollarSign, LayoutDashboard, LogOut, Menu, Package, Plus, Radio, RefreshCw, Router as RouterIcon, Search, Users, Wifi, X } from "lucide-react";
+import { Activity, Bell, ChevronRight, CircleDollarSign, LayoutDashboard, LogOut, Menu, Package, Plus, Radio, RefreshCw, Router as RouterIcon, Search, ShieldCheck, Users, Wifi, X } from "lucide-react";
 import { listRouters, provisionCustomer } from "@/lib/mikrotik.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
