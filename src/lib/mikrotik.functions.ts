@@ -28,7 +28,7 @@ export const listRouters = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertStaff(context);
     const db = await admin();
-    const { data } = await db.from("routers").select("id, name, connection_mode, base_url, username, dhcp_server, active, last_check_at, last_check_ok, last_check_message").order("name");
+    const { data } = await db.from("routers").select("id, name, connection_mode, base_url, username, dhcp_server, active, last_check_at, last_check_ok, last_check_message, radius_enabled, radius_host, radius_auth_port, radius_acct_port").order("name");
     return data ?? [];
   });
 
@@ -59,6 +59,46 @@ export const deleteRouter = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     await (await admin()).from("routers").delete().eq("id", data.id);
+    return { ok: true };
+  });
+
+export const saveRadiusConfig = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    id: z.string().uuid(),
+    radius_enabled: z.boolean(),
+    radius_host: z.string().max(200).optional(),
+    radius_secret: z.string().max(200).optional(),
+    radius_auth_port: z.number().int().min(1).max(65535).default(1812),
+    radius_acct_port: z.number().int().min(1).max(65535).default(1813),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    if (data.radius_enabled && !data.radius_host) throw new Error("Informe o endereço do servidor RADIUS.");
+    const db = await admin();
+    const row: any = { radius_enabled: data.radius_enabled, radius_host: data.radius_host || null, radius_auth_port: data.radius_auth_port, radius_acct_port: data.radius_acct_port };
+    if (data.radius_secret) row["radius_secret"] = data.radius_secret;
+    const { error } = await db.from("routers").update(row).eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const applyRadius = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertStaff(context);
+    const r = await getRouter(data.id);
+    if (!(r as any).radius_enabled) throw new Error("Ative e salve a configuração RADIUS antes de aplicar.");
+    if (!(r as any).radius_host || !(r as any).radius_secret) throw new Error("Configure o endereço e o segredo do servidor RADIUS.");
+    await upsert(r, "/radius", { name: "nexora-radius" }, {
+      address: (r as any).radius_host,
+      secret: (r as any).radius_secret,
+      "authentication-port": String((r as any).radius_auth_port ?? 1812),
+      "accounting-port": String((r as any).radius_acct_port ?? 1813),
+      service: "ppp,dhcp", timeout: "3000ms", comment: "Nexora: autenticação centralizada",
+    });
+    await ros(r, "PATCH", "/ppp/aaa", { "use-radius": "yes", accounting: "yes", "interim-update": "5m" });
     return { ok: true };
   });
 

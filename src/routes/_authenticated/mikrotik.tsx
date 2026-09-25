@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { connectionStatus, deleteRouter, listRouters, saveRouter, syncPlans, testRouter } from "@/lib/mikrotik.functions";
+import { applyRadius, connectionStatus, deleteRouter, listRouters, saveRadiusConfig, saveRouter, syncPlans, testRouter } from "@/lib/mikrotik.functions";
 
 export const Route = createFileRoute("/_authenticated/mikrotik")({
   head: () => ({ meta: [
@@ -27,14 +27,15 @@ type Status = Awaited<ReturnType<typeof connectionStatus>>;
 function MikrotikPage() {
   const list = useServerFn(listRouters), save = useServerFn(saveRouter), del = useServerFn(deleteRouter);
   const test = useServerFn(testRouter), sync = useServerFn(syncPlans), status = useServerFn(connectionStatus);
+  const saveRadius = useServerFn(saveRadiusConfig), applyRad = useServerFn(applyRadius);
   const [routers, setRouters] = useState<RouterRow[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [conn, setConn] = useState<Status | null>(null);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [tab, setTab] = useState<"vpn" | "public_ip">("public_ip");
-  const shown = routers.filter(r => (r.connection_mode ?? "vpn") === tab);
+  const [tab, setTab] = useState<"vpn" | "public_ip" | "radius">("public_ip");
+  const shown = tab === "radius" ? routers : routers.filter(r => (r.connection_mode ?? "vpn") === tab);
 
   async function load() { try { setRouters(await list()); } catch (e) { setMsg((e as Error).message); } }
   useEffect(() => { void load(); }, []);
@@ -51,12 +52,12 @@ function MikrotikPage() {
       <Link to="/dashboard" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />Voltar ao painel</Link>
       <div className="mt-4 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div><p className="text-sm text-muted-foreground">Integração RouterOS 7</p><h1 className="text-3xl font-extrabold">MikroTik</h1></div>
-        <Button onClick={() => setShowForm(v => !v)}><Plus />Novo roteador</Button>
+        {tab !== "radius" && <Button onClick={() => setShowForm(v => !v)}><Plus />Novo roteador</Button>}
       </div>
-      <div className="mt-6 inline-flex rounded-md border bg-card p-1">{([["public_ip", "IP público"], ["vpn", "VPN"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => { setTab(k); setSelected(null); }} className={`rounded px-4 py-1.5 text-sm font-semibold ${tab === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{l}</button>)}</div>
+      <div className="mt-6 inline-flex rounded-md border bg-card p-1">{([["public_ip", "IP público"], ["vpn", "VPN"], ["radius", "RADIUS"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => { setTab(k); setSelected(null); }} className={`rounded px-4 py-1.5 text-sm font-semibold ${tab === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{l}</button>)}</div>
       {msg && <p className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">{msg}</p>}
 
-      {showForm && <form onSubmit={onSave} className="mt-6 grid gap-4 border bg-card p-5 md:grid-cols-2">
+      {showForm && tab !== "radius" && <form onSubmit={onSave} className="mt-6 grid gap-4 border bg-card p-5 md:grid-cols-2">
         <F label="Nome"><Input name="name" required placeholder="Concentrador Centro" /></F>
         {tab === "public_ip" ? <><F label="IP público ou domínio"><Input name="ip" required placeholder="200.100.50.10" /></F><div className="grid grid-cols-2 gap-3"><F label="Protocolo"><select name="proto" defaultValue="https" className="h-9 w-full rounded-md border bg-background px-3 text-sm"><option value="https">HTTPS</option><option value="http">HTTP (inseguro)</option></select></F><F label="Porta"><Input name="port" type="number" required defaultValue="443" min="1" max="65535" /></F></div></> : <F label="Endereço na VPN (HTTPS)"><Input name="url" required type="url" placeholder="https://10.8.0.1" /></F>}
         <F label="Usuário da API"><Input name="user" required /></F>
@@ -66,7 +67,36 @@ function MikrotikPage() {
         {tab === "public_ip" ? <p className="text-xs text-muted-foreground md:col-span-2">No RouterOS, ative o serviço <b>www-ssl</b> com um certificado válido (ex.: Let's Encrypt via <code>/certificate enable-ssl-certificate</code>), mude a porta padrão se quiser e libere-a no firewall apenas para os IPs do painel. Use um usuário com permissões read, write, api e rest-api.</p> : <p className="text-xs text-muted-foreground md:col-span-2">Ative o serviço <b>www-ssl</b> no RouterOS e garanta que o endereço seja alcançável pela internet (encaminhamento de porta a partir da VPN, restrito por IP). Use um usuário com permissões read, write, api e rest-api.</p>}
       </form>}
 
-      <section className="mt-6 border bg-card">
+      {tab === "radius" && <section className="mt-6 space-y-4">
+        <div className="border bg-card p-5 text-sm">
+          <h2 className="font-bold">Autenticação via RADIUS</h2>
+          <p className="mt-1 text-muted-foreground">Com RADIUS, o MikroTik consulta o cadastro do painel para autenticar cada cliente PPPoE/IPoE — sem precisar provisionar usuário por usuário no roteador. O painel roda na nuvem e não fala o protocolo RADIUS (UDP) diretamente; por isso você precisa de um servidor <b>FreeRADIUS</b> na sua rede lendo o banco de dados do painel. Configure abaixo onde cada roteador deve apontar e clique em <b>Aplicar no roteador</b>.</p>
+        </div>
+        {routers.map(r => <RadiusCard key={r.id} r={r} busy={busy} onSave={async (f) => run(async () => { await saveRadius({ data: f }); await load(); setMsg(""); })} onApply={() => run(async () => { await applyRad({ data: { id: r.id } }); alert("RADIUS aplicado no roteador."); })} />)}
+        {!routers.length && <p className="border bg-card p-6 text-center text-sm text-muted-foreground">Cadastre um roteador primeiro.</p>}
+        <div className="border bg-card p-5 text-sm">
+          <h2 className="font-bold">Configuração do FreeRADIUS (na sua rede)</h2>
+          <p className="mt-1 text-muted-foreground">Instale o FreeRADIUS com o módulo SQL (PostgreSQL) apontando para o banco de dados do painel e use estas consultas:</p>
+          <pre className="mt-3 overflow-x-auto rounded-md bg-muted p-3 font-mono text-xs">{`# mods-enabled/sql — authorize_check_query
+SELECT c.id AS id, c.pppoe_username AS "User-Name",
+       'Cleartext-Password' AS attribute, c.pppoe_password AS value, ':=' AS op
+FROM customers c
+WHERE c.pppoe_username = '%{SQL-User-Name}' AND c.status = 'active'
+
+# mods-enabled/sql — authorize_reply_query (velocidade do plano)
+SELECT c.id AS id, p.name AS "User-Name",
+       'Mikrotik-Rate-Limit' AS attribute,
+       concat(p.upload_mbps, 'M/', p.download_mbps, 'M') AS value, ':=' AS op
+FROM customers c JOIN plans p ON p.id = c.plan_id
+WHERE c.pppoe_username = '%{SQL-User-Name}'
+
+# clients.conf — autorize seus roteadores
+client mikrotik { ipaddr = IP_DO_ROTEADOR; secret = SEGREDO_RADIUS }`}</pre>
+          <p className="mt-2 text-xs text-muted-foreground">Clientes suspensos ou cancelados não são retornados pela consulta de autenticação, então o acesso é negado automaticamente. O endereço de conexão do banco está disponível nas configurações do backend do projeto.</p>
+        </div>
+      </section>}
+
+      {tab !== "radius" && <section className="mt-6 border bg-card">
         <Table><TableHeader><TableRow><TableHead>Roteador</TableHead><TableHead>Endereço</TableHead><TableHead>Último teste</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
           <TableBody>{shown.map(r => <TableRow key={r.id}>
             <TableCell className="font-semibold"><span className="flex items-center gap-2"><RouterIcon className="h-4 w-4 text-primary" />{r.name}</span></TableCell>
@@ -80,7 +110,7 @@ function MikrotikPage() {
             </TableCell>
           </TableRow>)}
           {!shown.length && <TableRow><TableCell colSpan={4} className="h-24 text-center text-muted-foreground">Nenhum roteador cadastrado.</TableCell></TableRow>}</TableBody></Table>
-      </section>
+      </section>}
 
       {selected && <section className="mt-6 border bg-card">
         <div className="flex items-center justify-between border-b p-4"><div><h2 className="font-bold">Conexões ativas</h2><p className="text-xs text-muted-foreground">{routers.find(r => r.id === selected)?.name}</p></div><Button size="sm" variant="ghost" disabled={busy} onClick={() => loadStatus(selected)}><RefreshCw />Atualizar</Button></div>
@@ -103,3 +133,27 @@ function MikrotikPage() {
   </div>;
 }
 function F({ label, children }: { label: string; children: React.ReactNode }) { return <div className="space-y-2"><Label>{label}</Label>{children}</div>; }
+
+function RadiusCard({ r, busy, onSave, onApply }: { r: RouterRow; busy: boolean; onSave: (f: { id: string; radius_enabled: boolean; radius_host?: string; radius_secret?: string | undefined; radius_auth_port: number; radius_acct_port: number }) => Promise<void>; onApply: () => void }) {
+  const [enabled, setEnabled] = useState(r.radius_enabled ?? false);
+  async function submit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault(); const f = new FormData(e.currentTarget);
+    await onSave({ id: r.id, radius_enabled: enabled, radius_host: String(f.get("rhost")).trim(), radius_secret: String(f.get("rsecret")).trim() || undefined, radius_auth_port: Number(f.get("rauth")) || 1812, radius_acct_port: Number(f.get("racct")) || 1813 });
+  }
+  return <form onSubmit={submit} className="border bg-card p-5">
+    <div className="flex items-center justify-between">
+      <p className="flex items-center gap-2 font-semibold"><RouterIcon className="h-4 w-4 text-primary" />{r.name} <span className="font-mono text-xs font-normal text-muted-foreground">{r.base_url}</span></p>
+      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={enabled} onChange={e => setEnabled(e.target.checked)} className="h-4 w-4" />Usar RADIUS</label>
+    </div>
+    <div className="mt-4 grid gap-4 md:grid-cols-4">
+      <F label="Servidor RADIUS (IP/domínio)"><Input name="rhost" defaultValue={r.radius_host ?? ""} placeholder="10.0.0.5" disabled={!enabled} /></F>
+      <F label="Segredo compartilhado"><Input name="rsecret" type="password" placeholder={r.radius_enabled ? "•••••• (mantido se vazio)" : "segredo"} disabled={!enabled} /></F>
+      <F label="Porta autenticação"><Input name="rauth" type="number" defaultValue={r.radius_auth_port ?? 1812} min="1" max="65535" disabled={!enabled} /></F>
+      <F label="Porta contabilidade"><Input name="racct" type="number" defaultValue={r.radius_acct_port ?? 1813} min="1" max="65535" disabled={!enabled} /></F>
+    </div>
+    <div className="mt-4 flex gap-2">
+      <Button type="submit" size="sm" disabled={busy}>Salvar configuração</Button>
+      <Button type="button" size="sm" variant="outline" disabled={busy || !enabled} onClick={onApply}>Aplicar no roteador</Button>
+    </div>
+  </form>;
+}
