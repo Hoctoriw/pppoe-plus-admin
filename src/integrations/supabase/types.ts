@@ -114,13 +114,6 @@ export type Database = {
             referencedRelation: "routers"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "customers_router_id_fkey"
-            columns: ["router_id"]
-            isOneToOne: false
-            referencedRelation: "routers_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       plans: {
@@ -260,30 +253,7 @@ export type Database = {
       }
     }
     Views: {
-      routers_public: {
-        Row: {
-          active: boolean | null
-          id: string | null
-          last_check_at: string | null
-          last_check_ok: boolean | null
-          name: string | null
-        }
-        Insert: {
-          active?: boolean | null
-          id?: string | null
-          last_check_at?: string | null
-          last_check_ok?: boolean | null
-          name?: string | null
-        }
-        Update: {
-          active?: boolean | null
-          id?: string | null
-          last_check_at?: string | null
-          last_check_ok?: boolean | null
-          name?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       can_manage_network: { Args: never; Returns: boolean }
