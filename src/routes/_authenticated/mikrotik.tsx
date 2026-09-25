@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { applyRadius, connectionStatus, deleteRouter, listRouters, saveRadiusConfig, saveRouter, syncPlans, testRouter } from "@/lib/mikrotik.functions";
+import { applyRadius, connectionStatus, deleteRouter, listRouters, saveRadiusConfig, saveRouter, syncPlans, testRadius, testRouter } from "@/lib/mikrotik.functions";
 
 export const Route = createFileRoute("/_authenticated/mikrotik")({
   head: () => ({ meta: [
@@ -27,7 +27,7 @@ type Status = Awaited<ReturnType<typeof connectionStatus>>;
 function MikrotikPage() {
   const list = useServerFn(listRouters), save = useServerFn(saveRouter), del = useServerFn(deleteRouter);
   const test = useServerFn(testRouter), sync = useServerFn(syncPlans), status = useServerFn(connectionStatus);
-  const saveRadius = useServerFn(saveRadiusConfig), applyRad = useServerFn(applyRadius);
+  const saveRadius = useServerFn(saveRadiusConfig), applyRad = useServerFn(applyRadius), testRad = useServerFn(testRadius);
   const [routers, setRouters] = useState<RouterRow[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [conn, setConn] = useState<Status | null>(null);
@@ -72,7 +72,7 @@ function MikrotikPage() {
           <h2 className="font-bold">Autenticação via RADIUS</h2>
           <p className="mt-1 text-muted-foreground">Com RADIUS, o MikroTik consulta o cadastro do painel para autenticar cada cliente PPPoE/IPoE — sem precisar provisionar usuário por usuário no roteador. O painel roda na nuvem e não fala o protocolo RADIUS (UDP) diretamente; por isso você precisa de um servidor <b>FreeRADIUS</b> na sua rede lendo o banco de dados do painel. Configure abaixo onde cada roteador deve apontar e clique em <b>Aplicar no roteador</b>.</p>
         </div>
-        {routers.map(r => <RadiusCard key={r.id} r={r} busy={busy} onSave={async (f) => run(async () => { await saveRadius({ data: f }); await load(); setMsg(""); })} onApply={() => run(async () => { await applyRad({ data: { id: r.id } }); alert("RADIUS aplicado no roteador."); })} />)}
+        {routers.map(r => <RadiusCard key={r.id} r={r} busy={busy} onSave={async (f) => run(async () => { await saveRadius({ data: f }); await load(); setMsg(""); })} onApply={() => run(async () => { await applyRad({ data: { id: r.id } }); alert("RADIUS aplicado no roteador."); })} onTest={async () => { let res: RadiusTest | null = null; await run(async () => { res = await testRad({ data: { id: r.id } }); }); return res; }} />)}
         {!routers.length && <p className="border bg-card p-6 text-center text-sm text-muted-foreground">Cadastre um roteador primeiro.</p>}
         <div className="border bg-card p-5 text-sm">
           <h2 className="font-bold">Configuração do FreeRADIUS (na sua rede)</h2>
@@ -134,8 +134,11 @@ client mikrotik { ipaddr = IP_DO_ROTEADOR; secret = SEGREDO_RADIUS }`}</pre>
 }
 function F({ label, children }: { label: string; children: React.ReactNode }) { return <div className="space-y-2"><Label>{label}</Label>{children}</div>; }
 
-function RadiusCard({ r, busy, onSave, onApply }: { r: RouterRow; busy: boolean; onSave: (f: { id: string; radius_enabled: boolean; radius_host?: string; radius_secret?: string | undefined; radius_auth_port: number; radius_acct_port: number }) => Promise<void>; onApply: () => void }) {
+type RadiusTest = Awaited<ReturnType<typeof testRadius>>;
+
+function RadiusCard({ r, busy, onSave, onApply, onTest }: { r: RouterRow; busy: boolean; onSave: (f: { id: string; radius_enabled: boolean; radius_host?: string; radius_secret?: string | undefined; radius_auth_port: number; radius_acct_port: number }) => Promise<void>; onApply: () => void; onTest: () => Promise<RadiusTest | null> }) {
   const [enabled, setEnabled] = useState(r.radius_enabled ?? false);
+  const [test, setTest] = useState<RadiusTest | null>(null);
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault(); const f = new FormData(e.currentTarget);
     await onSave({ id: r.id, radius_enabled: enabled, radius_host: String(f.get("rhost")).trim(), radius_secret: String(f.get("rsecret")).trim() || undefined, radius_auth_port: Number(f.get("rauth")) || 1812, radius_acct_port: Number(f.get("racct")) || 1813 });
@@ -154,6 +157,17 @@ function RadiusCard({ r, busy, onSave, onApply }: { r: RouterRow; busy: boolean;
     <div className="mt-4 flex gap-2">
       <Button type="submit" size="sm" disabled={busy}>Salvar configuração</Button>
       <Button type="button" size="sm" variant="outline" disabled={busy || !enabled} onClick={onApply}>Aplicar no roteador</Button>
+      <Button type="button" size="sm" variant="outline" disabled={busy || !r.radius_enabled} onClick={async () => { setTest(null); setTest(await onTest()); }}><RefreshCw className="h-3.5 w-3.5" />Testar comunicação</Button>
     </div>
+    {test && <div className={`mt-4 rounded-md border p-4 ${test.ok ? "border-primary/40 bg-primary/5" : "border-destructive/40 bg-destructive/5"}`}>
+      <p className="flex items-center gap-2 text-sm font-semibold">{test.ok ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <XCircle className="h-4 w-4 text-destructive" />}{test.ok ? "RADIUS configurado e alcançável" : "Foram encontrados problemas"}</p>
+      <ul className="mt-3 space-y-2">
+        {test.checks.map((c) => <li key={c.label} className="flex items-start gap-2 text-sm">
+          {c.ok ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" /> : <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />}
+          <span><span className="font-medium">{c.label}</span><span className="block text-xs text-muted-foreground">{c.detail}</span></span>
+        </li>)}
+      </ul>
+      <p className="mt-3 text-xs text-muted-foreground">O teste roda no próprio roteador: ele pinga o servidor FreeRADIUS e confere se autenticação e accounting estão apontando para o endereço e portas certos.</p>
+    </div>}
   </form>;
 }

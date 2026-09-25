@@ -102,6 +102,75 @@ export const applyRadius = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const testRadius = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertStaff(context);
+    const r = await getRouter(data.id);
+    if (!(r as any).radius_enabled || !(r as any).radius_host) throw new Error("Ative e salve a configuração RADIUS antes de testar.");
+    const host = (r as any).radius_host as string;
+    const authPort = String((r as any).radius_auth_port ?? 1812);
+    const acctPort = String((r as any).radius_acct_port ?? 1813);
+    const checks: { label: string; ok: boolean; detail: string }[] = [];
+
+    // 1. Router -> FreeRADIUS reachability (ping executed on the router via REST)
+    try {
+      const pings = await ros<any[]>(r, "POST", "/ping", { address: host, count: "3" });
+      const last = pings?.[pings.length - 1] ?? {};
+      const loss = Number(last["packet-loss"] ?? 100);
+      checks.push({
+        label: "Comunicação roteador → FreeRADIUS",
+        ok: loss < 100,
+        detail: loss < 100 ? `resposta em ${last["avg-rtt"] ?? last["time"] ?? "?"} · perda ${loss}%` : "sem resposta — verifique firewall, rotas e se o FreeRADIUS está no ar",
+      });
+    } catch (e) {
+      checks.push({ label: "Comunicação roteador → FreeRADIUS", ok: false, detail: e instanceof Error ? e.message : String(e) });
+    }
+
+    // 2. RADIUS entry applied on the router
+    let entry: any = null;
+    try {
+      const rad = await ros<any[]>(r, "GET", "/radius?name=nexora-radius");
+      entry = rad?.[0] ?? null;
+    } catch { /* reported below */ }
+    checks.push({
+      label: "Servidor RADIUS configurado no roteador",
+      ok: !!entry,
+      detail: entry ? `${entry.address} · auth ${entry["authentication-port"]} · acct ${entry["accounting-port"]}` : "entrada nexora-radius não encontrada — clique em Aplicar no roteador",
+    });
+    if (entry) {
+      const authOk = entry.address === host && String(entry["authentication-port"]) === authPort;
+      checks.push({
+        label: "Autenticação (porta " + authPort + ")",
+        ok: authOk,
+        detail: authOk ? "endereço e porta conferem com o painel" : `roteador aponta para ${entry.address}:${entry["authentication-port"]} — salve e aplique novamente`,
+      });
+      const acctOk = String(entry["accounting-port"]) === acctPort;
+      checks.push({
+        label: "Accounting (porta " + acctPort + ")",
+        ok: acctOk,
+        detail: acctOk ? "porta de contabilidade confere com o painel" : `roteador usa a porta ${entry["accounting-port"]} — salve e aplique novamente`,
+      });
+    }
+
+    // 3. PPP AAA using RADIUS for auth + accounting
+    let aaa: any = null;
+    try { aaa = await ros<any>(r, "GET", "/ppp/aaa"); } catch { /* reported below */ }
+    checks.push({
+      label: "Autenticação PPP delegada ao RADIUS",
+      ok: aaa?.["use-radius"] === "yes",
+      detail: aaa?.["use-radius"] === "yes" ? "use-radius ativado" : "use-radius desativado — clique em Aplicar no roteador",
+    });
+    checks.push({
+      label: "Accounting PPP ativado",
+      ok: aaa?.accounting === "yes",
+      detail: aaa?.accounting === "yes" ? `accounting ativado · interim-update ${aaa?.["interim-update"] ?? "—"}` : "accounting desativado — clique em Aplicar no roteador",
+    });
+
+    return { ok: checks.every((c) => c.ok), checks };
+  });
+
 export const testRouter = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
