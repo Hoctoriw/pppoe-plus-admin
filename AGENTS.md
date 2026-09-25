@@ -8,3 +8,4 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+- MikroTik integration uses RouterOS 7 REST (HTTPS, basic auth) from server functions in src/lib/mikrotik.*; router credentials live in admin-only `routers` table and are read via service role after role check — why: Workers can only reach routers over HTTP(S), and passwords must never reach the browser.
