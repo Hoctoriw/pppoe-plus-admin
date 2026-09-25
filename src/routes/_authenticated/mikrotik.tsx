@@ -72,7 +72,7 @@ function MikrotikPage() {
           <h2 className="font-bold">Autenticação via RADIUS</h2>
           <p className="mt-1 text-muted-foreground">Com RADIUS, o MikroTik consulta o cadastro do painel para autenticar cada cliente PPPoE/IPoE — sem precisar provisionar usuário por usuário no roteador. O painel roda na nuvem e não fala o protocolo RADIUS (UDP) diretamente; por isso você precisa de um servidor <b>FreeRADIUS</b> na sua rede lendo o banco de dados do painel. Configure abaixo onde cada roteador deve apontar e clique em <b>Aplicar no roteador</b>.</p>
         </div>
-        {routers.map(r => <RadiusCard key={r.id} r={r} busy={busy} onSave={async (f) => run(async () => { await saveRadius({ data: f }); await load(); setMsg(""); })} onApply={() => run(async () => { await applyRad({ data: { id: r.id } }); alert("RADIUS aplicado no roteador."); })} />)}
+        {routers.map(r => <RadiusCard key={r.id} r={r} busy={busy} onSave={async (f) => run(async () => { await saveRadius({ data: f }); await load(); setMsg(""); })} onApply={() => run(async () => { await applyRad({ data: { id: r.id } }); alert("RADIUS aplicado no roteador."); })} onTest={async () => { let res: RadiusTest | null = null; await run(async () => { res = await testRad({ data: { id: r.id } }); }); return res; }} />)}
         {!routers.length && <p className="border bg-card p-6 text-center text-sm text-muted-foreground">Cadastre um roteador primeiro.</p>}
         <div className="border bg-card p-5 text-sm">
           <h2 className="font-bold">Configuração do FreeRADIUS (na sua rede)</h2>
@@ -134,8 +134,11 @@ client mikrotik { ipaddr = IP_DO_ROTEADOR; secret = SEGREDO_RADIUS }`}</pre>
 }
 function F({ label, children }: { label: string; children: React.ReactNode }) { return <div className="space-y-2"><Label>{label}</Label>{children}</div>; }
 
-function RadiusCard({ r, busy, onSave, onApply }: { r: RouterRow; busy: boolean; onSave: (f: { id: string; radius_enabled: boolean; radius_host?: string; radius_secret?: string | undefined; radius_auth_port: number; radius_acct_port: number }) => Promise<void>; onApply: () => void }) {
+type RadiusTest = Awaited<ReturnType<typeof testRadius>>;
+
+function RadiusCard({ r, busy, onSave, onApply, onTest }: { r: RouterRow; busy: boolean; onSave: (f: { id: string; radius_enabled: boolean; radius_host?: string; radius_secret?: string | undefined; radius_auth_port: number; radius_acct_port: number }) => Promise<void>; onApply: () => void; onTest: () => Promise<RadiusTest | null> }) {
   const [enabled, setEnabled] = useState(r.radius_enabled ?? false);
+  const [test, setTest] = useState<RadiusTest | null>(null);
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault(); const f = new FormData(e.currentTarget);
     await onSave({ id: r.id, radius_enabled: enabled, radius_host: String(f.get("rhost")).trim(), radius_secret: String(f.get("rsecret")).trim() || undefined, radius_auth_port: Number(f.get("rauth")) || 1812, radius_acct_port: Number(f.get("racct")) || 1813 });
