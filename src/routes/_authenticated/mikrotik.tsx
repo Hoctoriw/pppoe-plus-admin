@@ -157,6 +157,17 @@ function RadiusCard({ r, busy, onSave, onApply, onTest }: { r: RouterRow; busy: 
     <div className="mt-4 flex gap-2">
       <Button type="submit" size="sm" disabled={busy}>Salvar configuração</Button>
       <Button type="button" size="sm" variant="outline" disabled={busy || !enabled} onClick={onApply}>Aplicar no roteador</Button>
+      <Button type="button" size="sm" variant="outline" disabled={busy || !r.radius_enabled} onClick={async () => { setTest(null); setTest(await onTest()); }}><RefreshCw className="h-3.5 w-3.5" />Testar comunicação</Button>
     </div>
+    {test && <div className={`mt-4 rounded-md border p-4 ${test.ok ? "border-primary/40 bg-primary/5" : "border-destructive/40 bg-destructive/5"}`}>
+      <p className="flex items-center gap-2 text-sm font-semibold">{test.ok ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <XCircle className="h-4 w-4 text-destructive" />}{test.ok ? "RADIUS configurado e alcançável" : "Foram encontrados problemas"}</p>
+      <ul className="mt-3 space-y-2">
+        {test.checks.map((c) => <li key={c.label} className="flex items-start gap-2 text-sm">
+          {c.ok ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" /> : <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />}
+          <span><span className="font-medium">{c.label}</span><span className="block text-xs text-muted-foreground">{c.detail}</span></span>
+        </li>)}
+      </ul>
+      <p className="mt-3 text-xs text-muted-foreground">O teste roda no próprio roteador: ele pinga o servidor FreeRADIUS e confere se autenticação e accounting estão apontando para o endereço e portas certos.</p>
+    </div>}
   </form>;
 }
