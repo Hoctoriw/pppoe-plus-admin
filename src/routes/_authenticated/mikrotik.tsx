@@ -52,12 +52,12 @@ function MikrotikPage() {
       <Link to="/dashboard" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />Voltar ao painel</Link>
       <div className="mt-4 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div><p className="text-sm text-muted-foreground">Integração RouterOS 7</p><h1 className="text-3xl font-extrabold">MikroTik</h1></div>
-        <Button onClick={() => setShowForm(v => !v)}><Plus />Novo roteador</Button>
+        {tab !== "radius" && <Button onClick={() => setShowForm(v => !v)}><Plus />Novo roteador</Button>}
       </div>
       <div className="mt-6 inline-flex rounded-md border bg-card p-1">{([["public_ip", "IP público"], ["vpn", "VPN"], ["radius", "RADIUS"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => { setTab(k); setSelected(null); }} className={`rounded px-4 py-1.5 text-sm font-semibold ${tab === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{l}</button>)}</div>
       {msg && <p className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">{msg}</p>}
 
-      {showForm && <form onSubmit={onSave} className="mt-6 grid gap-4 border bg-card p-5 md:grid-cols-2">
+      {showForm && tab !== "radius" && <form onSubmit={onSave} className="mt-6 grid gap-4 border bg-card p-5 md:grid-cols-2">
         <F label="Nome"><Input name="name" required placeholder="Concentrador Centro" /></F>
         {tab === "public_ip" ? <><F label="IP público ou domínio"><Input name="ip" required placeholder="200.100.50.10" /></F><div className="grid grid-cols-2 gap-3"><F label="Protocolo"><select name="proto" defaultValue="https" className="h-9 w-full rounded-md border bg-background px-3 text-sm"><option value="https">HTTPS</option><option value="http">HTTP (inseguro)</option></select></F><F label="Porta"><Input name="port" type="number" required defaultValue="443" min="1" max="65535" /></F></div></> : <F label="Endereço na VPN (HTTPS)"><Input name="url" required type="url" placeholder="https://10.8.0.1" /></F>}
         <F label="Usuário da API"><Input name="user" required /></F>
@@ -67,7 +67,36 @@ function MikrotikPage() {
         {tab === "public_ip" ? <p className="text-xs text-muted-foreground md:col-span-2">No RouterOS, ative o serviço <b>www-ssl</b> com um certificado válido (ex.: Let's Encrypt via <code>/certificate enable-ssl-certificate</code>), mude a porta padrão se quiser e libere-a no firewall apenas para os IPs do painel. Use um usuário com permissões read, write, api e rest-api.</p> : <p className="text-xs text-muted-foreground md:col-span-2">Ative o serviço <b>www-ssl</b> no RouterOS e garanta que o endereço seja alcançável pela internet (encaminhamento de porta a partir da VPN, restrito por IP). Use um usuário com permissões read, write, api e rest-api.</p>}
       </form>}
 
-      <section className="mt-6 border bg-card">
+      {tab === "radius" && <section className="mt-6 space-y-4">
+        <div className="border bg-card p-5 text-sm">
+          <h2 className="font-bold">Autenticação via RADIUS</h2>
+          <p className="mt-1 text-muted-foreground">Com RADIUS, o MikroTik consulta o cadastro do painel para autenticar cada cliente PPPoE/IPoE — sem precisar provisionar usuário por usuário no roteador. O painel roda na nuvem e não fala o protocolo RADIUS (UDP) diretamente; por isso você precisa de um servidor <b>FreeRADIUS</b> na sua rede lendo o banco de dados do painel. Configure abaixo onde cada roteador deve apontar e clique em <b>Aplicar no roteador</b>.</p>
+        </div>
+        {routers.map(r => <RadiusCard key={r.id} r={r} busy={busy} onSave={async (f) => run(async () => { await saveRadius({ data: f }); await load(); setMsg(""); })} onApply={() => run(async () => { await applyRad({ data: { id: r.id } }); alert("RADIUS aplicado no roteador."); })} />)}
+        {!routers.length && <p className="border bg-card p-6 text-center text-sm text-muted-foreground">Cadastre um roteador primeiro.</p>}
+        <div className="border bg-card p-5 text-sm">
+          <h2 className="font-bold">Configuração do FreeRADIUS (na sua rede)</h2>
+          <p className="mt-1 text-muted-foreground">Instale o FreeRADIUS com o módulo SQL (PostgreSQL) apontando para o banco de dados do painel e use estas consultas:</p>
+          <pre className="mt-3 overflow-x-auto rounded-md bg-muted p-3 font-mono text-xs">{`# mods-enabled/sql — authorize_check_query
+SELECT c.id AS id, c.pppoe_username AS "User-Name",
+       'Cleartext-Password' AS attribute, c.pppoe_password AS value, ':=' AS op
+FROM customers c
+WHERE c.pppoe_username = '%{SQL-User-Name}' AND c.status = 'active'
+
+# mods-enabled/sql — authorize_reply_query (velocidade do plano)
+SELECT c.id AS id, p.name AS "User-Name",
+       'Mikrotik-Rate-Limit' AS attribute,
+       concat(p.upload_mbps, 'M/', p.download_mbps, 'M') AS value, ':=' AS op
+FROM customers c JOIN plans p ON p.id = c.plan_id
+WHERE c.pppoe_username = '%{SQL-User-Name}'
+
+# clients.conf — autorize seus roteadores
+client mikrotik { ipaddr = IP_DO_ROTEADOR; secret = SEGREDO_RADIUS }`}</pre>
+          <p className="mt-2 text-xs text-muted-foreground">Clientes suspensos ou cancelados não são retornados pela consulta de autenticação, então o acesso é negado automaticamente. O endereço de conexão do banco está disponível nas configurações do backend do projeto.</p>
+        </div>
+      </section>}
+
+      {tab !== "radius" && <section className="mt-6 border bg-card">
         <Table><TableHeader><TableRow><TableHead>Roteador</TableHead><TableHead>Endereço</TableHead><TableHead>Último teste</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
           <TableBody>{shown.map(r => <TableRow key={r.id}>
             <TableCell className="font-semibold"><span className="flex items-center gap-2"><RouterIcon className="h-4 w-4 text-primary" />{r.name}</span></TableCell>
