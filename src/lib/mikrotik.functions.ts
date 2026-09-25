@@ -45,8 +45,8 @@ export const saveRouter = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const db = await admin();
-    const row: Record<string, unknown> = { name: data.name, base_url: data.base_url, username: data.username, dhcp_server: data.dhcp_server || null };
-    if (data.password) row.password = data.password;
+    const row: any = { name: data.name, base_url: data.base_url, username: data.username, dhcp_server: data.dhcp_server || null };
+    if (data.password) row["password"] = data.password;
     if (data.id) { const { error } = await db.from("routers").update(row).eq("id", data.id); if (error) throw new Error(error.message); }
     else { if (!data.password) throw new Error("Informe a senha."); const { error } = await db.from("routers").insert(row as any); if (error) throw new Error(error.message); }
     return { ok: true };

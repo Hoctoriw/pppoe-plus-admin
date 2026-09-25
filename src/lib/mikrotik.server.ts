@@ -14,7 +14,7 @@ export async function ros<T = any>(r: RouterCreds, method: string, path: string,
     res = await fetch(url, {
       method,
       headers: { Authorization: "Basic " + btoa(`${r.username}:${r.password}`), "Content-Type": "application/json" },
-      body: body ? JSON.stringify(body) : undefined,
+      body: body ? JSON.stringify(body) : null,
       signal: AbortSignal.timeout(10000),
     });
   } catch (e) {
