@@ -14,16 +14,198 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      customers: {
+        Row: {
+          address_number: string | null
+          city: string | null
+          created_at: string
+          created_by: string
+          district: string | null
+          document: string
+          email: string | null
+          full_name: string
+          id: string
+          ipoe_ip: unknown
+          mac_address: unknown
+          notes: string | null
+          phone: string
+          plan_id: string | null
+          postal_code: string | null
+          pppoe_password: string | null
+          pppoe_username: string | null
+          state: string | null
+          status: Database["public"]["Enums"]["customer_status"]
+          street: string | null
+          technology: Database["public"]["Enums"]["access_technology"]
+          updated_at: string
+        }
+        Insert: {
+          address_number?: string | null
+          city?: string | null
+          created_at?: string
+          created_by: string
+          district?: string | null
+          document: string
+          email?: string | null
+          full_name: string
+          id?: string
+          ipoe_ip?: unknown
+          mac_address?: unknown
+          notes?: string | null
+          phone: string
+          plan_id?: string | null
+          postal_code?: string | null
+          pppoe_password?: string | null
+          pppoe_username?: string | null
+          state?: string | null
+          status?: Database["public"]["Enums"]["customer_status"]
+          street?: string | null
+          technology: Database["public"]["Enums"]["access_technology"]
+          updated_at?: string
+        }
+        Update: {
+          address_number?: string | null
+          city?: string | null
+          created_at?: string
+          created_by?: string
+          district?: string | null
+          document?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          ipoe_ip?: unknown
+          mac_address?: unknown
+          notes?: string | null
+          phone?: string
+          plan_id?: string | null
+          postal_code?: string | null
+          pppoe_password?: string | null
+          pppoe_username?: string | null
+          state?: string | null
+          status?: Database["public"]["Enums"]["customer_status"]
+          street?: string | null
+          technology?: Database["public"]["Enums"]["access_technology"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customers_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plans: {
+        Row: {
+          created_at: string
+          description: string | null
+          download_mbps: number
+          id: string
+          monthly_price: number
+          name: string
+          status: Database["public"]["Enums"]["plan_status"]
+          technology: Database["public"]["Enums"]["access_technology"] | null
+          updated_at: string
+          upload_mbps: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          download_mbps: number
+          id?: string
+          monthly_price: number
+          name: string
+          status?: Database["public"]["Enums"]["plan_status"]
+          technology?: Database["public"]["Enums"]["access_technology"] | null
+          updated_at?: string
+          upload_mbps: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          download_mbps?: number
+          id?: string
+          monthly_price?: number
+          name?: string
+          status?: Database["public"]["Enums"]["plan_status"]
+          technology?: Database["public"]["Enums"]["access_technology"] | null
+          updated_at?: string
+          upload_mbps?: number
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          active: boolean
+          avatar_url: string | null
+          created_at: string
+          full_name: string
+          id: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string
+          id: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      can_manage_network: { Args: never; Returns: boolean }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      access_technology: "pppoe" | "ipoe"
+      app_role: "admin" | "operator" | "viewer"
+      customer_status: "active" | "suspended" | "pending" | "cancelled"
+      plan_status: "active" | "inactive"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +332,11 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      access_technology: ["pppoe", "ipoe"],
+      app_role: ["admin", "operator", "viewer"],
+      customer_status: ["active", "suspended", "pending", "cancelled"],
+      plan_status: ["active", "inactive"],
+    },
   },
 } as const
