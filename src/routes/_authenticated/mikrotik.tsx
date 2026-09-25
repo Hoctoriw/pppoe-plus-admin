@@ -33,6 +33,8 @@ function MikrotikPage() {
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [tab, setTab] = useState<"vpn" | "public_ip">("public_ip");
+  const shown = routers.filter(r => (r.connection_mode ?? "vpn") === tab);
 
   async function load() { try { setRouters(await list()); } catch (e) { setMsg((e as Error).message); } }
   useEffect(() => { void load(); }, []);
@@ -40,7 +42,7 @@ function MikrotikPage() {
 
   async function onSave(e: FormEvent<HTMLFormElement>) {
     e.preventDefault(); const f = new FormData(e.currentTarget);
-    await run(async () => { await save({ data: { name: String(f.get("name")), base_url: String(f.get("url")), username: String(f.get("user")), password: String(f.get("pass")), dhcp_server: String(f.get("dhcp")) } }); setShowForm(false); await load(); });
+    await run(async () => { await save({ data: { name: String(f.get("name")), base_url: tab === "public_ip" ? `${f.get("proto")}://${String(f.get("ip")).trim()}:${f.get("port")}` : String(f.get("url")), connection_mode: tab, username: String(f.get("user")), password: String(f.get("pass")), dhcp_server: String(f.get("dhcp")) } }); setShowForm(false); await load(); });
   }
   async function loadStatus(id: string) { setSelected(id); setConn(null); await run(async () => setConn(await status({ data: { id } }))); }
 
@@ -51,21 +53,22 @@ function MikrotikPage() {
         <div><p className="text-sm text-muted-foreground">Integração RouterOS 7</p><h1 className="text-3xl font-extrabold">MikroTik</h1></div>
         <Button onClick={() => setShowForm(v => !v)}><Plus />Novo roteador</Button>
       </div>
+      <div className="mt-6 inline-flex rounded-md border bg-card p-1">{([["public_ip", "IP público"], ["vpn", "VPN"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => { setTab(k); setSelected(null); }} className={`rounded px-4 py-1.5 text-sm font-semibold ${tab === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{l}</button>)}</div>
       {msg && <p className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">{msg}</p>}
 
       {showForm && <form onSubmit={onSave} className="mt-6 grid gap-4 border bg-card p-5 md:grid-cols-2">
         <F label="Nome"><Input name="name" required placeholder="Concentrador Centro" /></F>
-        <F label="Endereço (HTTPS)"><Input name="url" required type="url" placeholder="https://10.8.0.1" /></F>
+        {tab === "public_ip" ? <><F label="IP público ou domínio"><Input name="ip" required placeholder="200.100.50.10" /></F><div className="grid grid-cols-2 gap-3"><F label="Protocolo"><select name="proto" defaultValue="https" className="h-9 w-full rounded-md border bg-background px-3 text-sm"><option value="https">HTTPS</option><option value="http">HTTP (inseguro)</option></select></F><F label="Porta"><Input name="port" type="number" required defaultValue="443" min="1" max="65535" /></F></div></> : <F label="Endereço na VPN (HTTPS)"><Input name="url" required type="url" placeholder="https://10.8.0.1" /></F>}
         <F label="Usuário da API"><Input name="user" required /></F>
         <F label="Senha"><Input name="pass" type="password" required /></F>
         <F label="Servidor DHCP (IPoE)"><Input name="dhcp" placeholder="dhcp-clientes" /></F>
         <div className="flex items-end"><Button disabled={busy} className="w-full" type="submit">Salvar roteador</Button></div>
-        <p className="text-xs text-muted-foreground md:col-span-2">Ative o serviço <b>www-ssl</b> no RouterOS e garanta que o endereço seja alcançável pela internet (encaminhamento de porta a partir da VPN, restrito por IP). Use um usuário com permissões read, write, api e rest-api.</p>
+        {tab === "public_ip" ? <p className="text-xs text-muted-foreground md:col-span-2">No RouterOS, ative o serviço <b>www-ssl</b> com um certificado válido (ex.: Let's Encrypt via <code>/certificate enable-ssl-certificate</code>), mude a porta padrão se quiser e libere-a no firewall apenas para os IPs do painel. Use um usuário com permissões read, write, api e rest-api.</p> : <p className="text-xs text-muted-foreground md:col-span-2">Ative o serviço <b>www-ssl</b> no RouterOS e garanta que o endereço seja alcançável pela internet (encaminhamento de porta a partir da VPN, restrito por IP). Use um usuário com permissões read, write, api e rest-api.</p>}
       </form>}
 
       <section className="mt-6 border bg-card">
         <Table><TableHeader><TableRow><TableHead>Roteador</TableHead><TableHead>Endereço</TableHead><TableHead>Último teste</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
-          <TableBody>{routers.map(r => <TableRow key={r.id}>
+          <TableBody>{shown.map(r => <TableRow key={r.id}>
             <TableCell className="font-semibold"><span className="flex items-center gap-2"><RouterIcon className="h-4 w-4 text-primary" />{r.name}</span></TableCell>
             <TableCell className="font-mono text-xs">{r.base_url}</TableCell>
             <TableCell>{r.last_check_at ? <span className="flex items-center gap-2 text-sm">{r.last_check_ok ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <XCircle className="h-4 w-4 text-destructive" />}<span className="max-w-xs truncate text-muted-foreground" title={r.last_check_message ?? ""}>{r.last_check_message}</span></span> : <span className="text-sm text-muted-foreground">Nunca testado</span>}</TableCell>
@@ -76,7 +79,7 @@ function MikrotikPage() {
               <Button size="icon" variant="ghost" aria-label="Excluir" disabled={busy} onClick={() => confirm("Remover roteador?") && run(async () => { await del({ data: { id: r.id } }); await load(); })}><Trash2 /></Button>
             </TableCell>
           </TableRow>)}
-          {!routers.length && <TableRow><TableCell colSpan={4} className="h-24 text-center text-muted-foreground">Nenhum roteador cadastrado.</TableCell></TableRow>}</TableBody></Table>
+          {!shown.length && <TableRow><TableCell colSpan={4} className="h-24 text-center text-muted-foreground">Nenhum roteador cadastrado.</TableCell></TableRow>}</TableBody></Table>
       </section>
 
       {selected && <section className="mt-6 border bg-card">
