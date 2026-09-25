@@ -26,6 +26,7 @@ export type Database = {
           full_name: string
           id: string
           ipoe_ip: unknown
+          last_sync_at: string | null
           mac_address: unknown
           notes: string | null
           phone: string
@@ -33,9 +34,12 @@ export type Database = {
           postal_code: string | null
           pppoe_password: string | null
           pppoe_username: string | null
+          router_id: string | null
           state: string | null
           status: Database["public"]["Enums"]["customer_status"]
           street: string | null
+          sync_error: string | null
+          sync_status: string
           technology: Database["public"]["Enums"]["access_technology"]
           updated_at: string
         }
@@ -50,6 +54,7 @@ export type Database = {
           full_name: string
           id?: string
           ipoe_ip?: unknown
+          last_sync_at?: string | null
           mac_address?: unknown
           notes?: string | null
           phone: string
@@ -57,9 +62,12 @@ export type Database = {
           postal_code?: string | null
           pppoe_password?: string | null
           pppoe_username?: string | null
+          router_id?: string | null
           state?: string | null
           status?: Database["public"]["Enums"]["customer_status"]
           street?: string | null
+          sync_error?: string | null
+          sync_status?: string
           technology: Database["public"]["Enums"]["access_technology"]
           updated_at?: string
         }
@@ -74,6 +82,7 @@ export type Database = {
           full_name?: string
           id?: string
           ipoe_ip?: unknown
+          last_sync_at?: string | null
           mac_address?: unknown
           notes?: string | null
           phone?: string
@@ -81,9 +90,12 @@ export type Database = {
           postal_code?: string | null
           pppoe_password?: string | null
           pppoe_username?: string | null
+          router_id?: string | null
           state?: string | null
           status?: Database["public"]["Enums"]["customer_status"]
           street?: string | null
+          sync_error?: string | null
+          sync_status?: string
           technology?: Database["public"]["Enums"]["access_technology"]
           updated_at?: string
         }
@@ -93,6 +105,13 @@ export type Database = {
             columns: ["plan_id"]
             isOneToOne: false
             referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customers_router_id_fkey"
+            columns: ["router_id"]
+            isOneToOne: false
+            referencedRelation: "routers"
             referencedColumns: ["id"]
           },
         ]
@@ -163,6 +182,51 @@ export type Database = {
           id?: string
           phone?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      routers: {
+        Row: {
+          active: boolean
+          base_url: string
+          created_at: string
+          dhcp_server: string | null
+          id: string
+          last_check_at: string | null
+          last_check_message: string | null
+          last_check_ok: boolean | null
+          name: string
+          password: string
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          active?: boolean
+          base_url: string
+          created_at?: string
+          dhcp_server?: string | null
+          id?: string
+          last_check_at?: string | null
+          last_check_message?: string | null
+          last_check_ok?: boolean | null
+          name: string
+          password: string
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          active?: boolean
+          base_url?: string
+          created_at?: string
+          dhcp_server?: string | null
+          id?: string
+          last_check_at?: string | null
+          last_check_message?: string | null
+          last_check_ok?: boolean | null
+          name?: string
+          password?: string
+          updated_at?: string
+          username?: string
         }
         Relationships: []
       }
