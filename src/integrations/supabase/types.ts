@@ -189,6 +189,7 @@ export type Database = {
         Row: {
           active: boolean
           base_url: string
+          connection_mode: string
           created_at: string
           dhcp_server: string | null
           id: string
@@ -203,6 +204,7 @@ export type Database = {
         Insert: {
           active?: boolean
           base_url: string
+          connection_mode?: string
           created_at?: string
           dhcp_server?: string | null
           id?: string
@@ -217,6 +219,7 @@ export type Database = {
         Update: {
           active?: boolean
           base_url?: string
+          connection_mode?: string
           created_at?: string
           dhcp_server?: string | null
           id?: string
