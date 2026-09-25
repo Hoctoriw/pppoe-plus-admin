@@ -110,7 +110,7 @@ client mikrotik { ipaddr = IP_DO_ROTEADOR; secret = SEGREDO_RADIUS }`}</pre>
             </TableCell>
           </TableRow>)}
           {!shown.length && <TableRow><TableCell colSpan={4} className="h-24 text-center text-muted-foreground">Nenhum roteador cadastrado.</TableCell></TableRow>}</TableBody></Table>
-      </section>
+      </section>}
 
       {selected && <section className="mt-6 border bg-card">
         <div className="flex items-center justify-between border-b p-4"><div><h2 className="font-bold">Conexões ativas</h2><p className="text-xs text-muted-foreground">{routers.find(r => r.id === selected)?.name}</p></div><Button size="sm" variant="ghost" disabled={busy} onClick={() => loadStatus(selected)}><RefreshCw />Atualizar</Button></div>
@@ -133,3 +133,27 @@ client mikrotik { ipaddr = IP_DO_ROTEADOR; secret = SEGREDO_RADIUS }`}</pre>
   </div>;
 }
 function F({ label, children }: { label: string; children: React.ReactNode }) { return <div className="space-y-2"><Label>{label}</Label>{children}</div>; }
+
+function RadiusCard({ r, busy, onSave, onApply }: { r: RouterRow; busy: boolean; onSave: (f: { id: string; radius_enabled: boolean; radius_host?: string; radius_secret?: string; radius_auth_port: number; radius_acct_port: number }) => Promise<void>; onApply: () => void }) {
+  const [enabled, setEnabled] = useState(r.radius_enabled ?? false);
+  async function submit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault(); const f = new FormData(e.currentTarget);
+    await onSave({ id: r.id, radius_enabled: enabled, radius_host: String(f.get("rhost")).trim(), radius_secret: String(f.get("rsecret")).trim() || undefined, radius_auth_port: Number(f.get("rauth")) || 1812, radius_acct_port: Number(f.get("racct")) || 1813 });
+  }
+  return <form onSubmit={submit} className="border bg-card p-5">
+    <div className="flex items-center justify-between">
+      <p className="flex items-center gap-2 font-semibold"><RouterIcon className="h-4 w-4 text-primary" />{r.name} <span className="font-mono text-xs font-normal text-muted-foreground">{r.base_url}</span></p>
+      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={enabled} onChange={e => setEnabled(e.target.checked)} className="h-4 w-4" />Usar RADIUS</label>
+    </div>
+    <div className="mt-4 grid gap-4 md:grid-cols-4">
+      <F label="Servidor RADIUS (IP/domínio)"><Input name="rhost" defaultValue={r.radius_host ?? ""} placeholder="10.0.0.5" disabled={!enabled} /></F>
+      <F label="Segredo compartilhado"><Input name="rsecret" type="password" placeholder={r.radius_enabled ? "•••••• (mantido se vazio)" : "segredo"} disabled={!enabled} /></F>
+      <F label="Porta autenticação"><Input name="rauth" type="number" defaultValue={r.radius_auth_port ?? 1812} min="1" max="65535" disabled={!enabled} /></F>
+      <F label="Porta contabilidade"><Input name="racct" type="number" defaultValue={r.radius_acct_port ?? 1813} min="1" max="65535" disabled={!enabled} /></F>
+    </div>
+    <div className="mt-4 flex gap-2">
+      <Button type="submit" size="sm" disabled={busy}>Salvar configuração</Button>
+      <Button type="button" size="sm" variant="outline" disabled={busy || !enabled} onClick={onApply}>Aplicar no roteador</Button>
+    </div>
+  </form>;
+}
