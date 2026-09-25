@@ -1,0 +1,1 @@
+ALTER TABLE public.routers ADD COLUMN connection_mode text NOT NULL DEFAULT 'vpn' CHECK (connection_mode IN ('vpn','public_ip'));
