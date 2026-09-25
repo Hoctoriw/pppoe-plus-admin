@@ -198,6 +198,11 @@ export type Database = {
           last_check_ok: boolean | null
           name: string
           password: string
+          radius_acct_port: number
+          radius_auth_port: number
+          radius_enabled: boolean
+          radius_host: string | null
+          radius_secret: string | null
           updated_at: string
           username: string
         }
@@ -213,6 +218,11 @@ export type Database = {
           last_check_ok?: boolean | null
           name: string
           password: string
+          radius_acct_port?: number
+          radius_auth_port?: number
+          radius_enabled?: boolean
+          radius_host?: string | null
+          radius_secret?: string | null
           updated_at?: string
           username: string
         }
@@ -228,6 +238,11 @@ export type Database = {
           last_check_ok?: boolean | null
           name?: string
           password?: string
+          radius_acct_port?: number
+          radius_auth_port?: number
+          radius_enabled?: boolean
+          radius_host?: string | null
+          radius_secret?: string | null
           updated_at?: string
           username?: string
         }
