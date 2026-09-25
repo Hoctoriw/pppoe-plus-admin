@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { applyRadius, connectionStatus, deleteRouter, listRouters, saveRadiusConfig, saveRouter, syncPlans, testRouter } from "@/lib/mikrotik.functions";
+import { applyRadius, connectionStatus, deleteRouter, listRouters, saveRadiusConfig, saveRouter, syncPlans, testRadius, testRouter } from "@/lib/mikrotik.functions";
 
 export const Route = createFileRoute("/_authenticated/mikrotik")({
   head: () => ({ meta: [
@@ -27,7 +27,7 @@ type Status = Awaited<ReturnType<typeof connectionStatus>>;
 function MikrotikPage() {
   const list = useServerFn(listRouters), save = useServerFn(saveRouter), del = useServerFn(deleteRouter);
   const test = useServerFn(testRouter), sync = useServerFn(syncPlans), status = useServerFn(connectionStatus);
-  const saveRadius = useServerFn(saveRadiusConfig), applyRad = useServerFn(applyRadius);
+  const saveRadius = useServerFn(saveRadiusConfig), applyRad = useServerFn(applyRadius), testRad = useServerFn(testRadius);
   const [routers, setRouters] = useState<RouterRow[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [conn, setConn] = useState<Status | null>(null);
