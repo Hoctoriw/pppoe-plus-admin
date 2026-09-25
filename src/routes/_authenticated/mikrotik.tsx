@@ -134,7 +134,7 @@ client mikrotik { ipaddr = IP_DO_ROTEADOR; secret = SEGREDO_RADIUS }`}</pre>
 }
 function F({ label, children }: { label: string; children: React.ReactNode }) { return <div className="space-y-2"><Label>{label}</Label>{children}</div>; }
 
-function RadiusCard({ r, busy, onSave, onApply }: { r: RouterRow; busy: boolean; onSave: (f: { id: string; radius_enabled: boolean; radius_host?: string; radius_secret?: string; radius_auth_port: number; radius_acct_port: number }) => Promise<void>; onApply: () => void }) {
+function RadiusCard({ r, busy, onSave, onApply }: { r: RouterRow; busy: boolean; onSave: (f: { id: string; radius_enabled: boolean; radius_host?: string; radius_secret?: string | undefined; radius_auth_port: number; radius_acct_port: number }) => Promise<void>; onApply: () => void }) {
   const [enabled, setEnabled] = useState(r.radius_enabled ?? false);
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault(); const f = new FormData(e.currentTarget);
