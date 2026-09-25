@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { connectionStatus, deleteRouter, listRouters, saveRouter, syncPlans, testRouter } from "@/lib/mikrotik.functions";
+import { applyRadius, connectionStatus, deleteRouter, listRouters, saveRadiusConfig, saveRouter, syncPlans, testRouter } from "@/lib/mikrotik.functions";
 
 export const Route = createFileRoute("/_authenticated/mikrotik")({
   head: () => ({ meta: [
@@ -27,14 +27,15 @@ type Status = Awaited<ReturnType<typeof connectionStatus>>;
 function MikrotikPage() {
   const list = useServerFn(listRouters), save = useServerFn(saveRouter), del = useServerFn(deleteRouter);
   const test = useServerFn(testRouter), sync = useServerFn(syncPlans), status = useServerFn(connectionStatus);
+  const saveRadius = useServerFn(saveRadiusConfig), applyRad = useServerFn(applyRadius);
   const [routers, setRouters] = useState<RouterRow[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [conn, setConn] = useState<Status | null>(null);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [tab, setTab] = useState<"vpn" | "public_ip">("public_ip");
-  const shown = routers.filter(r => (r.connection_mode ?? "vpn") === tab);
+  const [tab, setTab] = useState<"vpn" | "public_ip" | "radius">("public_ip");
+  const shown = tab === "radius" ? routers : routers.filter(r => (r.connection_mode ?? "vpn") === tab);
 
   async function load() { try { setRouters(await list()); } catch (e) { setMsg((e as Error).message); } }
   useEffect(() => { void load(); }, []);
@@ -53,7 +54,7 @@ function MikrotikPage() {
         <div><p className="text-sm text-muted-foreground">Integração RouterOS 7</p><h1 className="text-3xl font-extrabold">MikroTik</h1></div>
         <Button onClick={() => setShowForm(v => !v)}><Plus />Novo roteador</Button>
       </div>
-      <div className="mt-6 inline-flex rounded-md border bg-card p-1">{([["public_ip", "IP público"], ["vpn", "VPN"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => { setTab(k); setSelected(null); }} className={`rounded px-4 py-1.5 text-sm font-semibold ${tab === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{l}</button>)}</div>
+      <div className="mt-6 inline-flex rounded-md border bg-card p-1">{([["public_ip", "IP público"], ["vpn", "VPN"], ["radius", "RADIUS"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => { setTab(k); setSelected(null); }} className={`rounded px-4 py-1.5 text-sm font-semibold ${tab === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{l}</button>)}</div>
       {msg && <p className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">{msg}</p>}
 
       {showForm && <form onSubmit={onSave} className="mt-6 grid gap-4 border bg-card p-5 md:grid-cols-2">
