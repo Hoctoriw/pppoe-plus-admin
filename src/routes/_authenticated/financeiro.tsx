@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Bell, Building2, Check, ChevronRight, CircleDollarSign, Copy, FileBarcode, Landmark, LayoutDashboard, LogOut, Menu, MessageCircle, Package, Plus, Radio, RefreshCw, Router as RouterIcon, Search, ShieldCheck, Trash2, Users, Wifi, X } from "lucide-react";
+import { Bell, Building2, Check, ChevronRight, CircleDollarSign, Copy, FileCode, Landmark, LayoutDashboard, LogOut, Menu, MessageCircle, Package, Plus, Radio, RefreshCw, Router as RouterIcon, Search, ShieldCheck, Trash2, Users, Wifi, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";

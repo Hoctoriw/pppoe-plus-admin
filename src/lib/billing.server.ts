@@ -11,18 +11,18 @@ export type BankAccount = {
   active: boolean;
 };
 
-const ASAAS_BASE: Record<string, string> = {
+const ASAAS_BASE = {
   production: "https://api.asaas.com/v3",
   sandbox: "https://api-sandbox.asaas.com/v3",
-};
+} as const;
 
 async function asaas<T = any>(account: BankAccount, method: string, path: string, body?: unknown): Promise<T> {
   if (!account.api_key) throw new Error("Conta sem chave de API configurada.");
-  const base = ASAAS_BASE[account.environment] ?? ASAAS_BASE.production;
+  const base = ASAAS_BASE[account.environment] ?? ASAAS_BASE["production"];
   const res = await fetch(`${base}${path}`, {
     method,
     headers: { "Content-Type": "application/json", access_token: account.api_key },
-    body: body ? JSON.stringify(body) : undefined,
+    body: body ? JSON.stringify(body) : null,
     signal: AbortSignal.timeout(15000),
   });
   const data = (await res.json().catch(() => ({}))) as any;

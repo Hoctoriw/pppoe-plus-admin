@@ -44,19 +44,19 @@ export const Route = createFileRoute("/api/public/webhooks/asaas")({
           return new Response("provider check failed", { status: 502 });
         }
 
-        const patch: Record<string, unknown> = {};
+        const patch: Record<string, string> = {};
         if (info.status === "RECEIVED" || info.status === "CONFIRMED") {
-          patch.status = "paid";
-          patch.boleto_status = "paid";
-          patch.paid_at = new Date().toISOString().slice(0, 10);
-          patch.method = "boleto";
+          patch["status"] = "paid";
+          patch["boleto_status"] = "paid";
+          patch["paid_at"] = new Date().toISOString().slice(0, 10);
+          patch["method"] = "boleto";
         } else if (info.status === "OVERDUE" && invoice.status === "open") {
-          patch.status = "overdue";
+          patch["status"] = "overdue";
         } else if (info.status === "DELETED" || info.status === "REFUNDED") {
-          patch.boleto_status = "cancelled";
+          patch["boleto_status"] = "cancelled";
         }
         if (Object.keys(patch).length) {
-          await db.from("invoices").update(patch).eq("id", invoice.id);
+          await db.from("invoices").update(patch as never).eq("id", invoice.id);
         }
         return new Response("ok", { status: 200 });
       },
