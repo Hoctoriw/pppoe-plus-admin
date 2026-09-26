@@ -75,7 +75,10 @@ export async function provisionOne(db: any, c: any, r: any): Promise<{ ok: boole
       if (suspended) await upsert(r, "/ip/firewall/address-list", { list: BLOCK_LIST, address: ip }, { comment: tag });
       else await removeWhere(r, "/ip/firewall/address-list", { list: BLOCK_LIST, address: ip });
     }
-    await db.from("customers").update({ sync_status: "synced", last_sync_at: new Date().toISOString(), sync_error: null }).eq("id", c.id);
+    await db.from("customers").update({
+      sync_status: "synced", last_sync_at: new Date().toISOString(), sync_error: null,
+      ...(c.status === "pending" ? { status: "active" as const } : {}),
+    }).eq("id", c.id);
     return { ok: true };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
