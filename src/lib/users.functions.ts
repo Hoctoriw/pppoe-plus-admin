@@ -52,6 +52,7 @@ export const setUserRole = createServerFn({ method: "POST" })
       const { error } = await db.from("user_roles").delete().eq("user_id", data.userId).eq("role", data.role);
       if (error) throw new Error(error.message);
     } else {
+      if (data.role === "admin" && data.userId !== context.userId) throw new Error("Somente a conta principal pode ser administradora.");
       const { error } = await db.from("user_roles").upsert({ user_id: data.userId, role: data.role }, { onConflict: "user_id,role" });
       if (error) throw new Error(error.message);
     }
