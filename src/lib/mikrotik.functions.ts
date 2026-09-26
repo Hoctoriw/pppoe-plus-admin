@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { BLOCK_LIST, BLOCK_PROFILE, profileName, removeWhere, ros, upsert } from "./mikrotik.server";
+import { BLOCK_LIST, BLOCK_PROFILE, profileName, provisionOne, ros, upsert } from "./mikrotik.server";
 
 type Ctx = { supabase: any; userId: string };
 
@@ -212,41 +212,7 @@ export const provisionCustomer = createServerFn({ method: "POST" })
     if (!c) throw new Error("Cliente não encontrado.");
     if (!c.router_id) throw new Error("Vincule um roteador ao cliente.");
     const r = await getRouter(c.router_id);
-    const plan = (c as any).plans;
-    const suspended = c.status === "suspended";
-    const disabled = c.status === "cancelled" ? "yes" : "no";
-    const tag = `nexora:${c.id}`;
-    try {
-      if (c.technology === "pppoe") {
-        if (!plan) throw new Error("Cliente sem plano.");
-        await upsert(r, "/ppp/secret", { name: c.pppoe_username! }, {
-          password: c.pppoe_password ?? "", service: "pppoe", disabled, comment: `${tag} ${c.full_name}`,
-          profile: suspended ? BLOCK_PROFILE : profileName(plan.name),
-        });
-        // Drop active session so the new profile applies
-        const act = await ros<any[]>(r, "GET", `/ppp/active?name=${encodeURIComponent(c.pppoe_username!)}`);
-        for (const a of act ?? []) await ros(r, "DELETE", `/ppp/active/${encodeURIComponent(a[".id"])}`);
-      } else {
-        const ip = String(c.ipoe_ip);
-        if (!c.mac_address) throw new Error("Informe o MAC do cliente IPoE.");
-        await upsert(r, "/ip/dhcp-server/lease", { "mac-address": String(c.mac_address).toUpperCase() }, {
-          address: ip, disabled, comment: `${tag} ${c.full_name}`, ...(r.dhcp_server ? { server: r.dhcp_server } : {}),
-        });
-        if (plan) {
-          await upsert(r, "/queue/simple", { name: `nexora-${c.id.slice(0, 8)}` }, {
-            target: `${ip}/32`, "max-limit": suspended ? "1M/1M" : `${plan.upload_mbps}M/${plan.download_mbps}M`, comment: tag,
-          });
-        }
-        if (suspended) await upsert(r, "/ip/firewall/address-list", { list: BLOCK_LIST, address: ip }, { comment: tag });
-        else await removeWhere(r, "/ip/firewall/address-list", { list: BLOCK_LIST, address: ip });
-      }
-      await db.from("customers").update({ sync_status: "synced", last_sync_at: new Date().toISOString(), sync_error: null }).eq("id", c.id);
-      return { ok: true };
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      await db.from("customers").update({ sync_status: "error", sync_error: msg }).eq("id", c.id);
-      return { ok: false, error: msg };
-    }
+    return provisionOne(db, c, r);
   });
 
 export const connectionStatus = createServerFn({ method: "POST" })
