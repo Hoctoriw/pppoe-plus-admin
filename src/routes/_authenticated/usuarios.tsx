@@ -5,7 +5,7 @@ import { ArrowLeft, Check, Minus, RefreshCw, ShieldCheck, UserCog } from "lucide
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { listUsers, setUserActive, setUserRole } from "@/lib/users.functions";
+import { listUsers, setUserActive, setUserRole, listLicenses, extendLicense } from "@/lib/users.functions";
 
 export const Route = createFileRoute("/_authenticated/usuarios")({
   head: () => ({ meta: [
@@ -37,14 +37,15 @@ const PERMISSIONS: { label: string; roles: Record<Role, boolean> }[] = [
 ];
 
 function UsersPage() {
-  const list = useServerFn(listUsers), setRole = useServerFn(setUserRole), setActive = useServerFn(setUserActive);
+  const list = useServerFn(listUsers), setRole = useServerFn(setUserRole), setActive = useServerFn(setUserActive), licList = useServerFn(listLicenses), extend = useServerFn(extendLicense);
+  const [lic, setLic] = useState<Record<string, string>>({});
   const [users, setUsers] = useState<UserRow[]>([]);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [denied, setDenied] = useState(false);
 
   async function load() {
-    try { setUsers(await list()); setDenied(false); }
+    try { setUsers(await list()); setLic(Object.fromEntries((await licList()).map(l => [l.user_id, l.expires_at]))); setDenied(false); }
     catch (e) { setDenied(true); setMsg((e as Error).message); }
   }
   useEffect(() => { void load(); }, []);
@@ -65,8 +66,8 @@ function UsersPage() {
 
       {!denied && <section className="mt-6 border bg-card">
         <div className="border-b p-4"><h2 className="flex items-center gap-2 font-bold"><UserCog className="h-4 w-4 text-primary" />Usuários do painel</h2><p className="text-xs text-muted-foreground">Altere as funções de cada usuário. Um usuário pode acumular funções.</p></div>
-        <Table><TableHeader><TableRow><TableHead>Usuário</TableHead><TableHead>Funções</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
-          <TableBody>{users.map(u => <TableRow key={u.id}>
+        <Table><TableHeader><TableRow><TableHead>Usuário</TableHead><TableHead>Funções</TableHead><TableHead>Cadastro</TableHead><TableHead>Licença</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
+          <TableBody>{[...users].sort((a, b) => b.created_at.localeCompare(a.created_at)).map(u => <TableRow key={u.id}>
             <TableCell><p className="font-semibold">{u.full_name || "Sem nome"}</p><p className="text-xs text-muted-foreground">{u.email}</p></TableCell>
             <TableCell><div className="flex flex-wrap gap-1">{(["admin", "operator", "viewer"] as Role[]).map(r => {
               const has = u.roles.includes(r);
@@ -74,10 +75,12 @@ function UsersPage() {
                 onClick={() => run(async () => setRole({ data: { userId: u.id, role: r, grant: !has } }))}
                 className={`rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors ${has ? "border-primary bg-primary text-primary-foreground" : "text-muted-foreground hover:border-primary hover:text-foreground"}`}>{ROLE_LABEL[r]}</button>;
             })}</div></TableCell>
+            <TableCell className="text-xs text-muted-foreground">{new Date(u.created_at).toLocaleDateString("pt-BR")}</TableCell>
+            <TableCell>{u.roles.includes("admin") ? <Badge>Administrador</Badge> : (() => { const e = lic[u.id]; const ok = !!e && new Date(e) > new Date(); return <div className="space-y-1"><Badge variant={ok ? "default" : "destructive"}>{ok ? `Até ${new Date(e!).toLocaleDateString("pt-BR")}` : "Expirada"}</Badge><div className="flex flex-wrap gap-1">{[30, 365].map(d => <button key={d} type="button" disabled={busy} className="rounded border px-1.5 py-0.5 text-[11px] hover:border-primary" onClick={() => run(async () => extend({ data: { userId: u.id, days: d } }))}>+{d === 30 ? "30 dias" : "1 ano"}</button>)}{ok && <button type="button" disabled={busy} className="rounded border px-1.5 py-0.5 text-[11px] text-destructive hover:border-destructive" onClick={() => run(async () => extend({ data: { userId: u.id, days: 0 } }))}>Bloquear</button>}</div></div>; })()}</TableCell>
             <TableCell><Badge variant={u.active ? "default" : "secondary"}>{u.active ? "Ativo" : "Desativado"}</Badge></TableCell>
             <TableCell className="text-right"><Button size="sm" variant="outline" disabled={busy} onClick={() => run(async () => setActive({ data: { userId: u.id, active: !u.active } }))}>{u.active ? "Desativar" : "Reativar"}</Button></TableCell>
           </TableRow>)}
-          {!users.length && <TableRow><TableCell colSpan={4} className="h-24 text-center text-muted-foreground">Nenhum usuário encontrado.</TableCell></TableRow>}</TableBody></Table>
+          {!users.length && <TableRow><TableCell colSpan={6} className="h-24 text-center text-muted-foreground">Nenhum usuário encontrado.</TableCell></TableRow>}</TableBody></Table>
       </section>}
 
       <section className="mt-6 border bg-card">
