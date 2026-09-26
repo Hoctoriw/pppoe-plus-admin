@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createHash, timingSafeEqual } from "crypto";
-import { INSTALL_SCRIPT } from "@/lib/radius-install";
 
 function authorized(request: Request) {
   const expected = process.env["RADIUS_API_TOKEN"];
@@ -25,10 +24,6 @@ const MAC = /^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$/;
 export const Route = createFileRoute("/api/public/radius/$action")({
   server: {
     handlers: {
-      GET: async ({ params }) => {
-        if (params.action !== "install.sh") return new Response("Not found", { status: 404 });
-        return new Response(INSTALL_SCRIPT, { headers: { "Content-Type": "text/x-shellscript; charset=utf-8" } });
-      },
       POST: async ({ request, params }) => {
         if (!authorized(request)) return new Response("Unauthorized", { status: 403 });
         const body = await request.json().catch(() => ({}));

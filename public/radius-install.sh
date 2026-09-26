@@ -1,13 +1,11 @@
-// Script de instalação do servidor RADIUS (Debian 12). Não contém segredos:
-// a URL do painel e o token são passados como argumentos.
-export const INSTALL_SCRIPT = String.raw`#!/usr/bin/env bash
+#!/usr/bin/env bash
 # Nexora ISP — instalador do servidor RADIUS (Debian 12 / Ubuntu 22.04+)
 # Uso: sudo bash install.sh URL_DO_PAINEL TOKEN
 set -euo pipefail
-PANEL_URL="\${1:-}"; TOKEN="\${2:-}"
+PANEL_URL="${1:-}"; TOKEN="${2:-}"
 if [ -z "$PANEL_URL" ] || [ -z "$TOKEN" ]; then echo "Uso: sudo bash install.sh URL_DO_PAINEL TOKEN"; exit 1; fi
 [ "$(id -u)" = 0 ] || { echo "Execute como root (sudo)."; exit 1; }
-PANEL_URL="\${PANEL_URL%/}"
+PANEL_URL="${PANEL_URL%/}"
 
 echo "==> Instalando FreeRADIUS"
 export DEBIAN_FRONTEND=noninteractive
@@ -25,16 +23,16 @@ rest {
   tls { check_cert = yes; check_cert_cn = yes }
   connect_uri = "$PANEL_URL/api/public/radius"
   authorize {
-    uri = "\\\${..connect_uri}/authorize?token=$TOKEN"
+    uri = "\\${..connect_uri}/authorize?token=$TOKEN"
     method = 'post'
     body = 'json'
-    tls = \\\${..tls}
+    tls = \\${..tls}
   }
   accounting {
-    uri = "\\\${..connect_uri}/accounting?token=$TOKEN"
+    uri = "\\${..connect_uri}/accounting?token=$TOKEN"
     method = 'post'
     body = 'json'
-    tls = \\\${..tls}
+    tls = \\${..tls}
   }
   pool { start = 2; min = 2; max = 32; spare = 4; uses = 0; retry_delay = 30; lifetime = 0; idle_timeout = 60 }
 }
@@ -92,4 +90,3 @@ systemctl restart freeradius
 echo
 echo "Servidor RADIUS pronto. IP deste servidor: $(hostname -I | awk '{print $1}')"
 echo "Agora autorize cada MikroTik:  nexora-radius-add-router NOME IP_DO_ROTEADOR SEGREDO"
-`;
