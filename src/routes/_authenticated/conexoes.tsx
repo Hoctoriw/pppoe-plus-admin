@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { geocodeCustomerAddress, listConnectionCustomers, saveCustomerCoordinates } from "@/lib/connections.functions";
+import { geocodeCustomerAddress, listConnectionCustomers, saveCustomerCoordinates, type ConnectionCustomer } from "@/lib/connections.functions";
 
 export const Route = createFileRoute("/_authenticated/conexoes")({
   head: () => ({ meta: [
@@ -23,7 +23,7 @@ export const Route = createFileRoute("/_authenticated/conexoes")({
   component: ConnectionsPage,
 });
 
-type Customer = Awaited<ReturnType<typeof listConnectionCustomers>>[number];
+type Customer = ConnectionCustomer;
 type LocatedCustomer = Customer & { latitude: number; longitude: number };
 
 const STATUS_LABEL = { active: "Ativo", suspended: "Suspenso", pending: "Pendente", cancelled: "Cancelado" } as const;
