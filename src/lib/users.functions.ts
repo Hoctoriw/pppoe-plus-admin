@@ -69,3 +69,36 @@ export const setUserActive = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+export const getMyLicense = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (isAdmin) return { valid: true, admin: true, expires_at: null as string | null };
+    const { data } = await context.supabase.from("licenses").select("expires_at").eq("user_id", context.userId).maybeSingle();
+    const exp = (data?.expires_at as string | undefined) ?? null;
+    return { valid: !!exp && new Date(exp) > new Date(), admin: false, expires_at: exp };
+  });
+
+export const listLicenses = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context);
+    const db = await admin();
+    const { data } = await db.from("licenses").select("user_id, expires_at");
+    return (data ?? []) as { user_id: string; expires_at: string }[];
+  });
+
+export const extendLicense = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ userId: z.string().uuid(), days: z.number().int().min(-3650).max(3650) }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const db = await admin();
+    const { data: cur } = await db.from("licenses").select("expires_at").eq("user_id", data.userId).maybeSingle();
+    const base = cur && new Date(cur.expires_at) > new Date() ? new Date(cur.expires_at) : new Date();
+    const expires_at = data.days === 0 ? new Date().toISOString() : new Date(base.getTime() + data.days * 86400000).toISOString();
+    const { error } = await db.from("licenses").upsert({ user_id: data.userId, expires_at }, { onConflict: "user_id" });
+    if (error) throw new Error(error.message);
+    return { ok: true, expires_at };
+  });
