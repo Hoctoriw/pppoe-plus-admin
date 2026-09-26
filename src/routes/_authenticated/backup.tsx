@@ -25,6 +25,8 @@ function BackupPage() {
   const save = useServerFn(saveBackupEmail);
   const send = useServerFn(sendBackupNow);
   const dl = useServerFn(downloadBackup);
+  const restore = useServerFn(restoreBackup);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [email, setEmail] = useState("");
   const [last, setLast] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(true);
