@@ -5,20 +5,14 @@ import { cancelBoleto, emitBoleto, fetchBoleto, type BankAccount } from "./billi
 
 type Ctx = { supabase: any; userId: string };
 
-async function assertManager(ctx: Ctx) {
-  const { data } = await ctx.supabase.rpc("can_manage_network");
-  if (!data) throw new Error("Sem permissão para operar o financeiro.");
-}
-async function assertAdmin(ctx: Ctx) {
-  const { data } = await ctx.supabase.rpc("has_role", { _user_id: ctx.userId, _role: "admin" });
-  if (!data) throw new Error("Apenas administradores podem gerenciar contas bancárias.");
-}
+async function assertManager(_ctx: Ctx) { /* cada usuário opera o próprio financeiro */ }
+async function assertAdmin(_ctx: Ctx) { /* cada usuário gerencia as próprias contas */ }
 async function admin() {
   return (await import("@/integrations/supabase/client.server")).supabaseAdmin;
 }
-async function getAccount(id: string): Promise<BankAccount> {
+async function getAccount(id: string, owner: string): Promise<BankAccount> {
   const db = await admin();
-  const { data, error } = await db.from("bank_accounts").select("*").eq("id", id).single();
+  const { data, error } = await db.from("bank_accounts").select("*").eq("id", id).eq("owner_id", owner).single();
   if (error || !data) throw new Error("Conta bancária não encontrada.");
   return data as BankAccount;
 }
@@ -31,6 +25,7 @@ export const listBankAccounts = createServerFn({ method: "GET" })
     const { data } = await db
       .from("bank_accounts")
       .select("id, name, bank_code, agency, account_number, wallet, convenio, provider, environment, active")
+      .eq("owner_id", context.userId)
       .order("name");
     return data ?? [];
   });
@@ -62,11 +57,11 @@ export const saveBankAccount = createServerFn({ method: "POST" })
     };
     if (data.api_key) row["api_key"] = data.api_key;
     if (data.id) {
-      const { error } = await db.from("bank_accounts").update(row).eq("id", data.id);
+      const { error } = await db.from("bank_accounts").update(row).eq("id", data.id).eq("owner_id", context.userId);
       if (error) throw new Error(error.message);
     } else {
       if (data.provider === "asaas" && !data.api_key) throw new Error("Informe a chave de API do Asaas.");
-      const { error } = await db.from("bank_accounts").insert(row);
+      const { error } = await db.from("bank_accounts").insert({ ...row, owner_id: context.userId });
       if (error) throw new Error(error.message);
     }
     return { ok: true };
@@ -78,7 +73,7 @@ export const deleteBankAccount = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const db = await admin();
-    const { error } = await db.from("bank_accounts").delete().eq("id", data.id);
+    const { error } = await db.from("bank_accounts").delete().eq("id", data.id).eq("owner_id", context.userId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -93,13 +88,14 @@ export const emitInvoiceBoleto = createServerFn({ method: "POST" })
       .from("invoices")
       .select("*, customers(*)")
       .eq("id", data.invoice_id)
+      .eq("owner_id", context.userId)
       .single();
     if (error || !invoice) throw new Error("Cobrança não encontrada.");
     if (!invoice.customers) throw new Error("Cobrança sem cliente vinculado.");
     if (invoice.status === "paid" || invoice.status === "cancelled") throw new Error("Cobrança já paga ou cancelada.");
     if (invoice.provider_charge_id) throw new Error("Esta cobrança já tem boleto emitido.");
 
-    const account = await getAccount(data.bank_account_id);
+    const account = await getAccount(data.bank_account_id, context.userId);
     if (!account.active) throw new Error("Conta bancária inativa.");
 
     try {
@@ -127,9 +123,9 @@ export const refreshInvoiceBoleto = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertManager(context);
     const db = await admin();
-    const { data: invoice } = await db.from("invoices").select("*").eq("id", data.invoice_id).single();
+    const { data: invoice } = await db.from("invoices").select("*").eq("id", data.invoice_id).eq("owner_id", context.userId).single();
     if (!invoice?.provider_charge_id || !invoice.bank_account_id) throw new Error("Cobrança sem boleto emitido.");
-    const account = await getAccount(invoice.bank_account_id);
+    const account = await getAccount(invoice.bank_account_id, context.userId);
     const info = await fetchBoleto(account, invoice.provider_charge_id);
     const patch: any = {
       nosso_numero: info.nosso_numero ?? invoice.nosso_numero,
@@ -153,9 +149,9 @@ export const cancelInvoiceBoleto = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertManager(context);
     const db = await admin();
-    const { data: invoice } = await db.from("invoices").select("*").eq("id", data.invoice_id).single();
+    const { data: invoice } = await db.from("invoices").select("*").eq("id", data.invoice_id).eq("owner_id", context.userId).single();
     if (!invoice?.provider_charge_id || !invoice.bank_account_id) throw new Error("Cobrança sem boleto emitido.");
-    const account = await getAccount(invoice.bank_account_id);
+    const account = await getAccount(invoice.bank_account_id, context.userId);
     await cancelBoleto(account, invoice.provider_charge_id);
     await db.from("invoices").update({
       boleto_status: "cancelled", provider_charge_id: null, nosso_numero: null,

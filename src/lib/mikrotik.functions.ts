@@ -5,20 +5,14 @@ import { BLOCK_LIST, BLOCK_PROFILE, profileName, provisionOne, ros, upsert } fro
 
 type Ctx = { supabase: any; userId: string };
 
-async function assertStaff(ctx: Ctx) {
-  const { data } = await ctx.supabase.rpc("can_manage_network");
-  if (!data) throw new Error("Sem permissão para operar a rede.");
-}
-async function assertAdmin(ctx: Ctx) {
-  const { data } = await ctx.supabase.rpc("has_role", { _user_id: ctx.userId, _role: "admin" });
-  if (!data) throw new Error("Apenas administradores podem gerenciar roteadores.");
-}
+async function assertStaff(_ctx: Ctx) { /* cada usuário opera o próprio painel */ }
+async function assertAdmin(_ctx: Ctx) { /* cada usuário gerencia os próprios roteadores */ }
 async function admin() {
   return (await import("@/integrations/supabase/client.server")).supabaseAdmin;
 }
-async function getRouter(id: string) {
+async function getRouter(id: string, owner: string) {
   const db = await admin();
-  const { data, error } = await db.from("routers").select("*").eq("id", id).single();
+  const { data, error } = await db.from("routers").select("*").eq("id", id).eq("owner_id", owner).single();
   if (error || !data) throw new Error("Roteador não encontrado.");
   return data;
 }
@@ -28,7 +22,7 @@ export const listRouters = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertStaff(context);
     const db = await admin();
-    const { data } = await db.from("routers").select("id, name, connection_mode, base_url, username, dhcp_server, active, last_check_at, last_check_ok, last_check_message, radius_enabled, radius_host, radius_auth_port, radius_acct_port").order("name");
+    const { data } = await db.from("routers").select("id, name, connection_mode, base_url, username, dhcp_server, active, last_check_at, last_check_ok, last_check_message, radius_enabled, radius_host, radius_auth_port, radius_acct_port").eq("owner_id", context.userId).order("name");
     return data ?? [];
   });
 
@@ -48,8 +42,8 @@ export const saveRouter = createServerFn({ method: "POST" })
     const db = await admin();
     const row: any = { name: data.name, base_url: data.base_url, username: data.username, dhcp_server: data.dhcp_server || null, connection_mode: data.connection_mode };
     if (data.password) row["password"] = data.password;
-    if (data.id) { const { error } = await db.from("routers").update(row).eq("id", data.id); if (error) throw new Error(error.message); }
-    else { if (!data.password) throw new Error("Informe a senha."); const { error } = await db.from("routers").insert(row as any); if (error) throw new Error(error.message); }
+    if (data.id) { const { error } = await db.from("routers").update(row).eq("id", data.id).eq("owner_id", context.userId); if (error) throw new Error(error.message); }
+    else { if (!data.password) throw new Error("Informe a senha."); const { error } = await db.from("routers").insert({ ...row, owner_id: context.userId } as any); if (error) throw new Error(error.message); }
     return { ok: true };
   });
 
@@ -58,7 +52,7 @@ export const deleteRouter = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    await (await admin()).from("routers").delete().eq("id", data.id);
+    await (await admin()).from("routers").delete().eq("id", data.id).eq("owner_id", context.userId);
     return { ok: true };
   });
 
@@ -78,7 +72,7 @@ export const saveRadiusConfig = createServerFn({ method: "POST" })
     const db = await admin();
     const row: any = { radius_enabled: data.radius_enabled, radius_host: data.radius_host || null, radius_auth_port: data.radius_auth_port, radius_acct_port: data.radius_acct_port };
     if (data.radius_secret) row["radius_secret"] = data.radius_secret;
-    const { error } = await db.from("routers").update(row).eq("id", data.id);
+    const { error } = await db.from("routers").update(row).eq("id", data.id).eq("owner_id", context.userId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -88,7 +82,7 @@ export const applyRadius = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertStaff(context);
-    const r = await getRouter(data.id);
+    const r = await getRouter(data.id, context.userId);
     if (!(r as any).radius_enabled) throw new Error("Ative e salve a configuração RADIUS antes de aplicar.");
     if (!(r as any).radius_host || !(r as any).radius_secret) throw new Error("Configure o endereço e o segredo do servidor RADIUS.");
     await upsert(r, "/radius", { name: "nexora-radius" }, {
@@ -107,7 +101,7 @@ export const testRadius = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertStaff(context);
-    const r = await getRouter(data.id);
+    const r = await getRouter(data.id, context.userId);
     if (!(r as any).radius_enabled || !(r as any).radius_host) throw new Error("Ative e salve a configuração RADIUS antes de testar.");
     const host = (r as any).radius_host as string;
     const authPort = String((r as any).radius_auth_port ?? 1812);
@@ -176,14 +170,14 @@ export const testRouter = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertStaff(context);
-    const r = await getRouter(data.id);
+    const r = await getRouter(data.id, context.userId);
     let ok = true, message: string;
     try {
       const id = await ros<any>(r, "GET", "/system/identity");
       const res = await ros<any>(r, "GET", "/system/resource");
       message = `${id?.name ?? "RouterOS"} · v${res?.version} · uptime ${res?.uptime}`;
     } catch (e) { ok = false; message = e instanceof Error ? e.message : String(e); }
-    await (await admin()).from("routers").update({ last_check_at: new Date().toISOString(), last_check_ok: ok, last_check_message: message }).eq("id", data.id);
+    await (await admin()).from("routers").update({ last_check_at: new Date().toISOString(), last_check_ok: ok, last_check_message: message }).eq("id", data.id).eq("owner_id", context.userId);
     return { ok, message };
   });
 
@@ -192,9 +186,9 @@ export const syncPlans = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertStaff(context);
-    const r = await getRouter(data.id);
+    const r = await getRouter(data.id, context.userId);
     const db = await admin();
-    const { data: plans } = await db.from("plans").select("*").eq("status", "active");
+    const { data: plans } = await db.from("plans").select("*").eq("status", "active").eq("owner_id", context.userId);
     await upsert(r, "/ppp/profile", { name: BLOCK_PROFILE }, { "rate-limit": "1M/1M", "address-list": BLOCK_LIST, comment: "Nexora: clientes suspensos" });
     for (const p of plans ?? []) {
       await upsert(r, "/ppp/profile", { name: profileName(p.name) }, { "rate-limit": `${p.upload_mbps}M/${p.download_mbps}M`, comment: `Nexora: ${p.name}` });
@@ -208,10 +202,10 @@ export const provisionCustomer = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertStaff(context);
     const db = await admin();
-    const { data: c } = await db.from("customers").select("*, plans(*)").eq("id", data.id).single();
+    const { data: c } = await db.from("customers").select("*, plans(*)").eq("id", data.id).eq("owner_id", context.userId).single();
     if (!c) throw new Error("Cliente não encontrado.");
     if (!c.router_id) throw new Error("Vincule um roteador ao cliente.");
-    const r = await getRouter(c.router_id);
+    const r = await getRouter(c.router_id, context.userId);
     return provisionOne(db, c, r);
   });
 
@@ -220,7 +214,7 @@ export const connectionStatus = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertStaff(context);
-    const r = await getRouter(data.id);
+    const r = await getRouter(data.id, context.userId);
     try {
       const [ppp, leases] = await Promise.all([
         ros<any[]>(r, "GET", "/ppp/active"),
@@ -239,6 +233,8 @@ export const connectionStatus = createServerFn({ method: "POST" })
 export const getRadiusInstall = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertAdmin(context);
+    // O token RADIUS é compartilhado pelo servidor: só o administrador da plataforma o recebe.
+    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!isAdmin) throw new Error("Apenas o administrador da plataforma pode gerar o instalador RADIUS.");
     return { token: process.env["RADIUS_API_TOKEN"] ?? "" };
   });
