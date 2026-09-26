@@ -76,7 +76,12 @@ export const getMyLicense = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
     if (isAdmin) return { valid: true, admin: true, expires_at: null as string | null };
-    const { data } = await context.supabase.from("licenses").select("expires_at").eq("user_id", context.userId).maybeSingle();
+    // Funcionários usam a licença da conta principal
+    const db = await admin();
+    const { data: roles } = await db.from("user_roles").select("owner_id").eq("user_id", context.userId);
+    const ownerId = (roles ?? []).find((r) => r.owner_id)?.owner_id as string | undefined;
+    const licenseUser = ownerId ?? context.userId;
+    const { data } = await db.from("licenses").select("expires_at").eq("user_id", licenseUser).maybeSingle();
     const exp = (data?.expires_at as string | undefined) ?? null;
     return { valid: !!exp && new Date(exp) > new Date(), admin: false, expires_at: exp };
   });
