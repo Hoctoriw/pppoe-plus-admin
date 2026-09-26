@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedClientesRouteImport } from './routes/_authenticated/clientes'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedMikrotikRouteImport } from './routes/_authenticated/mikrotik'
+import { Route as AuthenticatedPlanosRouteImport } from './routes/_authenticated/planos'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as ApiPublicRadiusActionRouteImport } from './routes/api/public/radius.$action'
 
@@ -47,6 +48,11 @@ const AuthenticatedMikrotikRoute = AuthenticatedMikrotikRouteImport.update({
   path: '/mikrotik',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPlanosRoute = AuthenticatedPlanosRouteImport.update({
+  id: '/planos',
+  path: '/planos',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
   id: '/usuarios',
   path: '/usuarios',
@@ -64,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/clientes': typeof AuthenticatedClientesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/mikrotik': typeof AuthenticatedMikrotikRoute
+  '/planos': typeof AuthenticatedPlanosRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/public/radius/$action': typeof ApiPublicRadiusActionRoute
 }
@@ -73,6 +80,7 @@ export interface FileRoutesByTo {
   '/clientes': typeof AuthenticatedClientesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/mikrotik': typeof AuthenticatedMikrotikRoute
+  '/planos': typeof AuthenticatedPlanosRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/public/radius/$action': typeof ApiPublicRadiusActionRoute
 }
@@ -84,6 +92,7 @@ export interface FileRoutesById {
   '/_authenticated/clientes': typeof AuthenticatedClientesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/mikrotik': typeof AuthenticatedMikrotikRoute
+  '/_authenticated/planos': typeof AuthenticatedPlanosRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/public/radius/$action': typeof ApiPublicRadiusActionRoute
 }
@@ -95,6 +104,7 @@ export interface FileRouteTypes {
     | '/clientes'
     | '/dashboard'
     | '/mikrotik'
+    | '/planos'
     | '/usuarios'
     | '/api/public/radius/$action'
   fileRoutesByTo: FileRoutesByTo
@@ -104,6 +114,7 @@ export interface FileRouteTypes {
     | '/clientes'
     | '/dashboard'
     | '/mikrotik'
+    | '/planos'
     | '/usuarios'
     | '/api/public/radius/$action'
   id:
@@ -114,6 +125,7 @@ export interface FileRouteTypes {
     | '/_authenticated/clientes'
     | '/_authenticated/dashboard'
     | '/_authenticated/mikrotik'
+    | '/_authenticated/planos'
     | '/_authenticated/usuarios'
     | '/api/public/radius/$action'
   fileRoutesById: FileRoutesById
@@ -169,6 +181,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMikrotikRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/planos': {
+      id: '/_authenticated/planos'
+      path: '/planos'
+      fullPath: '/planos'
+      preLoaderRoute: typeof AuthenticatedPlanosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/usuarios': {
       id: '/_authenticated/usuarios'
       path: '/usuarios'
@@ -190,6 +209,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedClientesRoute: typeof AuthenticatedClientesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedMikrotikRoute: typeof AuthenticatedMikrotikRoute
+  AuthenticatedPlanosRoute: typeof AuthenticatedPlanosRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
 }
 
@@ -197,6 +217,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedClientesRoute: AuthenticatedClientesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedMikrotikRoute: AuthenticatedMikrotikRoute,
+  AuthenticatedPlanosRoute: AuthenticatedPlanosRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
 }
 
