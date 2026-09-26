@@ -55,7 +55,7 @@ function BackupPage() {
         <p className="text-xs text-muted-foreground">Último envio: {last ? new Date(last).toLocaleString("pt-BR") : "nunca"}</p>
       </section>
       <div className="flex flex-wrap gap-2">
-        <Button disabled={busy} onClick={() => run(async () => { await send(); setLast(new Date().toISOString()); }, "Backup enviado para o e-mail.")}><Mail />Enviar backup agora</Button>
+        <Button disabled={busy} onClick={() => run(async () => { if (!email.trim()) throw new Error("Digite o e-mail que vai receber o backup."); if (isOwner) await save({ data: { email: email.trim() } }); await send(); setLast(new Date().toISOString()); }, "Backup enviado para o e-mail.")}><Mail />Enviar backup agora</Button>
         <Button variant="outline" disabled={busy} onClick={() => run(async () => {
           const json = await dl();
           const url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
