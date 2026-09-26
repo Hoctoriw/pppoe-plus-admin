@@ -250,7 +250,7 @@ function Financeiro() {
                   <TableCell className="whitespace-nowrap">
                     <div className="flex flex-wrap gap-1">
                       {(i.status === "open" || i.status === "overdue") && !i.provider_charge_id && <>
-                        <Button size="sm" variant="outline" disabled={busy === i.id} onClick={() => { setBoletoFor(i); setBoletoBank(banks.find(b => b.active)?.id ?? ""); }}><FileBarcode />Boleto</Button>
+                        <Button size="sm" variant="outline" disabled={busy === i.id} onClick={() => { setBoletoFor(i); setBoletoBank(banks.find(b => b.active)?.id ?? ""); }}><FileCode />Boleto</Button>
                         <Button size="sm" variant="outline" onClick={() => markPaid(i.id)}><Check />Baixar</Button>
                         <Button size="sm" variant="ghost" onClick={() => cancelInvoice(i.id)}>Cancelar</Button>
                       </>}
