@@ -14,6 +14,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      customer_equipment: {
+        Row: {
+          brand: string | null
+          created_at: string
+          customer_id: string
+          delivered_at: string | null
+          equipment_type: string
+          id: string
+          mac_address: string | null
+          model: string | null
+          notes: string | null
+          returned_at: string | null
+          serial_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          brand?: string | null
+          created_at?: string
+          customer_id: string
+          delivered_at?: string | null
+          equipment_type: string
+          id?: string
+          mac_address?: string | null
+          model?: string | null
+          notes?: string | null
+          returned_at?: string | null
+          serial_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          brand?: string | null
+          created_at?: string
+          customer_id?: string
+          delivered_at?: string | null
+          equipment_type?: string
+          id?: string
+          mac_address?: string | null
+          model?: string | null
+          notes?: string | null
+          returned_at?: string | null
+          serial_number?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_equipment_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           address_number: string | null
