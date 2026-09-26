@@ -276,3 +276,84 @@ export const reviewLicensePayment = createServerFn({ method: "POST" })
     await db.from("license_payments").update({ status: data.approve ? "approved" : "rejected" }).eq("id", data.id);
     return { ok: true };
   });
+
+// ===== Banco de recebimento das licenças (Asaas) =====
+async function loadLicenseSettings(db: any) {
+  const { data } = await db.from("license_settings").select("api_key, environment, active").eq("id", 1).maybeSingle();
+  return data as { api_key: string | null; environment: "production" | "sandbox"; active: boolean } | null;
+}
+
+// Libera a licença de um pagamento pendente (idempotente). Usado pelo aviso do banco e pela consulta.
+export async function approveLicensePaymentRow(db: any, p: any) {
+  const { data: upd } = await db.from("license_payments").update({ status: "approved" }).eq("id", p.id).eq("status", "pending").select("id");
+  if (!upd?.length) return;
+  const { data: cur } = await db.from("licenses").select("expires_at").eq("user_id", p.user_id).maybeSingle();
+  const base = cur && new Date(cur.expires_at) > new Date() ? new Date(cur.expires_at) : new Date();
+  await db.from("licenses").upsert({ user_id: p.user_id, expires_at: new Date(base.getTime() + p.days * 86400000).toISOString() }, { onConflict: "user_id" });
+}
+
+export const getLicenseBank = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context);
+    const s = await loadLicenseSettings(await admin());
+    return { configured: !!s?.api_key, environment: s?.environment ?? "production", active: !!s?.active };
+  });
+
+export const saveLicenseBank = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ api_key: z.string().max(300).optional(), environment: z.enum(["production", "sandbox"]), active: z.boolean() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const db = await admin();
+    const row: any = { id: 1, environment: data.environment, active: data.active };
+    if (data.api_key) row.api_key = data.api_key;
+    const { error } = await db.from("license_settings").upsert(row, { onConflict: "id" });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const getLicenseCheckoutMode = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
+    const s = await loadLicenseSettings(await admin());
+    return { automatic: !!(s?.active && s.api_key) };
+  });
+
+export const createAutoLicensePayment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ planId: z.string().uuid(), cpfCnpj: z.string().regex(/^\D*(\d\D*){11}$|^\D*(\d\D*){14}$/, "Informe um CPF ou CNPJ válido.") }).parse(d))
+  .handler(async ({ data, context }) => {
+    const db = await admin();
+    const s = await loadLicenseSettings(db);
+    if (!s?.active || !s.api_key) throw new Error("Pagamento automático indisponível.");
+    const { data: plan } = await db.from("license_plans").select("*").eq("id", data.planId).eq("active", true).maybeSingle();
+    if (!plan) throw new Error("Plano indisponível.");
+    const { data: prof } = await db.from("profiles").select("full_name").eq("id", context.userId).maybeSingle();
+    const { data: u } = await db.auth.admin.getUserById(context.userId);
+    const txid = "NX" + crypto.randomUUID().replace(/-/g, "").slice(0, 20).toUpperCase();
+    const { data: row, error } = await db.from("license_payments").insert({ user_id: context.userId, plan_id: plan.id, plan_name: plan.name, days: plan.days, amount: plan.price, txid }).select("id").single();
+    if (error) throw new Error(error.message);
+    const { createLicensePix } = await import("./billing.server");
+    const pix = await createLicensePix(s, { id: context.userId, name: prof?.full_name ?? "", email: u?.user?.email ?? null, cpfCnpj: data.cpfCnpj }, Number(plan.price), `Licença Nexora - ${plan.name}`, `license:${row.id}`);
+    await db.from("license_payments").update({ provider_charge_id: pix.id, pix_payload: pix.payload }).eq("id", row.id);
+    return { id: row.id as string, payload: pix.payload, image: pix.image, amount: Number(plan.price) };
+  });
+
+export const checkLicensePayment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const db = await admin();
+    const { data: p } = await db.from("license_payments").select("*").eq("id", data.id).eq("user_id", context.userId).maybeSingle();
+    if (!p) throw new Error("Pagamento não encontrado.");
+    if (p.status === "pending" && p.provider_charge_id) {
+      const s = await loadLicenseSettings(db);
+      if (s?.api_key) {
+        const { licensePixStatus } = await import("./billing.server");
+        const st = await licensePixStatus(s, p.provider_charge_id);
+        if (st === "RECEIVED" || st === "CONFIRMED") { await approveLicensePaymentRow(db, p); return { paid: true }; }
+      }
+    }
+    return { paid: p.status === "approved" };
+  });
