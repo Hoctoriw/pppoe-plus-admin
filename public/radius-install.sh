@@ -23,16 +23,16 @@ rest {
   tls { check_cert = yes; check_cert_cn = yes }
   connect_uri = "$PANEL_URL/api/public/radius"
   authorize {
-    uri = "\\${..connect_uri}/authorize?token=$TOKEN"
+    uri = "\${..connect_uri}/authorize?token=$TOKEN"
     method = 'post'
     body = 'json'
-    tls = \\${..tls}
+    tls = \${..tls}
   }
   accounting {
-    uri = "\\${..connect_uri}/accounting?token=$TOKEN"
+    uri = "\${..connect_uri}/accounting?token=$TOKEN"
     method = 'post'
     body = 'json'
-    tls = \\${..tls}
+    tls = \${..tls}
   }
   pool { start = 2; min = 2; max = 32; spare = 4; uses = 0; retry_delay = 30; lifetime = 0; idle_timeout = 60 }
 }
