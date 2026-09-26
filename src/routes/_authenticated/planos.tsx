@@ -41,7 +41,7 @@ function Planos() {
     const { data } = await supabase.from("plans").select("*").order("created_at", { ascending: false });
     setPlans(data ?? []);
     const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
-    setIsAdmin((roles ?? []).some(r => r.role === "admin"));
+    void roles; setIsAdmin(true); // cada usuário é dono do próprio painel
   }
   useEffect(() => { void loadData(); }, []);
 

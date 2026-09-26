@@ -233,6 +233,8 @@ export const connectionStatus = createServerFn({ method: "POST" })
 export const getRadiusInstall = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertAdmin(context);
+    // O token RADIUS é compartilhado pelo servidor: só o administrador da plataforma o recebe.
+    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!isAdmin) throw new Error("Apenas o administrador da plataforma pode gerar o instalador RADIUS.");
     return { token: process.env["RADIUS_API_TOKEN"] ?? "" };
   });
