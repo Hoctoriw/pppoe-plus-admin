@@ -64,6 +64,23 @@ function BackupPage() {
           const a = document.createElement("a"); a.href = url; a.download = `backup-nexora-${new Date().toISOString().slice(0, 10)}.json`; a.click(); URL.revokeObjectURL(url);
         }, "Backup baixado.")}><Download />Baixar backup</Button>
       </div>
+      <section className="space-y-3 rounded-lg border bg-card p-5">
+        <h2 className="text-sm font-semibold">Restaurar backup</h2>
+        <p className="text-xs text-muted-foreground">Escolha o arquivo JSON que chegou no seu e-mail (ou que você baixou). Os registros do arquivo são recriados ou atualizados na sua conta. Senhas de roteadores e chaves de bancos não voltam, por segurança — recadastre-as depois.</p>
+        <input ref={fileRef} type="file" accept="application/json,.json" className="hidden" onChange={(e) => {
+          const f = e.target.files?.[0];
+          e.target.value = "";
+          if (!f) return;
+          if (!window.confirm(`Restaurar o backup "${f.name}"? Registros existentes com o mesmo código serão atualizados.`)) return;
+          run(async () => {
+            const json = await f.text();
+            const r = await restore({ data: { json } });
+            const total = Object.values(r.restored).reduce((a, b) => a + b, 0);
+            setMsg({ ok: true, text: `Backup restaurado: ${total} registros importados.` });
+          }, "");
+        }} />
+        <Button variant="outline" disabled={busy || !isOwner} onClick={() => fileRef.current?.click()}><Upload />Escolher arquivo e restaurar</Button>
+      </section>
       {msg && <p className={msg.ok ? "text-sm text-primary" : "text-sm text-destructive"}>{msg.text}</p>}
     </main>
   );
