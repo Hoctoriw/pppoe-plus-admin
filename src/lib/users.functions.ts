@@ -103,3 +103,73 @@ export const extendLicense = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true, expires_at };
   });
+
+// ===== Equipe: funcionários da conta =====
+
+async function assertAccountOwner(ctx: Ctx) {
+  const db = await admin();
+  const { data: rows } = await db.from("user_roles").select("owner_id").eq("user_id", ctx.userId);
+  if ((rows ?? []).some((r) => r.owner_id)) throw new Error("Funcionários não podem gerenciar a equipe.");
+  return db;
+}
+
+export const listTeamUsers = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const db = await assertAccountOwner(context);
+    const { data: rows } = await db.from("user_roles").select("user_id, role").eq("owner_id", context.userId);
+    const ids = [...new Set((rows ?? []).map((r) => r.user_id as string))];
+    if (!ids.length) return [] as { id: string; full_name: string; email: string; roles: string[]; created_at: string }[];
+    const { data: profiles } = await db.from("profiles").select("id, full_name, created_at").in("id", ids);
+    const emails = new Map<string, string>();
+    for (const id of ids) {
+      const { data: u } = await db.auth.admin.getUserById(id);
+      emails.set(id, u?.user?.email ?? "");
+    }
+    return (profiles ?? []).map((p) => ({
+      id: p.id as string,
+      full_name: p.full_name as string,
+      email: emails.get(p.id as string) ?? "",
+      created_at: p.created_at as string,
+      roles: (rows ?? []).filter((r) => r.user_id === p.id).map((r) => r.role as string),
+    }));
+  });
+
+export const createTeamUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    fullName: z.string().min(2),
+    email: z.string().email(),
+    password: z.string().min(6),
+    role: z.enum(["operator", "viewer"]),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    const db = await assertAccountOwner(context);
+    const { data: created, error } = await db.auth.admin.createUser({
+      email: data.email,
+      password: data.password,
+      email_confirm: true,
+      user_metadata: { full_name: data.fullName },
+    });
+    if (error) throw new Error(error.message);
+    const uid = created.user.id;
+    const { error: roleErr } = await db.from("user_roles").upsert(
+      { user_id: uid, role: data.role, owner_id: context.userId },
+      { onConflict: "user_id,role" },
+    );
+    if (roleErr) throw new Error(roleErr.message);
+    return { ok: true, id: uid };
+  });
+
+export const deleteTeamUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ userId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const db = await assertAccountOwner(context);
+    const { data: rows } = await db.from("user_roles").select("id").eq("user_id", data.userId).eq("owner_id", context.userId);
+    if (!rows?.length) throw new Error("Este usuário não pertence à sua equipe.");
+    await db.from("user_roles").delete().eq("user_id", data.userId).eq("owner_id", context.userId);
+    const { error } = await db.auth.admin.deleteUser(data.userId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
