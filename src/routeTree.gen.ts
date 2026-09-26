@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedMikrotikRouteImport } from './routes/_authenticated/mikrotik'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
+import { Route as ApiPublicRadiusActionRouteImport } from './routes/api/public/radius.$action'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -45,6 +46,11 @@ const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
   path: '/usuarios',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicRadiusActionRoute = ApiPublicRadiusActionRouteImport.update({
+  id: '/api/public/radius/$action',
+  path: '/api/public/radius/$action',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/mikrotik': typeof AuthenticatedMikrotikRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
+  '/api/public/radius/$action': typeof ApiPublicRadiusActionRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/mikrotik': typeof AuthenticatedMikrotikRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
+  '/api/public/radius/$action': typeof ApiPublicRadiusActionRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -68,12 +76,25 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/mikrotik': typeof AuthenticatedMikrotikRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
+  '/api/public/radius/$action': typeof ApiPublicRadiusActionRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/dashboard' | '/mikrotik' | '/usuarios'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/mikrotik'
+    | '/usuarios'
+    | '/api/public/radius/$action'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/dashboard' | '/mikrotik' | '/usuarios'
+  to:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/mikrotik'
+    | '/usuarios'
+    | '/api/public/radius/$action'
   id:
     | '__root__'
     | '/'
@@ -82,12 +103,14 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/mikrotik'
     | '/_authenticated/usuarios'
+    | '/api/public/radius/$action'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicRadiusActionRoute: typeof ApiPublicRadiusActionRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -134,6 +157,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUsuariosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/radius/$action': {
+      id: '/api/public/radius/$action'
+      path: '/api/public/radius/$action'
+      fullPath: '/api/public/radius/$action'
+      preLoaderRoute: typeof ApiPublicRadiusActionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -156,6 +186,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicRadiusActionRoute: ApiPublicRadiusActionRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

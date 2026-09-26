@@ -269,3 +269,10 @@ export const connectionStatus = createServerFn({ method: "POST" })
       return { error: e instanceof Error ? e.message : String(e), pppoe: [], ipoe: [] };
     }
   });
+
+export const getRadiusInstall = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context);
+    return { token: process.env["RADIUS_API_TOKEN"] ?? "" };
+  });
