@@ -58,6 +58,7 @@ export function ConnectionsMap({ points, selectedId, onSelect, onMoveSelected }:
   const markersRef = useRef<any[]>([]);
   const callbacksRef = useRef({ onSelect, onMoveSelected, selectedId });
   const [error, setError] = useState("");
+  const [mapReady, setMapReady] = useState(false);
 
   callbacksRef.current = { onSelect, onMoveSelected, selectedId };
 
@@ -80,6 +81,7 @@ export function ConnectionsMap({ points, selectedId, onSelect, onMoveSelected }:
         callbacksRef.current.onMoveSelected(event.latLng.lat(), event.latLng.lng());
       });
       mapRef.current = map;
+      setMapReady(true);
     }).catch((cause: unknown) => setError(cause instanceof Error ? cause.message : "Mapa indisponível."));
     return () => { cancelled = true; };
   }, []);
@@ -94,13 +96,15 @@ export function ConnectionsMap({ points, selectedId, onSelect, onMoveSelected }:
     const bounds = new maps.LatLngBounds();
     for (const point of points) {
       const selected = point.id === selectedId;
-      const color = point.status === "active" ? "#16a34a" : point.status === "suspended" ? "#dc2626" : point.status === "pending" ? "#d97706" : "#64748b";
+      const rootStyle = getComputedStyle(document.documentElement);
+      const color = rootStyle.getPropertyValue(`--map-${point.status}`).trim();
+      const selectedStroke = rootStyle.getPropertyValue("--card").trim();
       const marker = new maps.Marker({
         map,
         position: { lat: point.latitude, lng: point.longitude },
         title: point.name,
         zIndex: selected ? 10 : 1,
-        icon: { path: maps.SymbolPath.CIRCLE, fillColor: color, fillOpacity: 1, strokeColor: selected ? "#ffffff" : color, strokeWeight: selected ? 4 : 2, scale: selected ? 11 : 8 },
+        icon: { path: maps.SymbolPath.CIRCLE, fillColor: color, fillOpacity: 1, strokeColor: selected ? selectedStroke : color, strokeWeight: selected ? 4 : 2, scale: selected ? 11 : 8 },
       });
       marker.addListener("click", () => callbacksRef.current.onSelect(point.id));
       markersRef.current.push(marker);
@@ -114,7 +118,7 @@ export function ConnectionsMap({ points, selectedId, onSelect, onMoveSelected }:
     } else {
       map.fitBounds(bounds, 52);
     }
-  }, [points, selectedId]);
+  }, [points, selectedId, mapReady]);
 
   if (error) return <div className="flex h-full min-h-96 items-center justify-center bg-muted p-8 text-center text-sm text-muted-foreground"><div><MapPin className="mx-auto mb-3 h-8 w-8" /><p>{error}</p></div></div>;
   return <div ref={hostRef} className="h-full min-h-96 w-full" aria-label="Mapa de residências dos clientes" />;
