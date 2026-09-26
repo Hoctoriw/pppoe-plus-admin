@@ -23,6 +23,7 @@ import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticat
 import { Route as ApiPublicHooksSyncMikrotikRouteImport } from './routes/api/public/hooks/sync-mikrotik'
 import { Route as ApiPublicRadiusActionRouteImport } from './routes/api/public/radius.$action'
 import { Route as ApiPublicWebhooksAsaasRouteImport } from './routes/api/public/webhooks/asaas'
+import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -94,6 +95,12 @@ const ApiPublicWebhooksAsaasRoute = ApiPublicWebhooksAsaasRouteImport.update({
   path: '/api/public/webhooks/asaas',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LovableEmailTransactionalPreviewRoute =
+  LovableEmailTransactionalPreviewRouteImport.update({
+    id: '/lovable/email/transactional/preview',
+    path: '/lovable/email/transactional/preview',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -109,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/sync-mikrotik': typeof ApiPublicHooksSyncMikrotikRoute
   '/api/public/radius/$action': typeof ApiPublicRadiusActionRoute
   '/api/public/webhooks/asaas': typeof ApiPublicWebhooksAsaasRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -124,6 +132,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/sync-mikrotik': typeof ApiPublicHooksSyncMikrotikRoute
   '/api/public/radius/$action': typeof ApiPublicRadiusActionRoute
   '/api/public/webhooks/asaas': typeof ApiPublicWebhooksAsaasRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -141,6 +150,7 @@ export interface FileRoutesById {
   '/api/public/hooks/sync-mikrotik': typeof ApiPublicHooksSyncMikrotikRoute
   '/api/public/radius/$action': typeof ApiPublicRadiusActionRoute
   '/api/public/webhooks/asaas': typeof ApiPublicWebhooksAsaasRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -158,6 +168,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/sync-mikrotik'
     | '/api/public/radius/$action'
     | '/api/public/webhooks/asaas'
+    | '/lovable/email/transactional/preview'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -173,6 +184,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/sync-mikrotik'
     | '/api/public/radius/$action'
     | '/api/public/webhooks/asaas'
+    | '/lovable/email/transactional/preview'
   id:
     | '__root__'
     | '/'
@@ -189,6 +201,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/sync-mikrotik'
     | '/api/public/radius/$action'
     | '/api/public/webhooks/asaas'
+    | '/lovable/email/transactional/preview'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -198,6 +211,7 @@ export interface RootRouteChildren {
   ApiPublicHooksSyncMikrotikRoute: typeof ApiPublicHooksSyncMikrotikRoute
   ApiPublicRadiusActionRoute: typeof ApiPublicRadiusActionRoute
   ApiPublicWebhooksAsaasRoute: typeof ApiPublicWebhooksAsaasRoute
+  LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -300,6 +314,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicWebhooksAsaasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/lovable/email/transactional/preview': {
+      id: '/lovable/email/transactional/preview'
+      path: '/lovable/email/transactional/preview'
+      fullPath: '/lovable/email/transactional/preview'
+      preLoaderRoute: typeof LovableEmailTransactionalPreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -335,6 +356,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksSyncMikrotikRoute: ApiPublicHooksSyncMikrotikRoute,
   ApiPublicRadiusActionRoute: ApiPublicRadiusActionRoute,
   ApiPublicWebhooksAsaasRoute: ApiPublicWebhooksAsaasRoute,
+  LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
