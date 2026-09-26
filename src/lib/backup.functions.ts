@@ -87,7 +87,7 @@ export const restoreBackup = createServerFn({ method: "POST" })
       const clean = rows.map((r) => {
         const row: Record<string, unknown> = {};
         for (const [k, v] of Object.entries(r)) if (!BLOCKED_FIELDS.has(k)) row[k] = v;
-        row.owner_id = owner;
+        row["owner_id"] = owner;
         return row;
       });
       const { error } = await (supabaseAdmin as any).from(table).upsert(clean, { onConflict: "id" });
