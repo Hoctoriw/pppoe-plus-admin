@@ -18,6 +18,7 @@ import { Route as AuthenticatedFinanceiroRouteImport } from './routes/_authentic
 import { Route as AuthenticatedMikrotikRouteImport } from './routes/_authenticated/mikrotik'
 import { Route as AuthenticatedPlanosRouteImport } from './routes/_authenticated/planos'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
+import { Route as ApiPublicHooksSyncMikrotikRouteImport } from './routes/api/public/hooks/sync-mikrotik'
 import { Route as ApiPublicRadiusActionRouteImport } from './routes/api/public/radius.$action'
 
 const IndexRoute = IndexRouteImport.update({
@@ -64,6 +65,12 @@ const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
   path: '/usuarios',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicHooksSyncMikrotikRoute =
+  ApiPublicHooksSyncMikrotikRouteImport.update({
+    id: '/api/public/hooks/sync-mikrotik',
+    path: '/api/public/hooks/sync-mikrotik',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicRadiusActionRoute = ApiPublicRadiusActionRouteImport.update({
   id: '/api/public/radius/$action',
   path: '/api/public/radius/$action',
@@ -79,6 +86,7 @@ export interface FileRoutesByFullPath {
   '/mikrotik': typeof AuthenticatedMikrotikRoute
   '/planos': typeof AuthenticatedPlanosRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
+  '/api/public/hooks/sync-mikrotik': typeof ApiPublicHooksSyncMikrotikRoute
   '/api/public/radius/$action': typeof ApiPublicRadiusActionRoute
 }
 export interface FileRoutesByTo {
@@ -90,6 +98,7 @@ export interface FileRoutesByTo {
   '/mikrotik': typeof AuthenticatedMikrotikRoute
   '/planos': typeof AuthenticatedPlanosRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
+  '/api/public/hooks/sync-mikrotik': typeof ApiPublicHooksSyncMikrotikRoute
   '/api/public/radius/$action': typeof ApiPublicRadiusActionRoute
 }
 export interface FileRoutesById {
@@ -103,6 +112,7 @@ export interface FileRoutesById {
   '/_authenticated/mikrotik': typeof AuthenticatedMikrotikRoute
   '/_authenticated/planos': typeof AuthenticatedPlanosRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
+  '/api/public/hooks/sync-mikrotik': typeof ApiPublicHooksSyncMikrotikRoute
   '/api/public/radius/$action': typeof ApiPublicRadiusActionRoute
 }
 export interface FileRouteTypes {
@@ -116,6 +126,7 @@ export interface FileRouteTypes {
     | '/mikrotik'
     | '/planos'
     | '/usuarios'
+    | '/api/public/hooks/sync-mikrotik'
     | '/api/public/radius/$action'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -127,6 +138,7 @@ export interface FileRouteTypes {
     | '/mikrotik'
     | '/planos'
     | '/usuarios'
+    | '/api/public/hooks/sync-mikrotik'
     | '/api/public/radius/$action'
   id:
     | '__root__'
@@ -139,6 +151,7 @@ export interface FileRouteTypes {
     | '/_authenticated/mikrotik'
     | '/_authenticated/planos'
     | '/_authenticated/usuarios'
+    | '/api/public/hooks/sync-mikrotik'
     | '/api/public/radius/$action'
   fileRoutesById: FileRoutesById
 }
@@ -146,6 +159,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicHooksSyncMikrotikRoute: typeof ApiPublicHooksSyncMikrotikRoute
   ApiPublicRadiusActionRoute: typeof ApiPublicRadiusActionRoute
 }
 
@@ -214,6 +228,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUsuariosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/hooks/sync-mikrotik': {
+      id: '/api/public/hooks/sync-mikrotik'
+      path: '/api/public/hooks/sync-mikrotik'
+      fullPath: '/api/public/hooks/sync-mikrotik'
+      preLoaderRoute: typeof ApiPublicHooksSyncMikrotikRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/radius/$action': {
       id: '/api/public/radius/$action'
       path: '/api/public/radius/$action'
@@ -249,6 +270,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicHooksSyncMikrotikRoute: ApiPublicHooksSyncMikrotikRoute,
   ApiPublicRadiusActionRoute: ApiPublicRadiusActionRoute,
 }
 export const routeTree = rootRouteImport
