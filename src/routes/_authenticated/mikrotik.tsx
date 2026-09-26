@@ -7,7 +7,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { applyRadius, connectionStatus, deleteRouter, listRouters, saveRadiusConfig, saveRouter, syncPlans, testRadius, testRouter } from "@/lib/mikrotik.functions";
+import { applyRadius, connectionStatus, deleteRouter, getRadiusInstall, listRouters, saveRadiusConfig, saveRouter, syncPlans, testRadius, testRouter } from "@/lib/mikrotik.functions";
+
+function RadiusInstaller() {
+  const get = useServerFn(getRadiusInstall);
+  const [cmd, setCmd] = useState("");
+  const [err, setErr] = useState("");
+  const origin = typeof window === "undefined" ? "" : window.location.origin;
+  async function reveal() {
+    try { const { token } = await get(); setCmd(`curl -fsSL ${origin}/radius-install.sh -o install.sh && sudo bash install.sh ${origin} ${token}`); }
+    catch (e) { setErr(e instanceof Error ? e.message : "Erro"); }
+  }
+  return <div className="border bg-card p-5 text-sm">
+    <h2 className="font-bold">Servidor RADIUS próprio (instalação automática)</h2>
+    <ol className="mt-2 list-decimal space-y-1 pl-5 text-muted-foreground">
+      <li>Instale <b>Debian 12</b> limpo na máquina que será o servidor RADIUS, com IP fixo e acesso à internet.</li>
+      <li>Entre como root e rode o comando abaixo. Ele instala e configura o FreeRADIUS consultando o cadastro deste painel.</li>
+      <li>Autorize cada MikroTik: <code className="font-mono">nexora-radius-add-router NOME IP_DO_ROTEADOR SEGREDO</code> (o mesmo segredo configurado no cartão do roteador acima).</li>
+    </ol>
+    {cmd ? <pre className="mt-3 overflow-x-auto whitespace-pre-wrap break-all rounded-md bg-muted p-3 font-mono text-xs">{cmd}</pre>
+      : <Button className="mt-3" size="sm" onClick={reveal}>Gerar comando de instalação</Button>}
+    {err && <p className="mt-2 text-xs text-destructive">{err}</p>}
+    <p className="mt-2 text-xs text-muted-foreground">O comando contém a chave de acesso do servidor RADIUS — não compartilhe. Use o endereço do painel publicado para produção. Clientes suspensos ou cancelados são negados automaticamente; PPPoE autentica por usuário/senha e IPoE pelo MAC.</p>
+  </div>;
+}
 
 export const Route = createFileRoute("/_authenticated/mikrotik")({
   head: () => ({ meta: [
@@ -74,26 +97,7 @@ function MikrotikPage() {
         </div>
         {routers.map(r => <RadiusCard key={r.id} r={r} busy={busy} onSave={async (f) => run(async () => { await saveRadius({ data: f }); await load(); setMsg(""); })} onApply={() => run(async () => { await applyRad({ data: { id: r.id } }); alert("RADIUS aplicado no roteador."); })} onTest={async () => { let res: RadiusTest | null = null; await run(async () => { res = await testRad({ data: { id: r.id } }); }); return res; }} />)}
         {!routers.length && <p className="border bg-card p-6 text-center text-sm text-muted-foreground">Cadastre um roteador primeiro.</p>}
-        <div className="border bg-card p-5 text-sm">
-          <h2 className="font-bold">Configuração do FreeRADIUS (na sua rede)</h2>
-          <p className="mt-1 text-muted-foreground">Instale o FreeRADIUS com o módulo SQL (PostgreSQL) apontando para o banco de dados do painel e use estas consultas:</p>
-          <pre className="mt-3 overflow-x-auto rounded-md bg-muted p-3 font-mono text-xs">{`# mods-enabled/sql — authorize_check_query
-SELECT c.id AS id, c.pppoe_username AS "User-Name",
-       'Cleartext-Password' AS attribute, c.pppoe_password AS value, ':=' AS op
-FROM customers c
-WHERE c.pppoe_username = '%{SQL-User-Name}' AND c.status = 'active'
-
-# mods-enabled/sql — authorize_reply_query (velocidade do plano)
-SELECT c.id AS id, p.name AS "User-Name",
-       'Mikrotik-Rate-Limit' AS attribute,
-       concat(p.upload_mbps, 'M/', p.download_mbps, 'M') AS value, ':=' AS op
-FROM customers c JOIN plans p ON p.id = c.plan_id
-WHERE c.pppoe_username = '%{SQL-User-Name}'
-
-# clients.conf — autorize seus roteadores
-client mikrotik { ipaddr = IP_DO_ROTEADOR; secret = SEGREDO_RADIUS }`}</pre>
-          <p className="mt-2 text-xs text-muted-foreground">Clientes suspensos ou cancelados não são retornados pela consulta de autenticação, então o acesso é negado automaticamente. O endereço de conexão do banco está disponível nas configurações do backend do projeto.</p>
-        </div>
+        <RadiusInstaller />
       </section>}
 
       {tab !== "radius" && <section className="mt-6 border bg-card">
