@@ -1,3 +1,4 @@
+import { template as backupTemplate } from './backup'
 import type { ComponentType } from 'react'
 
 export interface TemplateEntry {
@@ -18,6 +19,6 @@ export interface TemplateEntry {
  *   // then add to TEMPLATES: 'welcome': welcomeTemplate
  */
 export const TEMPLATES: Record<string, TemplateEntry> = {
-  // Add templates here as they are created, e.g.:
+  'backup': backupTemplate,
   // 'welcome': welcomeTemplate,
 }
