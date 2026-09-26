@@ -166,6 +166,28 @@ export const createTeamUser = createServerFn({ method: "POST" })
     return { ok: true, id: uid };
   });
 
+export const deleteUserAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ userId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    if (data.userId === context.userId) throw new Error("Você não pode excluir a própria conta.");
+    const db = await admin();
+    const { data: target } = await db.from("user_roles").select("role").eq("user_id", data.userId).eq("role", "admin");
+    if (target?.length) throw new Error("Não é possível excluir uma conta de administrador.");
+    // Apaga os dados do painel dessa conta (clientes, planos, roteadores, cobranças, etc.)
+    for (const t of ["invoices", "customer_equipment", "customers", "plans", "routers", "bank_accounts"]) {
+      await db.from(t).delete().eq("owner_id", data.userId);
+    }
+    await db.from("user_roles").delete().eq("owner_id", data.userId); // funcionários da conta
+    await db.from("user_roles").delete().eq("user_id", data.userId);
+    await db.from("licenses").delete().eq("user_id", data.userId);
+    await db.from("profiles").delete().eq("id", data.userId);
+    const { error } = await db.auth.admin.deleteUser(data.userId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 export const deleteTeamUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ userId: z.string().uuid() }).parse(d))
