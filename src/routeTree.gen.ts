@@ -21,6 +21,7 @@ import { Route as AuthenticatedMikrotikRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedPlanosRouteImport } from './routes/_authenticated/planos'
 import { Route as AuthenticatedPrecosRouteImport } from './routes/_authenticated/precos'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
+import { Route as ApiPublicHooksDailyBackupRouteImport } from './routes/api/public/hooks/daily-backup'
 import { Route as ApiPublicHooksSyncMikrotikRouteImport } from './routes/api/public/hooks/sync-mikrotik'
 import { Route as ApiPublicRadiusActionRouteImport } from './routes/api/public/radius.$action'
 import { Route as ApiPublicWebhooksAsaasRouteImport } from './routes/api/public/webhooks/asaas'
@@ -85,6 +86,12 @@ const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
   path: '/usuarios',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicHooksDailyBackupRoute =
+  ApiPublicHooksDailyBackupRouteImport.update({
+    id: '/api/public/hooks/daily-backup',
+    path: '/api/public/hooks/daily-backup',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksSyncMikrotikRoute =
   ApiPublicHooksSyncMikrotikRouteImport.update({
     id: '/api/public/hooks/sync-mikrotik',
@@ -120,6 +127,7 @@ export interface FileRoutesByFullPath {
   '/planos': typeof AuthenticatedPlanosRoute
   '/precos': typeof AuthenticatedPrecosRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
+  '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
   '/api/public/hooks/sync-mikrotik': typeof ApiPublicHooksSyncMikrotikRoute
   '/api/public/radius/$action': typeof ApiPublicRadiusActionRoute
   '/api/public/webhooks/asaas': typeof ApiPublicWebhooksAsaasRoute
@@ -137,6 +145,7 @@ export interface FileRoutesByTo {
   '/planos': typeof AuthenticatedPlanosRoute
   '/precos': typeof AuthenticatedPrecosRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
+  '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
   '/api/public/hooks/sync-mikrotik': typeof ApiPublicHooksSyncMikrotikRoute
   '/api/public/radius/$action': typeof ApiPublicRadiusActionRoute
   '/api/public/webhooks/asaas': typeof ApiPublicWebhooksAsaasRoute
@@ -156,6 +165,7 @@ export interface FileRoutesById {
   '/_authenticated/planos': typeof AuthenticatedPlanosRoute
   '/_authenticated/precos': typeof AuthenticatedPrecosRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
+  '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
   '/api/public/hooks/sync-mikrotik': typeof ApiPublicHooksSyncMikrotikRoute
   '/api/public/radius/$action': typeof ApiPublicRadiusActionRoute
   '/api/public/webhooks/asaas': typeof ApiPublicWebhooksAsaasRoute
@@ -175,6 +185,7 @@ export interface FileRouteTypes {
     | '/planos'
     | '/precos'
     | '/usuarios'
+    | '/api/public/hooks/daily-backup'
     | '/api/public/hooks/sync-mikrotik'
     | '/api/public/radius/$action'
     | '/api/public/webhooks/asaas'
@@ -192,6 +203,7 @@ export interface FileRouteTypes {
     | '/planos'
     | '/precos'
     | '/usuarios'
+    | '/api/public/hooks/daily-backup'
     | '/api/public/hooks/sync-mikrotik'
     | '/api/public/radius/$action'
     | '/api/public/webhooks/asaas'
@@ -210,6 +222,7 @@ export interface FileRouteTypes {
     | '/_authenticated/planos'
     | '/_authenticated/precos'
     | '/_authenticated/usuarios'
+    | '/api/public/hooks/daily-backup'
     | '/api/public/hooks/sync-mikrotik'
     | '/api/public/radius/$action'
     | '/api/public/webhooks/asaas'
@@ -220,6 +233,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicHooksDailyBackupRoute: typeof ApiPublicHooksDailyBackupRoute
   ApiPublicHooksSyncMikrotikRoute: typeof ApiPublicHooksSyncMikrotikRoute
   ApiPublicRadiusActionRoute: typeof ApiPublicRadiusActionRoute
   ApiPublicWebhooksAsaasRoute: typeof ApiPublicWebhooksAsaasRoute
@@ -312,6 +326,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUsuariosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/hooks/daily-backup': {
+      id: '/api/public/hooks/daily-backup'
+      path: '/api/public/hooks/daily-backup'
+      fullPath: '/api/public/hooks/daily-backup'
+      preLoaderRoute: typeof ApiPublicHooksDailyBackupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/sync-mikrotik': {
       id: '/api/public/hooks/sync-mikrotik'
       path: '/api/public/hooks/sync-mikrotik'
@@ -374,6 +395,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicHooksDailyBackupRoute: ApiPublicHooksDailyBackupRoute,
   ApiPublicHooksSyncMikrotikRoute: ApiPublicHooksSyncMikrotikRoute,
   ApiPublicRadiusActionRoute: ApiPublicRadiusActionRoute,
   ApiPublicWebhooksAsaasRoute: ApiPublicWebhooksAsaasRoute,
