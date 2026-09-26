@@ -60,6 +60,10 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-map-active: var(--map-active);
+  --color-map-suspended: var(--map-suspended);
+  --color-map-pending: var(--map-pending);
+  --color-map-cancelled: var(--map-cancelled);
 }
 
 :root {
@@ -96,6 +100,10 @@
   --sidebar-accent-foreground: oklch(0.98 0 0);
   --sidebar-border: oklch(0.3 0.025 235);
   --sidebar-ring: oklch(0.704 0.04 256.788);
+  --map-active: oklch(0.58 0.17 145);
+  --map-suspended: oklch(0.58 0.22 27);
+  --map-pending: oklch(0.67 0.16 70);
+  --map-cancelled: oklch(0.52 0.03 250);
 }
 
 .dark {
@@ -131,6 +139,10 @@
   --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.551 0.027 264.364);
+  --map-active: oklch(0.7 0.16 145);
+  --map-suspended: oklch(0.7 0.19 27);
+  --map-pending: oklch(0.76 0.15 80);
+  --map-cancelled: oklch(0.68 0.03 250);
 }
 
 @layer base {

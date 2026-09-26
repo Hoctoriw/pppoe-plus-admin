@@ -165,6 +165,8 @@ export type Database = {
           id: string
           ipoe_ip: unknown
           last_sync_at: string | null
+          latitude: number | null
+          longitude: number | null
           mac_address: unknown
           notes: string | null
           owner_id: string
@@ -195,6 +197,8 @@ export type Database = {
           id?: string
           ipoe_ip?: unknown
           last_sync_at?: string | null
+          latitude?: number | null
+          longitude?: number | null
           mac_address?: unknown
           notes?: string | null
           owner_id?: string
@@ -225,6 +229,8 @@ export type Database = {
           id?: string
           ipoe_ip?: unknown
           last_sync_at?: string | null
+          latitude?: number | null
+          longitude?: number | null
           mac_address?: unknown
           notes?: string | null
           owner_id?: string
