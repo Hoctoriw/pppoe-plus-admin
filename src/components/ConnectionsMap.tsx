@@ -114,7 +114,9 @@ export function ConnectionsMap({ points, selectedId, onSelect, onMoveSelected }:
       const point = points.find((item) => item.id === selectedId);
       if (point) { map.panTo({ lat: point.latitude, lng: point.longitude }); map.setZoom(17); }
     } else if (points.length === 1) {
-      map.setCenter({ lat: points[0].latitude, lng: points[0].longitude }); map.setZoom(16);
+      const onlyPoint = points[0];
+      if (onlyPoint) map.setCenter({ lat: onlyPoint.latitude, lng: onlyPoint.longitude });
+      map.setZoom(16);
     } else {
       map.fitBounds(bounds, 52);
     }

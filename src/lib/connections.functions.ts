@@ -2,6 +2,24 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+export type ConnectionCustomer = {
+  id: string;
+  full_name: string;
+  technology: "pppoe" | "ipoe";
+  status: "active" | "suspended" | "pending" | "cancelled";
+  pppoe_username: string | null;
+  ipoe_ip: string | null;
+  street: string | null;
+  address_number: string | null;
+  district: string | null;
+  city: string | null;
+  state: string | null;
+  postal_code: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  plans: { name: string } | null;
+};
+
 async function ownerOf(supabase: any, userId: string) {
   const { data } = await supabase
     .from("user_roles")
@@ -22,7 +40,10 @@ export const listConnectionCustomers = createServerFn({ method: "GET" })
       .eq("owner_id", owner)
       .order("full_name");
     if (error) throw new Error(error.message);
-    return data ?? [];
+    return (data ?? []).map((customer): ConnectionCustomer => ({
+      ...customer,
+      ipoe_ip: customer.ipoe_ip === null ? null : String(customer.ipoe_ip),
+    }));
   });
 
 export const geocodeCustomerAddress = createServerFn({ method: "POST" })
