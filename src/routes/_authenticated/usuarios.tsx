@@ -60,7 +60,7 @@ function UsersPage() {
       <Link to="/dashboard" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />Voltar ao painel</Link>
       <div className="mt-4 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div><p className="text-sm text-muted-foreground">Administração</p><h1 className="text-3xl font-extrabold">Usuários e permissões</h1></div>
-        <Button variant="outline" disabled={busy} onClick={() => run(async () => {})}><RefreshCw />Atualizar</Button>
+        <div className="flex gap-2"><Button asChild variant="outline"><Link to="/precos">Preços de licença</Link></Button><Button variant="outline" disabled={busy} onClick={() => run(async () => {})}><RefreshCw />Atualizar</Button></div>
       </div>
       {msg && <p className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">{msg}</p>}
 

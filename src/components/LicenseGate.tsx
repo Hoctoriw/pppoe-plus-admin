@@ -4,6 +4,7 @@ import { KeyRound } from "lucide-react";
 import { getMyLicense } from "@/lib/users.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { PixCheckout } from "@/components/PixCheckout";
 
 export function LicenseGate({ children }: { children: ReactNode }) {
   const fetchLicense = useServerFn(getMyLicense);
@@ -24,7 +25,8 @@ export function LicenseGate({ children }: { children: ReactNode }) {
       <div className="max-w-md rounded-xl border bg-card p-8 text-center shadow-sm">
         <KeyRound className="mx-auto mb-4 h-10 w-10 text-primary" />
         <h1 className="mb-2 text-xl font-bold">Licença necessária</h1>
-        <p className="mb-6 text-sm text-muted-foreground">Seu período de 30 dias terminou{state.expires_at ? ` em ${new Date(state.expires_at).toLocaleDateString("pt-BR")}` : ""}. Entre em contato com o administrador do painel para ativar sua licença.</p>
+        <p className="mb-6 text-sm text-muted-foreground">Seu acesso terminou{state.expires_at ? ` em ${new Date(state.expires_at).toLocaleDateString("pt-BR")}` : ""}. Escolha um plano e pague via Pix para renovar.</p>
+        <div className="mb-6"><PixCheckout /></div>
         <Button variant="outline" onClick={async () => { await supabase.auth.signOut(); window.location.href = "/auth"; }}>Sair</Button>
       </div>
     </div>
