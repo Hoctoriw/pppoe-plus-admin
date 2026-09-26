@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
-import { CustomerForm, Status, type Customer, type Plan } from "./dashboard";
+import { CustomerForm, Status, addressFromForm, type Customer, type Plan } from "./dashboard";
 
 export const Route = createFileRoute("/_authenticated/clientes")({
   head: () => ({ meta: [
@@ -78,6 +78,7 @@ function Clientes() {
       ipoe_ip: technology === "ipoe" ? String(f.get("connection")) : null,
       mac_address: technology === "ipoe" ? String(f.get("mac")).trim().toUpperCase().replace(/-/g, ":") : null,
       notes: String(f.get("notes") ?? "") || null,
+      ...addressFromForm(f),
     };
     const { error } = editing
       ? await supabase.from("customers").update(payload).eq("id", editing.id)
