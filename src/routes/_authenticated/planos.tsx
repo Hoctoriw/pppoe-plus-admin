@@ -77,7 +77,7 @@ function Planos() {
     try {
       const routers = await listRoutersFn();
       if (!routers.length) { alert("Nenhum roteador cadastrado. Cadastre um na página MikroTik."); return; }
-      for (const r of routers) { const res = await syncPlansFn({ data: { routerId: r.id } }); if (!res.ok) alert(`${r.name}: ${res.error}`); }
+      for (const r of routers) { try { await syncPlansFn({ data: { routerId: r.id } }); } catch (e) { alert(`${r.name}: ${(e as Error).message}`); } }
     } catch (e) { alert((e as Error).message); } finally { setSyncing(false); }
   }
 
