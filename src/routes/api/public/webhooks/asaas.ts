@@ -27,7 +27,23 @@ export const Route = createFileRoute("/api/public/webhooks/asaas")({
           .select("id, status, bank_account_id, provider_charge_id")
           .eq("provider_charge_id", paymentId)
           .maybeSingle();
-        if (!invoice?.bank_account_id) return new Response("ok", { status: 200 });
+        if (!invoice) {
+          // Pode ser um pagamento de licença do painel.
+          const { data: lp } = await db.from("license_payments").select("*").eq("provider_charge_id", paymentId).eq("status", "pending").maybeSingle();
+          if (!lp) return new Response("ok", { status: 200 });
+          const { data: s } = await db.from("license_settings").select("api_key, environment, active").eq("id", 1).maybeSingle();
+          if (!s?.api_key) return new Response("ok", { status: 200 });
+          const { licensePixStatus } = await import("@/lib/billing.server");
+          const { approveLicensePaymentRow } = await import("@/lib/users.functions");
+          try {
+            const st = await licensePixStatus(s as never, paymentId);
+            if (st === "RECEIVED" || st === "CONFIRMED") await approveLicensePaymentRow(db, lp);
+          } catch {
+            return new Response("provider check failed", { status: 502 });
+          }
+          return new Response("ok", { status: 200 });
+        }
+        if (!invoice.bank_account_id) return new Response("ok", { status: 200 });
 
         const { data: account } = await db
           .from("bank_accounts")

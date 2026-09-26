@@ -124,3 +124,23 @@ export async function fetchBoleto(account: BankAccount, providerChargeId: string
     boleto_url: (payment.bankSlipUrl as string) ?? (payment.invoiceUrl as string) ?? null,
   };
 }
+
+// ===== Pix das licenças (conta Asaas da plataforma) =====
+export type LicenseSettings = { api_key: string | null; environment: "production" | "sandbox"; active: boolean };
+const asLicAccount = (s: LicenseSettings): BankAccount => ({ id: "license", name: "licencas", provider: "asaas", api_key: s.api_key, environment: s.environment, active: s.active });
+
+export async function createLicensePix(s: LicenseSettings, buyer: { id: string; name: string; email: string | null; cpfCnpj: string }, amount: number, description: string, ref: string) {
+  const acc = asLicAccount(s);
+  const doc = onlyDigits(buyer.cpfCnpj);
+  const found = await asaas(acc, "GET", `/customers?cpfCnpj=${doc}`);
+  const customerId = found?.data?.length ? found.data[0].id : (await asaas(acc, "POST", "/customers", { name: buyer.name || "Cliente Nexora", cpfCnpj: doc, email: buyer.email || undefined, externalReference: buyer.id })).id;
+  const due = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+  const pay = await asaas(acc, "POST", "/payments", { customer: customerId, billingType: "PIX", value: amount, dueDate: due, description, externalReference: ref });
+  const qr = await asaas(acc, "GET", `/payments/${pay.id}/pixQrCode`);
+  return { id: pay.id as string, payload: qr.payload as string, image: `data:image/png;base64,${qr.encodedImage}` };
+}
+
+export async function licensePixStatus(s: LicenseSettings, chargeId: string): Promise<string> {
+  const p = await asaas(asLicAccount(s), "GET", `/payments/${chargeId}`);
+  return p.status as string;
+}
