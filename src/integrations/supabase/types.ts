@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      backup_settings: {
+        Row: {
+          created_at: string
+          email: string
+          last_sent_at: string | null
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          last_sent_at?: string | null
+          owner_id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          last_sent_at?: string | null
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bank_accounts: {
         Row: {
           account_digit: string | null
