@@ -90,7 +90,7 @@ export const restoreBackup = createServerFn({ method: "POST" })
         row.owner_id = owner;
         return row;
       });
-      const { error } = await supabaseAdmin.from(table).upsert(clean, { onConflict: "id" });
+      const { error } = await (supabaseAdmin as any).from(table).upsert(clean, { onConflict: "id" });
       if (error) throw new Error(`Erro ao restaurar ${table}: ${error.message}`);
       restored[table] = clean.length;
     }
