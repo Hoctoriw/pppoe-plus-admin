@@ -78,6 +78,7 @@ function Clientes() {
       ipoe_ip: technology === "ipoe" ? String(f.get("connection")) : null,
       mac_address: technology === "ipoe" ? String(f.get("mac")).trim().toUpperCase().replace(/-/g, ":") : null,
       notes: String(f.get("notes") ?? "") || null,
+      due_day: Number(f.get("due_day")) || null,
       ...addressFromForm(f),
     };
     const { error } = editing
@@ -91,7 +92,7 @@ function Clientes() {
   async function setStatus(id: string, status: Customer["status"]) { const { error } = await supabase.from("customers").update({ status }).eq("id", id); if (error) return alert(error.message); await provision(id); }
   async function signOut() { await supabase.auth.signOut(); navigate({ to: "/auth", replace: true }); }
 
-  const nav = <><div className="flex h-16 items-center gap-3 px-5 text-lg font-extrabold"><span className="flex h-9 w-9 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground"><Radio /></span>NEXORA <span className="text-sidebar-primary">ISP</span></div><nav className="mt-5 space-y-1 px-3"><Link to="/dashboard"><NavItem icon={<LayoutDashboard />} label="Visão geral" /></Link><NavItem icon={<Users />} label="Clientes" active /><Link to="/planos"><NavItem icon={<Package />} label="Planos" /></Link><Link to="/mikrotik"><NavItem icon={<RouterIcon />} label="MikroTik" /></Link><Link to="/usuarios"><NavItem icon={<ShieldCheck />} label="Usuários" /></Link><NavItem icon={<Wifi />} label="Conexões" /><NavItem icon={<CircleDollarSign />} label="Financeiro" /></nav><div className="mt-auto border-t border-sidebar-border p-3"><Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={signOut}><LogOut />Sair</Button></div></>;
+  const nav = <><div className="flex h-16 items-center gap-3 px-5 text-lg font-extrabold"><span className="flex h-9 w-9 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground"><Radio /></span>NEXORA <span className="text-sidebar-primary">ISP</span></div><nav className="mt-5 space-y-1 px-3"><Link to="/dashboard"><NavItem icon={<LayoutDashboard />} label="Visão geral" /></Link><NavItem icon={<Users />} label="Clientes" active /><Link to="/planos"><NavItem icon={<Package />} label="Planos" /></Link><Link to="/mikrotik"><NavItem icon={<RouterIcon />} label="MikroTik" /></Link><Link to="/usuarios"><NavItem icon={<ShieldCheck />} label="Usuários" /></Link><NavItem icon={<Wifi />} label="Conexões" /><Link to="/financeiro"><NavItem icon={<CircleDollarSign />} label="Financeiro" /></Link></nav><div className="mt-auto border-t border-sidebar-border p-3"><Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={signOut}><LogOut />Sair</Button></div></>;
 
   return <div className="min-h-screen bg-background text-foreground lg:grid lg:grid-cols-[240px_1fr]">
     <aside className="hidden min-h-screen flex-col bg-sidebar text-sidebar-foreground lg:flex">{nav}</aside>

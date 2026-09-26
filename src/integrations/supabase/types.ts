@@ -75,6 +75,7 @@ export type Database = {
           created_by: string
           district: string | null
           document: string
+          due_day: number | null
           email: string | null
           full_name: string
           id: string
@@ -103,6 +104,7 @@ export type Database = {
           created_by: string
           district?: string | null
           document: string
+          due_day?: number | null
           email?: string | null
           full_name: string
           id?: string
@@ -131,6 +133,7 @@ export type Database = {
           created_by?: string
           district?: string | null
           document?: string
+          due_day?: number | null
           email?: string | null
           full_name?: string
           id?: string
@@ -165,6 +168,56 @@ export type Database = {
             columns: ["router_id"]
             isOneToOne: false
             referencedRelation: "routers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string
+          customer_id: string
+          due_date: string
+          id: string
+          method: string | null
+          notes: string | null
+          paid_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by: string
+          customer_id: string
+          due_date: string
+          id?: string
+          method?: string | null
+          notes?: string | null
+          paid_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string
+          customer_id?: string
+          due_date?: string
+          id?: string
+          method?: string | null
+          notes?: string | null
+          paid_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
             referencedColumns: ["id"]
           },
         ]
