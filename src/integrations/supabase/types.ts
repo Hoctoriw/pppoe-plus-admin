@@ -316,6 +316,83 @@ export type Database = {
           },
         ]
       }
+      license_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          days: number
+          id: string
+          plan_id: string | null
+          plan_name: string
+          status: string
+          txid: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          days: number
+          id?: string
+          plan_id?: string | null
+          plan_name: string
+          status?: string
+          txid: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          days?: number
+          id?: string
+          plan_id?: string | null
+          plan_name?: string
+          status?: string
+          txid?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "license_payments_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "license_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      license_plans: {
+        Row: {
+          active: boolean
+          created_at: string
+          days: number
+          id: string
+          name: string
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          days: number
+          id?: string
+          name: string
+          price: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          days?: number
+          id?: string
+          name?: string
+          price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       licenses: {
         Row: {
           created_at: string

@@ -201,3 +201,78 @@ export const deleteTeamUser = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// ===== Planos de licença e pagamentos Pix =====
+
+export const listLicensePlans = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase.from("license_plans").select("id, name, days, price, active").order("days");
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((p: any) => ({ ...p, price: Number(p.price) })) as { id: string; name: string; days: number; price: number; active: boolean }[];
+  });
+
+export const saveLicensePlan = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid().optional(), name: z.string().trim().min(1).max(60), days: z.number().int().min(1).max(3650), price: z.number().positive().max(100000), active: z.boolean() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const db = await admin();
+    const { id, ...row } = data;
+    const { error } = id ? await db.from("license_plans").update(row).eq("id", id) : await db.from("license_plans").insert(row);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deleteLicensePlan = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { error } = await (await admin()).from("license_plans").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const createLicensePayment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ planId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const db = await admin();
+    const { data: plan } = await db.from("license_plans").select("*").eq("id", data.planId).eq("active", true).maybeSingle();
+    if (!plan) throw new Error("Plano indisponível.");
+    const txid = "NX" + crypto.randomUUID().replace(/-/g, "").slice(0, 20).toUpperCase();
+    const { data: row, error } = await db.from("license_payments").insert({ user_id: context.userId, plan_id: plan.id, plan_name: plan.name, days: plan.days, amount: plan.price, txid }).select("id, txid, amount").single();
+    if (error) throw new Error(error.message);
+    return { id: row.id as string, txid: row.txid as string, amount: Number(row.amount) };
+  });
+
+export const listLicensePayments = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context);
+    const db = await admin();
+    const { data } = await db.from("license_payments").select("*").order("created_at", { ascending: false }).limit(200);
+    const { data: profiles } = await db.from("profiles").select("id, full_name");
+    const names = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
+    return (data ?? []).map((p: any) => ({ id: p.id as string, user_id: p.user_id as string, user_name: (names.get(p.user_id) as string) || "Sem nome", plan_name: p.plan_name as string, days: p.days as number, amount: Number(p.amount), txid: p.txid as string, status: p.status as string, created_at: p.created_at as string }));
+  });
+
+export const reviewLicensePayment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid(), approve: z.boolean() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const db = await admin();
+    const { data: p } = await db.from("license_payments").select("*").eq("id", data.id).eq("status", "pending").maybeSingle();
+    if (!p) throw new Error("Pagamento não encontrado ou já revisado.");
+    if (data.approve) {
+      const { data: cur } = await db.from("licenses").select("expires_at").eq("user_id", p.user_id).maybeSingle();
+      const base = cur && new Date(cur.expires_at) > new Date() ? new Date(cur.expires_at) : new Date();
+      const expires_at = new Date(base.getTime() + p.days * 86400000).toISOString();
+      const { error } = await db.from("licenses").upsert({ user_id: p.user_id, expires_at }, { onConflict: "user_id" });
+      if (error) throw new Error(error.message);
+    }
+    await db.from("license_payments").update({ status: data.approve ? "approved" : "rejected" }).eq("id", data.id);
+    return { ok: true };
+  });
