@@ -18,6 +18,7 @@ import { Route as AuthenticatedEquipeRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedFinanceiroRouteImport } from './routes/_authenticated/financeiro'
 import { Route as AuthenticatedMikrotikRouteImport } from './routes/_authenticated/mikrotik'
 import { Route as AuthenticatedPlanosRouteImport } from './routes/_authenticated/planos'
+import { Route as AuthenticatedPrecosRouteImport } from './routes/_authenticated/precos'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as ApiPublicHooksSyncMikrotikRouteImport } from './routes/api/public/hooks/sync-mikrotik'
 import { Route as ApiPublicRadiusActionRouteImport } from './routes/api/public/radius.$action'
@@ -67,6 +68,11 @@ const AuthenticatedPlanosRoute = AuthenticatedPlanosRouteImport.update({
   path: '/planos',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPrecosRoute = AuthenticatedPrecosRouteImport.update({
+  id: '/precos',
+  path: '/precos',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
   id: '/usuarios',
   path: '/usuarios',
@@ -98,6 +104,7 @@ export interface FileRoutesByFullPath {
   '/financeiro': typeof AuthenticatedFinanceiroRoute
   '/mikrotik': typeof AuthenticatedMikrotikRoute
   '/planos': typeof AuthenticatedPlanosRoute
+  '/precos': typeof AuthenticatedPrecosRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/public/hooks/sync-mikrotik': typeof ApiPublicHooksSyncMikrotikRoute
   '/api/public/radius/$action': typeof ApiPublicRadiusActionRoute
@@ -112,6 +119,7 @@ export interface FileRoutesByTo {
   '/financeiro': typeof AuthenticatedFinanceiroRoute
   '/mikrotik': typeof AuthenticatedMikrotikRoute
   '/planos': typeof AuthenticatedPlanosRoute
+  '/precos': typeof AuthenticatedPrecosRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/public/hooks/sync-mikrotik': typeof ApiPublicHooksSyncMikrotikRoute
   '/api/public/radius/$action': typeof ApiPublicRadiusActionRoute
@@ -128,6 +136,7 @@ export interface FileRoutesById {
   '/_authenticated/financeiro': typeof AuthenticatedFinanceiroRoute
   '/_authenticated/mikrotik': typeof AuthenticatedMikrotikRoute
   '/_authenticated/planos': typeof AuthenticatedPlanosRoute
+  '/_authenticated/precos': typeof AuthenticatedPrecosRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/public/hooks/sync-mikrotik': typeof ApiPublicHooksSyncMikrotikRoute
   '/api/public/radius/$action': typeof ApiPublicRadiusActionRoute
@@ -144,6 +153,7 @@ export interface FileRouteTypes {
     | '/financeiro'
     | '/mikrotik'
     | '/planos'
+    | '/precos'
     | '/usuarios'
     | '/api/public/hooks/sync-mikrotik'
     | '/api/public/radius/$action'
@@ -158,6 +168,7 @@ export interface FileRouteTypes {
     | '/financeiro'
     | '/mikrotik'
     | '/planos'
+    | '/precos'
     | '/usuarios'
     | '/api/public/hooks/sync-mikrotik'
     | '/api/public/radius/$action'
@@ -173,6 +184,7 @@ export interface FileRouteTypes {
     | '/_authenticated/financeiro'
     | '/_authenticated/mikrotik'
     | '/_authenticated/planos'
+    | '/_authenticated/precos'
     | '/_authenticated/usuarios'
     | '/api/public/hooks/sync-mikrotik'
     | '/api/public/radius/$action'
@@ -253,6 +265,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPlanosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/precos': {
+      id: '/_authenticated/precos'
+      path: '/precos'
+      fullPath: '/precos'
+      preLoaderRoute: typeof AuthenticatedPrecosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/usuarios': {
       id: '/_authenticated/usuarios'
       path: '/usuarios'
@@ -291,6 +310,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFinanceiroRoute: typeof AuthenticatedFinanceiroRoute
   AuthenticatedMikrotikRoute: typeof AuthenticatedMikrotikRoute
   AuthenticatedPlanosRoute: typeof AuthenticatedPlanosRoute
+  AuthenticatedPrecosRoute: typeof AuthenticatedPrecosRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
 }
 
@@ -301,6 +321,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFinanceiroRoute: AuthenticatedFinanceiroRoute,
   AuthenticatedMikrotikRoute: AuthenticatedMikrotikRoute,
   AuthenticatedPlanosRoute: AuthenticatedPlanosRoute,
+  AuthenticatedPrecosRoute: AuthenticatedPrecosRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
 }
 
