@@ -1,7 +1,7 @@
 import { AdminOnly } from "@/components/AdminOnly";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Bell, Building2, Check, ChevronRight, CircleDollarSign, Copy, FileCode, Landmark, LayoutDashboard, LogOut, Menu, MessageCircle, Package, Plus, Radio, UserPlus, RefreshCw, Router as RouterIcon, Search, ShieldCheck, Trash2, Users, Wifi, X } from "lucide-react";
+import { Bell, Building2, Check, ChevronRight, CircleDollarSign, Copy, FileCode, Landmark, LayoutDashboard, LogOut, Menu, MessageCircle, Package, Plus, Radio, UserPlus, UserPlus, RefreshCw, Router as RouterIcon, Search, ShieldCheck, Trash2, Users, Wifi, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -205,7 +205,7 @@ function Financeiro() {
 
   async function signOut() { await supabase.auth.signOut(); navigate({ to: "/auth", replace: true }); }
 
-  const nav = <><div className="flex h-16 items-center gap-3 px-5 text-lg font-extrabold"><span className="flex h-9 w-9 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground"><Radio /></span>NEXORA <span className="text-sidebar-primary">ISP</span></div><nav className="mt-5 space-y-1 px-3"><Link to="/dashboard"><NavItem icon={<LayoutDashboard />} label="Visão geral" /></Link><Link to="/clientes"><NavItem icon={<Users />} label="Clientes" /></Link><Link to="/planos"><NavItem icon={<Package />} label="Planos" /></Link><Link to="/mikrotik"><NavItem icon={<RouterIcon />} label="MikroTik" /></Link><AdminOnly><Link to="/usuarios"><NavItem icon={<ShieldCheck />} label="Usuários" /></Link></AdminOnly><NavItem icon={<Wifi />} label="Conexões" /><NavItem icon={<CircleDollarSign />} label="Financeiro" active /></nav><div className="mt-auto border-t border-sidebar-border p-3"><Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={signOut}><LogOut />Sair</Button></div></>;
+  const nav = <><div className="flex h-16 items-center gap-3 px-5 text-lg font-extrabold"><span className="flex h-9 w-9 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground"><Radio /></span>NEXORA <span className="text-sidebar-primary">ISP</span></div><nav className="mt-5 space-y-1 px-3"><Link to="/dashboard"><NavItem icon={<LayoutDashboard />} label="Visão geral" /></Link><Link to="/clientes"><NavItem icon={<Users />} label="Clientes" /></Link><Link to="/planos"><NavItem icon={<Package />} label="Planos" /></Link><Link to="/mikrotik"><NavItem icon={<RouterIcon />} label="MikroTik" /></Link><AdminOnly><Link to="/usuarios"><NavItem icon={<ShieldCheck />} label="Usuários" /></Link></AdminOnly><Link to="/equipe"><NavItem icon={<UserPlus />} label="Equipe" /></Link><NavItem icon={<Wifi />} label="Conexões" /><NavItem icon={<CircleDollarSign />} label="Financeiro" active /></nav><div className="mt-auto border-t border-sidebar-border p-3"><Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={signOut}><LogOut />Sair</Button></div></>;
 
   return <div className="min-h-screen bg-background text-foreground lg:grid lg:grid-cols-[240px_1fr]">
     <aside className="hidden min-h-screen flex-col bg-sidebar text-sidebar-foreground lg:flex">{nav}</aside>
