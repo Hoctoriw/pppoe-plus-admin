@@ -37,7 +37,7 @@ const PERMISSIONS: { label: string; roles: Record<Role, boolean> }[] = [
 ];
 
 function UsersPage() {
-  const list = useServerFn(listUsers), setRole = useServerFn(setUserRole), setActive = useServerFn(setUserActive), licList = useServerFn(listLicenses), extend = useServerFn(extendLicense);
+  const list = useServerFn(listUsers), setRole = useServerFn(setUserRole), setActive = useServerFn(setUserActive), licList = useServerFn(listLicenses), extend = useServerFn(extendLicense), deleteAcc = useServerFn(deleteUserAccount);
   const [lic, setLic] = useState<Record<string, string>>({});
   const [users, setUsers] = useState<UserRow[]>([]);
   const [msg, setMsg] = useState("");
