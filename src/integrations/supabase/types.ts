@@ -322,8 +322,10 @@ export type Database = {
           created_at: string
           days: number
           id: string
+          pix_payload: string | null
           plan_id: string | null
           plan_name: string
+          provider_charge_id: string | null
           status: string
           txid: string
           updated_at: string
@@ -334,8 +336,10 @@ export type Database = {
           created_at?: string
           days: number
           id?: string
+          pix_payload?: string | null
           plan_id?: string | null
           plan_name: string
+          provider_charge_id?: string | null
           status?: string
           txid: string
           updated_at?: string
@@ -346,8 +350,10 @@ export type Database = {
           created_at?: string
           days?: number
           id?: string
+          pix_payload?: string | null
           plan_id?: string | null
           plan_name?: string
+          provider_charge_id?: string | null
           status?: string
           txid?: string
           updated_at?: string
@@ -389,6 +395,33 @@ export type Database = {
           id?: string
           name?: string
           price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      license_settings: {
+        Row: {
+          active: boolean
+          api_key: string | null
+          created_at: string
+          environment: string
+          id: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          api_key?: string | null
+          created_at?: string
+          environment?: string
+          id?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          api_key?: string | null
+          created_at?: string
+          environment?: string
+          id?: number
           updated_at?: string
         }
         Relationships: []
