@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      bank_accounts: {
+        Row: {
+          account_digit: string | null
+          account_number: string | null
+          active: boolean
+          agency: string | null
+          agency_digit: string | null
+          api_key: string | null
+          bank_code: string | null
+          convenio: string | null
+          created_at: string
+          environment: string
+          id: string
+          name: string
+          provider: string
+          updated_at: string
+          wallet: string | null
+        }
+        Insert: {
+          account_digit?: string | null
+          account_number?: string | null
+          active?: boolean
+          agency?: string | null
+          agency_digit?: string | null
+          api_key?: string | null
+          bank_code?: string | null
+          convenio?: string | null
+          created_at?: string
+          environment?: string
+          id?: string
+          name: string
+          provider?: string
+          updated_at?: string
+          wallet?: string | null
+        }
+        Update: {
+          account_digit?: string | null
+          account_number?: string | null
+          active?: boolean
+          agency?: string | null
+          agency_digit?: string | null
+          api_key?: string | null
+          bank_code?: string | null
+          convenio?: string | null
+          created_at?: string
+          environment?: string
+          id?: string
+          name?: string
+          provider?: string
+          updated_at?: string
+          wallet?: string | null
+        }
+        Relationships: []
+      }
       customer_equipment: {
         Row: {
           brand: string | null
@@ -175,44 +229,72 @@ export type Database = {
       invoices: {
         Row: {
           amount: number
+          bank_account_id: string | null
+          barcode: string | null
+          boleto_status: string
+          boleto_url: string | null
           created_at: string
           created_by: string
           customer_id: string
           due_date: string
           id: string
+          linha_digitavel: string | null
           method: string | null
+          nosso_numero: string | null
           notes: string | null
           paid_at: string | null
+          provider_charge_id: string | null
           status: string
           updated_at: string
         }
         Insert: {
           amount: number
+          bank_account_id?: string | null
+          barcode?: string | null
+          boleto_status?: string
+          boleto_url?: string | null
           created_at?: string
           created_by: string
           customer_id: string
           due_date: string
           id?: string
+          linha_digitavel?: string | null
           method?: string | null
+          nosso_numero?: string | null
           notes?: string | null
           paid_at?: string | null
+          provider_charge_id?: string | null
           status?: string
           updated_at?: string
         }
         Update: {
           amount?: number
+          bank_account_id?: string | null
+          barcode?: string | null
+          boleto_status?: string
+          boleto_url?: string | null
           created_at?: string
           created_by?: string
           customer_id?: string
           due_date?: string
           id?: string
+          linha_digitavel?: string | null
           method?: string | null
+          nosso_numero?: string | null
           notes?: string | null
           paid_at?: string | null
+          provider_charge_id?: string | null
           status?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "invoices_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "invoices_customer_id_fkey"
             columns: ["customer_id"]
