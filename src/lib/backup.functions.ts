@@ -55,6 +55,48 @@ export const downloadBackup = createServerFn({ method: "POST" })
     return JSON.stringify({ generated_at: new Date().toISOString(), ...data }, null, 2);
   });
 
+// Ordem importa: planos/roteadores/bancos antes de clientes; clientes antes de equipamentos e cobranças.
+const RESTORE_ORDER = ["plans", "routers", "bank_accounts", "customers", "customer_equipment", "invoices"] as const;
+
+const backupSchema = z.object({
+  plans: z.array(z.record(z.string(), z.unknown())).optional(),
+  customers: z.array(z.record(z.string(), z.unknown())).optional(),
+  customer_equipment: z.array(z.record(z.string(), z.unknown())).optional(),
+  routers: z.array(z.record(z.string(), z.unknown())).optional(),
+  bank_accounts: z.array(z.record(z.string(), z.unknown())).optional(),
+  invoices: z.array(z.record(z.string(), z.unknown())).optional(),
+});
+
+// Campos que nunca podem vir do arquivo (segredos e identidade de dono).
+const BLOCKED_FIELDS = new Set(["owner_id", "password", "api_key", "radius_secret"]);
+
+export const restoreBackup = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ json: z.string().max(20_000_000) }).parse(d))
+  .handler(async ({ data, context }) => {
+    const owner = await ownerOf(context.supabase, context.userId);
+    if (owner !== context.userId) throw new Error("Apenas o dono da conta pode restaurar o backup.");
+    let parsed: unknown;
+    try { parsed = JSON.parse(data.json); } catch { throw new Error("Arquivo inválido: não é um JSON de backup."); }
+    const backup = backupSchema.parse(parsed);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const restored: Record<string, number> = {};
+    for (const table of RESTORE_ORDER) {
+      const rows = backup[table as keyof typeof backup] ?? [];
+      if (!rows.length) { restored[table] = 0; continue; }
+      const clean = rows.map((r) => {
+        const row: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(r)) if (!BLOCKED_FIELDS.has(k)) row[k] = v;
+        row.owner_id = owner;
+        return row;
+      });
+      const { error } = await supabaseAdmin.from(table).upsert(clean, { onConflict: "id" });
+      if (error) throw new Error(`Erro ao restaurar ${table}: ${error.message}`);
+      restored[table] = clean.length;
+    }
+    return { ok: true, restored };
+  });
+
 export const sendBackupNow = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
