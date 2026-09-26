@@ -28,6 +28,7 @@ export type Database = {
           environment: string
           id: string
           name: string
+          owner_id: string
           provider: string
           updated_at: string
           wallet: string | null
@@ -45,6 +46,7 @@ export type Database = {
           environment?: string
           id?: string
           name: string
+          owner_id?: string
           provider?: string
           updated_at?: string
           wallet?: string | null
@@ -62,6 +64,7 @@ export type Database = {
           environment?: string
           id?: string
           name?: string
+          owner_id?: string
           provider?: string
           updated_at?: string
           wallet?: string | null
@@ -79,6 +82,7 @@ export type Database = {
           mac_address: string | null
           model: string | null
           notes: string | null
+          owner_id: string
           returned_at: string | null
           serial_number: string | null
           updated_at: string
@@ -93,6 +97,7 @@ export type Database = {
           mac_address?: string | null
           model?: string | null
           notes?: string | null
+          owner_id?: string
           returned_at?: string | null
           serial_number?: string | null
           updated_at?: string
@@ -107,6 +112,7 @@ export type Database = {
           mac_address?: string | null
           model?: string | null
           notes?: string | null
+          owner_id?: string
           returned_at?: string | null
           serial_number?: string | null
           updated_at?: string
@@ -137,6 +143,7 @@ export type Database = {
           last_sync_at: string | null
           mac_address: unknown
           notes: string | null
+          owner_id: string
           phone: string
           plan_id: string | null
           postal_code: string | null
@@ -166,6 +173,7 @@ export type Database = {
           last_sync_at?: string | null
           mac_address?: unknown
           notes?: string | null
+          owner_id?: string
           phone: string
           plan_id?: string | null
           postal_code?: string | null
@@ -195,6 +203,7 @@ export type Database = {
           last_sync_at?: string | null
           mac_address?: unknown
           notes?: string | null
+          owner_id?: string
           phone?: string
           plan_id?: string | null
           postal_code?: string | null
@@ -242,6 +251,7 @@ export type Database = {
           method: string | null
           nosso_numero: string | null
           notes: string | null
+          owner_id: string
           paid_at: string | null
           provider_charge_id: string | null
           status: string
@@ -262,6 +272,7 @@ export type Database = {
           method?: string | null
           nosso_numero?: string | null
           notes?: string | null
+          owner_id?: string
           paid_at?: string | null
           provider_charge_id?: string | null
           status?: string
@@ -282,6 +293,7 @@ export type Database = {
           method?: string | null
           nosso_numero?: string | null
           notes?: string | null
+          owner_id?: string
           paid_at?: string | null
           provider_charge_id?: string | null
           status?: string
@@ -312,6 +324,7 @@ export type Database = {
           id: string
           monthly_price: number
           name: string
+          owner_id: string
           status: Database["public"]["Enums"]["plan_status"]
           technology: Database["public"]["Enums"]["access_technology"] | null
           updated_at: string
@@ -324,6 +337,7 @@ export type Database = {
           id?: string
           monthly_price: number
           name: string
+          owner_id?: string
           status?: Database["public"]["Enums"]["plan_status"]
           technology?: Database["public"]["Enums"]["access_technology"] | null
           updated_at?: string
@@ -336,6 +350,7 @@ export type Database = {
           id?: string
           monthly_price?: number
           name?: string
+          owner_id?: string
           status?: Database["public"]["Enums"]["plan_status"]
           technology?: Database["public"]["Enums"]["access_technology"] | null
           updated_at?: string
@@ -385,6 +400,7 @@ export type Database = {
           last_check_message: string | null
           last_check_ok: boolean | null
           name: string
+          owner_id: string
           password: string
           radius_acct_port: number
           radius_auth_port: number
@@ -405,6 +421,7 @@ export type Database = {
           last_check_message?: string | null
           last_check_ok?: boolean | null
           name: string
+          owner_id?: string
           password: string
           radius_acct_port?: number
           radius_auth_port?: number
@@ -425,6 +442,7 @@ export type Database = {
           last_check_message?: string | null
           last_check_ok?: boolean | null
           name?: string
+          owner_id?: string
           password?: string
           radius_acct_port?: number
           radius_auth_port?: number
