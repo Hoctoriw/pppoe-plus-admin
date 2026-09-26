@@ -1,6 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { authenticateCronRequest } from "@/integrations/supabase/cron-auth";
 import { BLOCK_PROFILE, profileName, provisionOne, upsert } from "@/lib/mikrotik.server";
+
+async function authorized(request: Request): Promise<boolean> {
+  const expected = process.env["SYNC_CRON_TOKEN"];
+  if (!expected) return false;
+  const token = /^Bearer ([^\s,]+)$/.exec(request.headers.get("authorization") ?? "")?.[1];
+  if (!token) return false;
+  const { createHash, timingSafeEqual } = await import("node:crypto");
+  const d = (v: string) => createHash("sha256").update(v, "utf8").digest();
+  return timingSafeEqual(d(token), d(expected));
+}
 
 // Sincronismo automático: reprovisiona todos os clientes em seus roteadores.
 // Chamado a cada hora pelo agendador do banco (pg_cron), autenticado por LOVABLE_CRON_SECRET.
@@ -8,8 +17,7 @@ export const Route = createFileRoute("/api/public/hooks/sync-mikrotik")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const denied = await authenticateCronRequest(request);
-        if (denied) return denied;
+        if (!(await authorized(request))) return new Response("Unauthorized", { status: 401 });
 
         const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
 
