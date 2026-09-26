@@ -107,8 +107,10 @@ export const sendBackupNow = createServerFn({ method: "POST" })
     const now = new Date();
     const date = now.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
     const { sendTemplateEmail } = await import("@/lib/email-templates/send-email");
+    const { storeBackupFile } = await import("@/lib/backup-file.server");
+    const file = await storeBackupFile(owner, JSON.stringify({ generated_at: now.toISOString(), ...data }, null, 2), now);
     const res = await sendTemplateEmail("backup", s.email, {
-      templateData: { date, counts, json: JSON.stringify({ generated_at: now.toISOString(), ...data }, null, 1) },
+      templateData: { date, counts, ...file },
       idempotencyKey: `backup-${owner}-${now.getTime()}`,
     });
     if (!res.sent) throw new Error("Este e-mail recusou mensagens anteriormente (descadastro ou devolução). Use outro e-mail.");
