@@ -176,7 +176,8 @@ export const deleteUserAccount = createServerFn({ method: "POST" })
     const { data: target } = await db.from("user_roles").select("role").eq("user_id", data.userId).eq("role", "admin");
     if (target?.length) throw new Error("Não é possível excluir uma conta de administrador.");
     // Apaga os dados do painel dessa conta (clientes, planos, roteadores, cobranças, etc.)
-    for (const t of ["invoices", "customer_equipment", "customers", "plans", "routers", "bank_accounts"]) {
+    const tables = ["invoices", "customer_equipment", "customers", "plans", "routers", "bank_accounts"] as const;
+    for (const t of tables) {
       await db.from(t).delete().eq("owner_id", data.userId);
     }
     await db.from("user_roles").delete().eq("owner_id", data.userId); // funcionários da conta
