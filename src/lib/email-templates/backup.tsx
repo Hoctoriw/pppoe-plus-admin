@@ -1,14 +1,15 @@
 import * as React from 'react'
-import { Body, Container, Head, Heading, Html, Preview, Section, Text } from '@react-email/components'
+import { Body, Button, Container, Head, Heading, Html, Preview, Section, Text } from '@react-email/components'
 import type { TemplateEntry } from './registry'
 
 interface BackupProps {
   date?: string
   counts?: Record<string, number>
-  json?: string
+  url?: string
+  fileName?: string
 }
 
-function BackupEmail({ date = '', counts = {}, json = '{}' }: BackupProps) {
+function BackupEmail({ date = '', counts = {}, url = '#', fileName = 'backup.json' }: BackupProps) {
   return (
     <Html>
       <Head />
@@ -22,8 +23,14 @@ function BackupEmail({ date = '', counts = {}, json = '{}' }: BackupProps) {
               <Text key={k} style={{ margin: '2px 0', color: '#333' }}>• {k}: {v}</Text>
             ))}
           </Section>
-          <Text style={{ color: '#333' }}>Dados completos (JSON) abaixo. Guarde este e-mail em local seguro.</Text>
-          <pre style={{ fontSize: '11px', background: '#f4f4f5', padding: '12px', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{json}</pre>
+          <Section style={{ margin: '20px 0' }}>
+            <Button href={url} style={{ backgroundColor: '#111', color: '#ffffff', padding: '12px 20px', borderRadius: '6px', fontSize: '14px' }}>
+              Baixar arquivo {fileName}
+            </Button>
+          </Section>
+          <Text style={{ color: '#555', fontSize: '13px' }}>
+            O link fica válido por 30 dias. Baixe o arquivo e guarde em local seguro. Para restaurar, use a página Backup do painel e escolha este arquivo.
+          </Text>
         </Container>
       </Body>
     </Html>
@@ -34,5 +41,5 @@ export const template = {
   component: BackupEmail,
   subject: (d: Record<string, any>) => `Backup do painel — ${d['date'] ?? ''}`,
   displayName: 'Backup das configurações',
-  previewData: { date: '26/09/2026 11:00', counts: { Clientes: 2, Planos: 1 }, json: '{"plans":[]}' },
+  previewData: { date: '26/09/2026 11:00', counts: { Clientes: 2, Planos: 1 }, url: 'https://example.com', fileName: 'backup-nexora.json' },
 } satisfies TemplateEntry

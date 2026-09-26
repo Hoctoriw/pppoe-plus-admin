@@ -43,8 +43,10 @@ export const Route = createFileRoute("/api/public/hooks/daily-backup")({
               data[t] = rows ?? [];
               counts[label] = rows?.length ?? 0;
             }
+            const { storeBackupFile } = await import("@/lib/backup-file.server");
+            const file = await storeBackupFile(s.owner_id, JSON.stringify({ generated_at: now.toISOString(), ...data }, null, 2), now);
             const res = await sendTemplateEmail("backup", s.email, {
-              templateData: { date, counts, json: JSON.stringify({ generated_at: now.toISOString(), ...data }, null, 1) },
+              templateData: { date, counts, ...file },
               idempotencyKey: `backup-daily-${s.owner_id}-${day}`,
             });
             if (res.sent) {
