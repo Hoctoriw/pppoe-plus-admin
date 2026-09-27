@@ -133,6 +133,36 @@ function MikrotikPage() {
 }
 function F({ label, children }: { label: string; children: React.ReactNode }) { return <div className="space-y-2"><Label>{label}</Label>{children}</div>; }
 
+function BlockPageCard() {
+  const [empresa, setEmpresa] = useState("");
+  const [fone, setFone] = useState("");
+  const origin = typeof window === "undefined" ? "" : window.location.origin;
+  const qs = new URLSearchParams();
+  if (empresa.trim()) qs.set("empresa", empresa.trim());
+  if (fone.trim()) qs.set("whatsapp", fone.trim());
+  const url = `${origin}/bloqueado${qs.toString() ? `?${qs}` : ""}`;
+  return <section className="mt-6 border bg-card p-5 text-sm">
+    <h2 className="font-bold">Página de bloqueio para clientes</h2>
+    <p className="mt-1 text-muted-foreground">Clientes suspensos entram na lista <code className="font-mono">nexora_bloqueados</code>. Preencha os dados abaixo, copie o endereço e aplique o script no roteador: quem estiver bloqueado cai direto nessa página ao abrir qualquer site.</p>
+    <div className="mt-4 grid gap-4 md:grid-cols-2">
+      <F label="Nome do provedor (aparece na página)"><Input value={empresa} onChange={e => setEmpresa(e.target.value)} placeholder="Syncron Telecom" /></F>
+      <F label="WhatsApp do atendimento"><Input value={fone} onChange={e => setFone(e.target.value)} placeholder="11999998888" /></F>
+    </div>
+    <div className="mt-4 flex flex-wrap items-center gap-2">
+      <code className="flex-1 overflow-x-auto rounded-md bg-muted p-3 font-mono text-xs break-all">{url}</code>
+      <Button size="sm" variant="outline" onClick={() => void navigator.clipboard.writeText(url)}>Copiar endereço</Button>
+      <Button size="sm" variant="outline" asChild><a href={url} target="_blank" rel="noreferrer">Abrir página</a></Button>
+    </div>
+    <pre className="mt-4 overflow-x-auto rounded-md bg-muted p-3 font-mono text-xs">{`/ip proxy set enabled=yes port=8181
+/ip proxy access add action=deny redirect-to="${url.replace(/^https?:\/\//, "")}" comment="nexora-bloqueio"
+/ip firewall nat add chain=dstnat src-address-list=nexora_bloqueados protocol=tcp dst-port=80 action=redirect to-ports=8181 comment="nexora-bloqueio"
+/ip firewall filter add chain=forward src-address-list=nexora_bloqueados protocol=udp dst-port=53 action=accept comment="nexora-bloqueio"
+/ip firewall filter add chain=forward src-address-list=nexora_bloqueados action=drop comment="nexora-bloqueio"`}</pre>
+    <p className="mt-2 text-xs text-muted-foreground">Sites abertos em HTTPS não podem ser redirecionados pelo roteador: o cliente vê erro de conexão até abrir um endereço comum (http). Por isso a página também deve ser divulgada no atendimento.</p>
+  </section>;
+}
+
+
 type RadiusTest = Awaited<ReturnType<typeof testRadius>>;
 
 function RadiusCard({ r, busy, onSave, onApply, onTest }: { r: RouterRow; busy: boolean; onSave: (f: { id: string; radius_enabled: boolean; radius_host?: string; radius_secret?: string | undefined; radius_auth_port: number; radius_acct_port: number }) => Promise<void>; onApply: () => void; onTest: () => Promise<RadiusTest | null> }) {
