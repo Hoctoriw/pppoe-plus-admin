@@ -126,13 +126,8 @@ function MikrotikPage() {
           </TableBody></Table>}
       </section>}
 
-      <section className="mt-6 border bg-card p-5 text-sm">
-        <h2 className="font-bold">Página de aviso para suspensos</h2>
-        <p className="mt-1 text-muted-foreground">Clientes suspensos entram na lista <code className="font-mono">nexora_bloqueados</code>. Crie uma vez no roteador a regra que redireciona esse tráfego para sua página de aviso:</p>
-        <pre className="mt-3 overflow-x-auto rounded-md bg-muted p-3 font-mono text-xs">{`/ip firewall nat add chain=dstnat src-address-list=nexora_bloqueados protocol=tcp dst-port=80 action=dst-nat to-addresses=IP_DO_SERVIDOR_AVISO to-ports=80
-/ip firewall filter add chain=forward src-address-list=nexora_bloqueados protocol=udp dst-port=53 action=accept
-/ip firewall filter add chain=forward src-address-list=nexora_bloqueados dst-address=!IP_DO_SERVIDOR_AVISO action=drop`}</pre>
-      </section>
+      <BlockPageCard />
+
     </div>
   </div>;
 }
