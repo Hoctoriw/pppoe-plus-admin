@@ -64,6 +64,9 @@
   --color-map-suspended: var(--map-suspended);
   --color-map-pending: var(--map-pending);
   --color-map-cancelled: var(--map-cancelled);
+  --color-ftth-olt: var(--ftth-olt);
+  --color-ftth-ceo: var(--ftth-ceo);
+  --color-ftth-cto: var(--ftth-cto);
 }
 
 :root {
@@ -104,6 +107,9 @@
   --map-suspended: oklch(0.58 0.22 27);
   --map-pending: oklch(0.67 0.16 70);
   --map-cancelled: oklch(0.52 0.03 250);
+  --ftth-olt: oklch(0.45 0.2 290);
+  --ftth-ceo: oklch(0.6 0.15 230);
+  --ftth-cto: oklch(0.62 0.17 45);
 }
 
 .dark {
@@ -143,6 +149,9 @@
   --map-suspended: oklch(0.7 0.19 27);
   --map-pending: oklch(0.76 0.15 80);
   --map-cancelled: oklch(0.68 0.03 250);
+  --ftth-olt: oklch(0.68 0.18 290);
+  --ftth-ceo: oklch(0.72 0.13 230);
+  --ftth-cto: oklch(0.75 0.15 50);
 }
 
 @layer base {
