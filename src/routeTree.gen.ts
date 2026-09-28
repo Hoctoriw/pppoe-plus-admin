@@ -22,6 +22,7 @@ import { Route as AuthenticatedFinanceiroRouteImport } from './routes/_authentic
 import { Route as AuthenticatedMikrotikRouteImport } from './routes/_authenticated/mikrotik'
 import { Route as AuthenticatedPlanosRouteImport } from './routes/_authenticated/planos'
 import { Route as AuthenticatedPrecosRouteImport } from './routes/_authenticated/precos'
+import { Route as AuthenticatedRedeRouteImport } from './routes/_authenticated/rede'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as ApiPublicHooksDailyBackupRouteImport } from './routes/api/public/hooks/daily-backup'
 import { Route as ApiPublicHooksSyncMikrotikRouteImport } from './routes/api/public/hooks/sync-mikrotik'
@@ -93,6 +94,11 @@ const AuthenticatedPrecosRoute = AuthenticatedPrecosRouteImport.update({
   path: '/precos',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedRedeRoute = AuthenticatedRedeRouteImport.update({
+  id: '/rede',
+  path: '/rede',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
   id: '/usuarios',
   path: '/usuarios',
@@ -140,6 +146,7 @@ export interface FileRoutesByFullPath {
   '/mikrotik': typeof AuthenticatedMikrotikRoute
   '/planos': typeof AuthenticatedPlanosRoute
   '/precos': typeof AuthenticatedPrecosRoute
+  '/rede': typeof AuthenticatedRedeRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
   '/api/public/hooks/sync-mikrotik': typeof ApiPublicHooksSyncMikrotikRoute
@@ -160,6 +167,7 @@ export interface FileRoutesByTo {
   '/mikrotik': typeof AuthenticatedMikrotikRoute
   '/planos': typeof AuthenticatedPlanosRoute
   '/precos': typeof AuthenticatedPrecosRoute
+  '/rede': typeof AuthenticatedRedeRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
   '/api/public/hooks/sync-mikrotik': typeof ApiPublicHooksSyncMikrotikRoute
@@ -182,6 +190,7 @@ export interface FileRoutesById {
   '/_authenticated/mikrotik': typeof AuthenticatedMikrotikRoute
   '/_authenticated/planos': typeof AuthenticatedPlanosRoute
   '/_authenticated/precos': typeof AuthenticatedPrecosRoute
+  '/_authenticated/rede': typeof AuthenticatedRedeRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
   '/api/public/hooks/sync-mikrotik': typeof ApiPublicHooksSyncMikrotikRoute
@@ -204,6 +213,7 @@ export interface FileRouteTypes {
     | '/mikrotik'
     | '/planos'
     | '/precos'
+    | '/rede'
     | '/usuarios'
     | '/api/public/hooks/daily-backup'
     | '/api/public/hooks/sync-mikrotik'
@@ -224,6 +234,7 @@ export interface FileRouteTypes {
     | '/mikrotik'
     | '/planos'
     | '/precos'
+    | '/rede'
     | '/usuarios'
     | '/api/public/hooks/daily-backup'
     | '/api/public/hooks/sync-mikrotik'
@@ -245,6 +256,7 @@ export interface FileRouteTypes {
     | '/_authenticated/mikrotik'
     | '/_authenticated/planos'
     | '/_authenticated/precos'
+    | '/_authenticated/rede'
     | '/_authenticated/usuarios'
     | '/api/public/hooks/daily-backup'
     | '/api/public/hooks/sync-mikrotik'
@@ -358,6 +370,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPrecosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/rede': {
+      id: '/_authenticated/rede'
+      path: '/rede'
+      fullPath: '/rede'
+      preLoaderRoute: typeof AuthenticatedRedeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/usuarios': {
       id: '/_authenticated/usuarios'
       path: '/usuarios'
@@ -413,6 +432,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMikrotikRoute: typeof AuthenticatedMikrotikRoute
   AuthenticatedPlanosRoute: typeof AuthenticatedPlanosRoute
   AuthenticatedPrecosRoute: typeof AuthenticatedPrecosRoute
+  AuthenticatedRedeRoute: typeof AuthenticatedRedeRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
 }
 
@@ -426,6 +446,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMikrotikRoute: AuthenticatedMikrotikRoute,
   AuthenticatedPlanosRoute: AuthenticatedPlanosRoute,
   AuthenticatedPrecosRoute: AuthenticatedPrecosRoute,
+  AuthenticatedRedeRoute: AuthenticatedRedeRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
 }
 
