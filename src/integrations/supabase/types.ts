@@ -157,6 +157,8 @@ export type Database = {
           city: string | null
           created_at: string
           created_by: string
+          cto_id: string | null
+          cto_port: number | null
           district: string | null
           document: string
           due_day: number | null
@@ -189,6 +191,8 @@ export type Database = {
           city?: string | null
           created_at?: string
           created_by: string
+          cto_id?: string | null
+          cto_port?: number | null
           district?: string | null
           document: string
           due_day?: number | null
@@ -221,6 +225,8 @@ export type Database = {
           city?: string | null
           created_at?: string
           created_by?: string
+          cto_id?: string | null
+          cto_port?: number | null
           district?: string | null
           document?: string
           due_day?: number | null
@@ -250,6 +256,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "customers_cto_id_fkey"
+            columns: ["cto_id"]
+            isOneToOne: false
+            referencedRelation: "ftth_nodes"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "customers_plan_id_fkey"
             columns: ["plan_id"]
             isOneToOne: false
@@ -261,6 +274,77 @@ export type Database = {
             columns: ["router_id"]
             isOneToOne: false
             referencedRelation: "routers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ftth_nodes: {
+        Row: {
+          cable_fibers: number | null
+          cable_length_m: number | null
+          connector_count: number
+          created_at: string
+          fusion_count: number
+          id: string
+          latitude: number
+          longitude: number
+          name: string
+          node_type: string
+          notes: string | null
+          owner_id: string
+          parent_id: string | null
+          pon_port: number | null
+          ports: number
+          splitter_ratio: number
+          tx_power_dbm: number
+          updated_at: string
+        }
+        Insert: {
+          cable_fibers?: number | null
+          cable_length_m?: number | null
+          connector_count?: number
+          created_at?: string
+          fusion_count?: number
+          id?: string
+          latitude: number
+          longitude: number
+          name: string
+          node_type: string
+          notes?: string | null
+          owner_id?: string
+          parent_id?: string | null
+          pon_port?: number | null
+          ports?: number
+          splitter_ratio?: number
+          tx_power_dbm?: number
+          updated_at?: string
+        }
+        Update: {
+          cable_fibers?: number | null
+          cable_length_m?: number | null
+          connector_count?: number
+          created_at?: string
+          fusion_count?: number
+          id?: string
+          latitude?: number
+          longitude?: number
+          name?: string
+          node_type?: string
+          notes?: string | null
+          owner_id?: string
+          parent_id?: string | null
+          pon_port?: number | null
+          ports?: number
+          splitter_ratio?: number
+          tx_power_dbm?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ftth_nodes_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "ftth_nodes"
             referencedColumns: ["id"]
           },
         ]
