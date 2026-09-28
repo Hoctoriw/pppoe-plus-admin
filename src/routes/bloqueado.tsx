@@ -33,8 +33,8 @@ export const Route = createFileRoute("/bloqueado")({
 
 function BlockedPage() {
   const { empresa, telefone, whatsapp, motivo } = Route.useSearch();
-  const company = empresa?.trim() || "Seu provedor de internet";
-  const wa = (whatsapp ?? telefone ?? "").replace(/\D/g, "");
+  const company = empresa.trim() || "Seu provedor de internet";
+  const wa = (whatsapp || telefone).replace(/\D/g, "");
   const waLink = wa ? `https://wa.me/${wa.length > 11 ? wa : `55${wa}`}?text=${encodeURIComponent("Olá! Minha internet está bloqueada e gostaria de regularizar.")}` : null;
 
   return (
