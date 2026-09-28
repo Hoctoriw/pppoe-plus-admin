@@ -2,18 +2,21 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AlertTriangle, MessageCircle, Phone, RefreshCw, Receipt } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-type Search = { empresa?: string; telefone?: string; whatsapp?: string; motivo?: string };
+type Search = { empresa: string; telefone: string; whatsapp: string; motivo: string };
 
 const TITLE = "Acesso bloqueado";
 const DESC = "Sua conexão está temporariamente bloqueada. Veja como regularizar e voltar a navegar.";
 
+const str = (v: unknown) => (typeof v === "string" ? v : "");
+
 export const Route = createFileRoute("/bloqueado")({
   validateSearch: (s: Record<string, unknown>): Search => ({
-    empresa: typeof s.empresa === "string" ? s.empresa : undefined,
-    telefone: typeof s.telefone === "string" ? s.telefone : undefined,
-    whatsapp: typeof s.whatsapp === "string" ? s.whatsapp : undefined,
-    motivo: typeof s.motivo === "string" ? s.motivo : undefined,
+    empresa: str(s["empresa"]),
+    telefone: str(s["telefone"]),
+    whatsapp: str(s["whatsapp"]),
+    motivo: str(s["motivo"]),
   }),
+
   head: () => ({
     meta: [
       { title: `${TITLE} | Nexora ISP` },
