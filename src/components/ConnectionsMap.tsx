@@ -32,7 +32,7 @@ declare global {
 
 let mapsPromise: Promise<GoogleMaps> | null = null;
 
-function loadMaps() {
+export function loadMaps(): Promise<any> {
   if (window.google?.maps) return Promise.resolve(window.google.maps);
   if (mapsPromise) return mapsPromise;
   mapsPromise = new Promise((resolve, reject) => {
