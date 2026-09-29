@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Box, Cable, ChevronRight, CircleDollarSign, LayoutDashboard, LogOut, Menu, Move, Network, Package, Plus, Radio, Router as RouterIcon, Save, Server, ShieldCheck, Split, Trash2, UserPlus, Users, Wifi, X } from "lucide-react";
+import { AlertTriangle, Anchor, Box, Cable, ChevronRight, CircleDollarSign, LayoutDashboard, LogOut, Menu, Move, Network, Package, Plus, Radio, Router as RouterIcon, Save, Server, ShieldCheck, Split, Trash2, UserPlus, Users, Wifi, X } from "lucide-react";
 import { AdminOnly } from "@/components/AdminOnly";
 import { NetworkMap, type MapCustomer } from "@/components/NetworkMap";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { computeSignals, CONNECTOR_DB, customerSignal, distanceM, fmtDbm, FIBER_DB_PER_KM, FUSION_DB, MIN_SIGNAL_DBM, NODE_LABEL, nodeLoss, nodePassLoss, SPLITTER_LOSS, UNBALANCED_LOSS, UNBALANCED_TAPS, type FtthNode, type NodeType } from "@/lib/ftth";
+import { computeSignals, CONNECTOR_DB, customerSignal, distanceM, fmtDbm, FIBER_DB_PER_KM, FUSION_DB, MIN_SIGNAL_DBM, NODE_LABEL, nodeLoss, nodePassLoss, SPLITTER_LOSS, UNBALANCED_LOSS, UNBALANCED_TAPS, type CableAnchor, type FtthNode, type NodeType } from "@/lib/ftth";
 
 export const Route = createFileRoute("/_authenticated/rede")({
   head: () => ({ meta: [
@@ -38,8 +38,9 @@ function NetworkPage() {
   const [nodes, setNodes] = useState<FtthNode[]>([]);
   const [customers, setCustomers] = useState<Cust[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [placing, setPlacing] = useState<NodeType | "move" | null>(null);
+  const [placing, setPlacing] = useState<NodeType | "move" | "anchor" | null>(null);
   const [draft, setDraft] = useState<FtthNode | null>(null);
+  const [selectedAnchor, setSelectedAnchor] = useState<number | null>(null);
   const [message, setMessage] = useState("");
   const [mobileNav, setMobileNav] = useState(false);
 
@@ -50,7 +51,7 @@ function NetworkPage() {
       db.from("user_roles").select("owner_id").eq("user_id", user.id).not("owner_id", "is", null).maybeSingle(),
     ]);
     if (n.error) setMessage(n.error.message);
-    setNodes((n.data ?? []).map((x: any) => ({ ...x, tx_power_dbm: Number(x.tx_power_dbm), cable_length_m: x.cable_length_m === null ? null : Number(x.cable_length_m) })));
+    setNodes((n.data ?? []).map((x: any) => ({ ...x, tx_power_dbm: Number(x.tx_power_dbm), cable_length_m: x.cable_length_m === null ? null : Number(x.cable_length_m), cable_anchors: Array.isArray(x.cable_anchors) ? x.cable_anchors : [] })));
     setCustomers(c.data ?? []);
     if (r.data?.owner_id) setOwner(r.data.owner_id);
   }
@@ -58,6 +59,7 @@ function NetworkPage() {
 
   const selected = nodes.find((n) => n.id === selectedId) ?? null;
   useEffect(() => { setDraft(selected ? { ...selected } : null); }, [selectedId, nodes]);
+  useEffect(() => { setSelectedAnchor(null); }, [selectedId]);
 
   const signals = useMemo(() => computeSignals(nodes), [nodes]);
   const byId = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
@@ -74,6 +76,13 @@ function NetworkPage() {
 
   async function handleMapClick(lat: number, lng: number) {
     if (!placing) return;
+    if (placing === "anchor") {
+      if (!selected || !selected.parent_id) return;
+      const anchors = [...(selected.cable_anchors ?? []), { latitude: lat, longitude: lng }];
+      await updateAnchors(selected.id, anchors, "Ponto de ancoragem adicionado.");
+      setSelectedAnchor(anchors.length - 1);
+      return;
+    }
     if (placing === "move") {
       if (!selected) return;
       const { error } = await db.from("ftth_nodes").update({ latitude: lat, longitude: lng }).eq("id", selected.id);
@@ -85,7 +94,7 @@ function NetworkPage() {
     const type = placing;
     const count = nodes.filter((n) => n.node_type === type).length + 1;
     const parent = type !== "olt" && selected ? selected.id : null;
-    const row = { ...DEFAULTS[type], owner_id: owner, node_type: type, name: `${type.toUpperCase()}-${String(count).padStart(2, "0")}`, latitude: lat, longitude: lng, parent_id: parent, cable_fibers: type === "olt" ? null : 12 };
+    const row = { ...DEFAULTS[type], owner_id: owner, node_type: type, name: `${type.toUpperCase()}-${String(count).padStart(2, "0")}`, latitude: lat, longitude: lng, parent_id: parent, cable_fibers: type === "olt" ? null : 12, cable_anchors: [] };
     const { data, error } = await db.from("ftth_nodes").insert(row).select().single();
     setPlacing(null);
     if (error) return setMessage(error.message);
@@ -118,6 +127,21 @@ function NetworkPage() {
     await load();
   }
 
+  async function updateAnchors(nodeId: string, anchors: CableAnchor[], success?: string) {
+    const { error } = await db.from("ftth_nodes").update({ cable_anchors: anchors }).eq("id", nodeId);
+    if (error) return setMessage(error.message);
+    setNodes((cur) => cur.map((node) => node.id === nodeId ? { ...node, cable_anchors: anchors } : node));
+    setDraft((cur) => cur?.id === nodeId ? { ...cur, cable_anchors: anchors } : cur);
+    if (success) setMessage(success);
+  }
+
+  async function removeSelectedAnchor() {
+    if (!selected || selectedAnchor === null) return;
+    const anchors = (selected.cable_anchors ?? []).filter((_, index) => index !== selectedAnchor);
+    await updateAnchors(selected.id, anchors, "Ponto de ancoragem removido.");
+    setSelectedAnchor(null);
+  }
+
   const set = <K extends keyof FtthNode>(k: K, v: FtthNode[K]) => setDraft((d) => d ? { ...d, [k]: v } : d);
   const num = (v: string) => (v === "" ? 0 : Number(v));
   const weakCount = customers.filter((c) => { const s = custSignal(c); return s !== null && s < MIN_SIGNAL_DBM; }).length;
@@ -142,12 +166,12 @@ function NetworkPage() {
             <Button variant={placing === "cto" ? "default" : "outline"} onClick={() => setPlacing(placing === "cto" ? null : "cto")}><Split />CTO</Button>
           </div>
         </div>
-        {placing && <p className="mt-4 border border-primary bg-primary/10 p-3 text-sm">{placing === "move" ? `Clique no mapa para a nova posição de ${selected?.name}.` : `Clique no mapa para posicionar a ${NODE_LABEL[placing]}.${placing !== "olt" && selected ? ` Ela será ligada por cabo a ${selected.name}.` : placing !== "olt" ? " Dica: selecione antes a caixa de origem para ligar o cabo automaticamente." : ""}`} <button className="ml-2 underline" onClick={() => setPlacing(null)}>Cancelar</button></p>}
+        {placing && <p className="mt-4 border border-primary bg-primary/10 p-3 text-sm">{placing === "move" ? `Clique no mapa para a nova posição de ${selected?.name}.` : placing === "anchor" ? "Clique no mapa para adicionar pontos ao trajeto do cabo. Você pode adicionar vários em sequência." : `Clique no mapa para posicionar a ${NODE_LABEL[placing]}.${placing !== "olt" && selected ? ` Ela será ligada por cabo a ${selected.name}.` : placing !== "olt" ? " Dica: selecione antes a caixa de origem para ligar o cabo automaticamente." : ""}`} <button className="ml-2 underline" onClick={() => setPlacing(null)}>Concluir</button></p>}
         {message && !placing && <p className="mt-4 border bg-card p-3 text-sm">{message}</p>}
 
         <section className="mt-6 grid overflow-hidden border bg-card lg:grid-cols-[1fr_400px]">
           <div className="relative min-h-[520px] lg:min-h-[720px]">
-            <NetworkMap nodes={nodes} customers={mapCustomers} selectedId={selectedId} placing={!!placing} onSelect={(id) => { setSelectedId(id); setPlacing(null); }} onMapClick={(a, b) => void handleMapClick(a, b)} />
+            <NetworkMap nodes={nodes} customers={mapCustomers} selectedId={selectedId} placing={!!placing} onSelect={(id) => { setSelectedId(id); setPlacing(null); }} onMapClick={(a, b) => void handleMapClick(a, b)} onAnchorSelect={setSelectedAnchor} onAnchorMove={(index, point) => { if (!selected) return; const anchors = [...(selected.cable_anchors ?? [])]; anchors[index] = point; void updateAnchors(selected.id, anchors, "Ponto de ancoragem ajustado."); }} />
             <div className="absolute bottom-4 left-4 flex flex-wrap gap-3 border bg-card/95 px-3 py-2 text-xs shadow backdrop-blur-sm">
               <span className="flex items-center gap-1"><span className="h-3 w-3 bg-ftth-olt" />OLT</span><span className="flex items-center gap-1"><span className="h-3 w-3 bg-ftth-ceo" />CEO</span><span className="flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-ftth-cto" />CTO</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-map-active" />Cliente</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-map-suspended" />Sinal fraco</span>
             </div>
@@ -188,6 +212,11 @@ function NetworkPage() {
                 {draft.node_type !== "olt" && <><Field label="Fibras do cabo"><Input type="number" min={1} value={draft.cable_fibers ?? ""} onChange={(e) => set("cable_fibers", e.target.value === "" ? null : Number(e.target.value))} /></Field><Field label="Metragem do cabo (m)"><Input type="number" min={0} placeholder={`Auto: ${Math.round(sig?.cableM ?? 0)}`} value={draft.cable_length_m ?? ""} onChange={(e) => set("cable_length_m", e.target.value === "" ? null : Number(e.target.value))} /></Field></>}
               </div>
               <Field label="Observações"><Input value={draft.notes ?? ""} onChange={(e) => set("notes", e.target.value || null)} /></Field>
+              {draft.node_type !== "olt" && draft.parent_id && <div className="space-y-3 border-t pt-4">
+                <div><p className="flex items-center gap-2 font-semibold"><Anchor className="h-4 w-4" />Trajeto do cabo</p><p className="text-xs text-muted-foreground">{draft.cable_anchors.length ? `${draft.cable_anchors.length} ponto(s) · ${Math.round(sig?.cableM ?? 0)} m pelo trajeto` : "Linha reta entre as caixas"}</p></div>
+                <div className="flex flex-wrap gap-2"><Button type="button" variant={placing === "anchor" ? "default" : "outline"} onClick={() => setPlacing(placing === "anchor" ? null : "anchor")}><Plus />Adicionar ancoragem</Button>{selectedAnchor !== null && <Button type="button" variant="outline" className="text-destructive" onClick={() => void removeSelectedAnchor()}><Trash2 />Excluir ponto {selectedAnchor + 1}</Button>}{draft.cable_anchors.length > 0 && <Button type="button" variant="ghost" onClick={() => { if (confirm("Remover todos os pontos deste cabo?")) { void updateAnchors(draft.id, [], "Trajeto limpo."); setSelectedAnchor(null); } }}>Limpar trajeto</Button>}</div>
+                {draft.cable_anchors.length > 0 && <p className="text-xs text-muted-foreground">Arraste os pontos numerados no mapa para ajustar o percurso. Toque em um ponto para selecioná-lo.</p>}
+              </div>}
               <div className="flex flex-wrap gap-2"><Button onClick={() => void save()}><Save />Salvar</Button><Button variant="outline" onClick={() => setPlacing("move")}><Move />Mover</Button>{draft.node_type !== "cto" && <><Button variant="outline" onClick={() => setPlacing("ceo")}><Plus />CEO aqui</Button><Button variant="outline" onClick={() => setPlacing("cto")}><Plus />CTO aqui</Button></>}<Button variant="ghost" className="text-destructive" onClick={() => void remove()}><Trash2 />Excluir</Button></div>
 
               {draft.node_type === "cto" && selected && <div className="border-t pt-4">
