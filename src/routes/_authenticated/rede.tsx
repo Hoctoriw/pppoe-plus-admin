@@ -113,7 +113,8 @@ function NetworkPage() {
   async function save() {
     if (!draft) return;
     const { id, owner_id: _o, ...rest } = draft;
-    const { error } = await db.from("ftth_nodes").update({ ...rest, parent_id: draft.node_type === "olt" ? null : draft.parent_id }).eq("id", id);
+    const parent = draft.parent_id ? byId.get(draft.parent_id) : undefined;
+    const { error } = await db.from("ftth_nodes").update({ ...rest, parent_id: draft.node_type === "olt" ? null : draft.parent_id, parent_leg: preferredParentLeg(parent) }).eq("id", id);
     if (error) return setMessage(error.message);
     await load(); setMessage("Alterações salvas.");
   }

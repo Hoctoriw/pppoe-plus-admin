@@ -112,7 +112,8 @@ export function computeSignals(nodes: FtthNode[]) {
       let parentOut: number | null = null;
       if (parent && depth < 50) {
         const ps = calc(parent, depth + 1);
-        parentOut = node.parent_leg === "pass" && ps.passOutput !== null ? ps.passOutput : ps.output;
+        const leg = preferredParentLeg(parent);
+        parentOut = leg === "pass" && ps.passOutput !== null ? ps.passOutput : ps.output;
       }
       const input = parentOut === null ? null : parentOut - (cableM / 1000) * FIBER_DB_PER_KM;
       const pass = nodePassLoss(node);
