@@ -9,6 +9,7 @@ const TABLES = [
   ["routers", "Roteadores", "id,name,base_url,username,dhcp_server,connection_mode,active,radius_enabled,radius_host,radius_auth_port,radius_acct_port,created_at"],
   ["bank_accounts", "Bancos", "id,name,bank_code,agency,agency_digit,account_number,account_digit,wallet,convenio,provider,environment,active,created_at"],
   ["invoices", "Cobranças", "*"],
+  ["ftth_nodes", "Rede FTTH", "*"],
 ] as const;
 
 async function ownerOf(supabase: any, userId: string) {
@@ -56,7 +57,7 @@ export const downloadBackup = createServerFn({ method: "POST" })
   });
 
 // Ordem importa: planos/roteadores/bancos antes de clientes; clientes antes de equipamentos e cobranças.
-const RESTORE_ORDER = ["plans", "routers", "bank_accounts", "customers", "customer_equipment", "invoices"] as const;
+const RESTORE_ORDER = ["plans", "routers", "bank_accounts", "ftth_nodes", "customers", "customer_equipment", "invoices"] as const;
 
 const backupSchema = z.object({
   plans: z.array(z.record(z.string(), z.unknown())).optional(),
@@ -65,6 +66,7 @@ const backupSchema = z.object({
   routers: z.array(z.record(z.string(), z.unknown())).optional(),
   bank_accounts: z.array(z.record(z.string(), z.unknown())).optional(),
   invoices: z.array(z.record(z.string(), z.unknown())).optional(),
+  ftth_nodes: z.array(z.record(z.string(), z.unknown())).optional(),
 });
 
 // Campos que nunca podem vir do arquivo (segredos e identidade de dono).

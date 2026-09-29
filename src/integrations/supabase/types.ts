@@ -280,6 +280,7 @@ export type Database = {
       }
       ftth_nodes: {
         Row: {
+          cable_anchors: Json
           cable_fibers: number | null
           cable_length_m: number | null
           connector_count: number
@@ -303,6 +304,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cable_anchors?: Json
           cable_fibers?: number | null
           cable_length_m?: number | null
           connector_count?: number
@@ -326,6 +328,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cable_anchors?: Json
           cable_fibers?: number | null
           cable_length_m?: number | null
           connector_count?: number
