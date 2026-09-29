@@ -16,6 +16,7 @@ export type FtthNode = {
   ports: number;
   cable_fibers: number | null;
   cable_fiber_number: number;
+  parent_port: number | null;
   cable_length_m: number | null;
   notes: string | null;
   splitter_type: SplitterType;
@@ -29,7 +30,7 @@ export type SplitterType = "balanced" | "unbalanced";
 export type ParentLeg = "tap" | "pass";
 export type CableAnchor = { latitude: number; longitude: number };
 
-export const NODE_LABEL: Record<NodeType, string> = { olt: "OLT", ceo: "CEO (emenda)", cto: "CTO (atendimento)" };
+export const NODE_LABEL: Record<NodeType, string> = { olt: "OLT", ceo: "CEO / Caixa de primeiro nível", cto: "CTO (atendimento)" };
 export const SPLITTER_LOSS: Record<number, number> = { 1: 0, 2: 3.7, 4: 7.3, 8: 10.5, 16: 13.7, 32: 17.1, 64: 20.5 };
 // Perdas típicas de splitter desbalanceado 1:2 — [derivada (tap), passagem]
 export const UNBALANCED_LOSS: Record<number, [number, number]> = {
