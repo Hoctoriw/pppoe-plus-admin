@@ -51,7 +51,13 @@ export function cableLength(node: FtthNode, parent: FtthNode | undefined) {
   if (node.cable_length_m !== null && node.cable_length_m !== undefined) return Number(node.cable_length_m);
   if (!parent) return 0;
   const path = [parent, ...(node.cable_anchors ?? []), node];
-  return path.slice(1).reduce((total, point, index) => total + distanceM(path[index], point), 0);
+  let total = 0;
+  for (let index = 1; index < path.length; index += 1) {
+    const previous = path[index - 1];
+    const point = path[index];
+    if (previous && point) total += distanceM(previous, point);
+  }
+  return total;
 }
 
 export function unbalancedLoss(node: FtthNode): [number, number] {
