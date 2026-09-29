@@ -20,6 +20,7 @@ export type FtthNode = {
   notes: string | null;
   splitter_type: SplitterType;
   splitter_tap: number;
+  distribution_ratio: number;
   parent_leg: ParentLeg;
   cable_anchors: CableAnchor[];
 };
@@ -88,7 +89,13 @@ export function nodePassLoss(node: FtthNode) {
   return pass === null ? null : pass + fixedLoss(node);
 }
 
-export type Signal = { input: number | null; output: number | null; passOutput: number | null; cableM: number };
+/** Splitter de distribuição ligado na saída derivada (menor %) da caixa desbalanceada. */
+export function distributionLoss(node: FtthNode) {
+  if (node.splitter_type !== "unbalanced") return 0;
+  return SPLITTER_LOSS[node.distribution_ratio ?? 1] ?? 0;
+}
+
+export type Signal = { input: number | null; output: number | null; passOutput: number | null; clientOutput: number | null; cableM: number };
 
 /** A continuidade usa a saída que entrega a maior porcentagem do splitter. */
 export function preferredParentLeg(parent: FtthNode | undefined): ParentLeg {
