@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { MapPin } from "lucide-react";
 import { loadMaps } from "@/components/ConnectionsMap";
-import type { FtthNode } from "@/lib/ftth";
+import type { CableAnchor, FtthNode } from "@/lib/ftth";
 
 export type MapCustomer = { id: string; name: string; latitude: number; longitude: number; cto_id: string | null; weak: boolean };
 
@@ -12,17 +12,19 @@ type Props = {
   placing: boolean;
   onSelect: (id: string) => void;
   onMapClick: (lat: number, lng: number) => void;
+  onAnchorSelect: (index: number) => void;
+  onAnchorMove: (index: number, point: CableAnchor) => void;
 };
 
-export function NetworkMap({ nodes, customers, selectedId, placing, onSelect, onMapClick }: Props) {
+export function NetworkMap({ nodes, customers, selectedId, placing, onSelect, onMapClick, onAnchorSelect, onAnchorMove }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const shapesRef = useRef<any[]>([]);
-  const cb = useRef({ onSelect, onMapClick });
+  const cb = useRef({ onSelect, onMapClick, onAnchorSelect, onAnchorMove });
   const fitted = useRef(false);
   const [error, setError] = useState("");
   const [ready, setReady] = useState(false);
-  cb.current = { onSelect, onMapClick };
+  cb.current = { onSelect, onMapClick, onAnchorSelect, onAnchorMove };
 
   useEffect(() => {
     let cancelled = false;
@@ -59,12 +61,26 @@ export function NetworkMap({ nodes, customers, selectedId, placing, onSelect, on
     for (const n of nodes) {
       const parent = n.parent_id ? byId.get(n.parent_id) : undefined;
       if (!parent) continue;
+      const anchors = n.cable_anchors ?? [];
       const line = new maps.Polyline({
-        map, path: [{ lat: parent.latitude, lng: parent.longitude }, { lat: n.latitude, lng: n.longitude }],
+        map, path: [{ lat: parent.latitude, lng: parent.longitude }, ...anchors.map((a) => ({ lat: a.latitude, lng: a.longitude })), { lat: n.latitude, lng: n.longitude }],
         strokeColor: color(`--ftth-${parent.node_type}`), strokeOpacity: 0.9, strokeWeight: n.id === selectedId ? 6 : 4,
       });
       line.addListener("click", () => cb.current.onSelect(n.id));
       shapesRef.current.push(line);
+      if (n.id === selectedId) anchors.forEach((anchor, index) => {
+        const marker = new maps.Marker({
+          map, position: { lat: anchor.latitude, lng: anchor.longitude }, draggable: true,
+          title: `Ancoragem ${index + 1}`, zIndex: 30,
+          label: { text: String(index + 1), color: color("--primary-foreground"), fontSize: "10px", fontWeight: "700" },
+          icon: { path: maps.SymbolPath.CIRCLE, fillColor: color("--primary"), fillOpacity: 1, strokeColor: color("--card"), strokeWeight: 2, scale: 8 },
+        });
+        marker.addListener("click", () => cb.current.onAnchorSelect(index));
+        marker.addListener("dragend", (event: any) => {
+          if (event.latLng) cb.current.onAnchorMove(index, { latitude: event.latLng.lat(), longitude: event.latLng.lng() });
+        });
+        shapesRef.current.push(marker);
+      });
     }
     for (const c of customers) {
       const cto = c.cto_id ? byId.get(c.cto_id) : undefined;

@@ -20,10 +20,12 @@ export type FtthNode = {
   splitter_type: SplitterType;
   splitter_tap: number;
   parent_leg: ParentLeg;
+  cable_anchors: CableAnchor[];
 };
 
 export type SplitterType = "balanced" | "unbalanced";
 export type ParentLeg = "tap" | "pass";
+export type CableAnchor = { latitude: number; longitude: number };
 
 export const NODE_LABEL: Record<NodeType, string> = { olt: "OLT", ceo: "CEO (emenda)", cto: "CTO (atendimento)" };
 export const SPLITTER_LOSS: Record<number, number> = { 1: 0, 2: 3.7, 4: 7.3, 8: 10.5, 16: 13.7, 32: 17.1, 64: 20.5 };
@@ -47,7 +49,9 @@ export function distanceM(a: { latitude: number; longitude: number }, b: { latit
 
 export function cableLength(node: FtthNode, parent: FtthNode | undefined) {
   if (node.cable_length_m !== null && node.cable_length_m !== undefined) return Number(node.cable_length_m);
-  return parent ? distanceM(parent, node) : 0;
+  if (!parent) return 0;
+  const path = [parent, ...(node.cable_anchors ?? []), node];
+  return path.slice(1).reduce((total, point, index) => total + distanceM(path[index], point), 0);
 }
 
 export function unbalancedLoss(node: FtthNode): [number, number] {
