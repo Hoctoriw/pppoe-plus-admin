@@ -122,3 +122,55 @@ export const saveCustomerCoordinates = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+export type PlaceResult = {
+  description: string;
+  latitude: number;
+  longitude: number;
+  viewport?: { northeast: { lat: number; lng: number }; southwest: { lat: number; lng: number } };
+};
+
+export const geocodePlaceQuery = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((value) => z.object({ query: z.string().trim().min(3).max(200) }).parse(value))
+  .handler(async ({ data }) => {
+    const lovableKey = process.env["LOVABLE_API_KEY"];
+    const mapsKey = process.env["GOOGLE_MAPS_API_KEY"];
+    if (!lovableKey || !mapsKey) throw new Error("Google Maps não está configurado.");
+    const url = new URL("https://connector-gateway.lovable.dev/google_maps/maps/api/geocode/json");
+    url.searchParams.set("address", data.query);
+    url.searchParams.set("language", "pt-BR");
+    url.searchParams.set("region", "br");
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${lovableKey}`,
+        "X-Connection-Api-Key": mapsKey,
+      },
+    });
+    if (response.status === 403) {
+      const body = await response.json().catch(() => ({})) as { error?: { details?: Array<{ reason?: string }> } };
+      const reason = body.error?.details?.find((detail) => detail.reason)?.reason;
+      if (reason === "API_KEY_HTTP_REFERRER_BLOCKED") throw new Error("A chave de servidor do Google Maps não permite consultas pelo painel.");
+      if (reason === "API_KEY_SERVICE_BLOCKED") throw new Error("Ative a API de Geocodificação na conexão do Google Maps.");
+      throw new Error("O Google Maps recusou a consulta.");
+    }
+    if (!response.ok) throw new Error(`Falha na busca [${response.status}]: ${await response.text()}`);
+    const result = await response.json() as {
+      status?: string;
+      error_message?: string;
+      results?: Array<{
+        formatted_address: string;
+        geometry: {
+          location: { lat: number; lng: number };
+          viewport?: { northeast: { lat: number; lng: number }; southwest: { lat: number; lng: number } };
+        };
+      }>;
+    };
+    if (result.status === "ZERO_RESULTS" || !result.results?.length) return [] as PlaceResult[];
+    return result.results.slice(0, 5).map((r): PlaceResult => ({
+      description: r.formatted_address,
+      latitude: r.geometry.location.lat,
+      longitude: r.geometry.location.lng,
+      viewport: r.geometry.viewport,
+    }));
+  });
