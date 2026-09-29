@@ -171,6 +171,6 @@ export const geocodePlaceQuery = createServerFn({ method: "POST" })
       description: r.formatted_address,
       latitude: r.geometry.location.lat,
       longitude: r.geometry.location.lng,
-      viewport: r.geometry.viewport,
+      ...(r.geometry.viewport ? { viewport: r.geometry.viewport } : {}),
     }));
   });
