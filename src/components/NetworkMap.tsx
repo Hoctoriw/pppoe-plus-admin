@@ -14,17 +14,18 @@ type Props = {
   onMapClick: (lat: number, lng: number) => void;
   onAnchorSelect: (index: number) => void;
   onAnchorMove: (index: number, point: CableAnchor) => void;
+  onCustomerMove: (id: string, latitude: number, longitude: number) => void;
 };
 
-export function NetworkMap({ nodes, customers, selectedId, placing, onSelect, onMapClick, onAnchorSelect, onAnchorMove }: Props) {
+export function NetworkMap({ nodes, customers, selectedId, placing, onSelect, onMapClick, onAnchorSelect, onAnchorMove, onCustomerMove }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const shapesRef = useRef<any[]>([]);
-  const cb = useRef({ onSelect, onMapClick, onAnchorSelect, onAnchorMove });
+  const cb = useRef({ onSelect, onMapClick, onAnchorSelect, onAnchorMove, onCustomerMove });
   const fitted = useRef(false);
   const [error, setError] = useState("");
   const [ready, setReady] = useState(false);
-  cb.current = { onSelect, onMapClick, onAnchorSelect, onAnchorMove };
+  cb.current = { onSelect, onMapClick, onAnchorSelect, onAnchorMove, onCustomerMove };
 
   useEffect(() => {
     let cancelled = false;
@@ -99,10 +100,14 @@ export function NetworkMap({ nodes, customers, selectedId, placing, onSelect, on
           strokeOpacity: 0, icons: [{ icon: { path: "M 0,-1 0,1", strokeOpacity: 0.8, strokeColor: color("--muted-foreground"), scale: 2 }, offset: "0", repeat: "8px" }],
         }));
       }
-      shapesRef.current.push(new maps.Marker({
-        map, position: { lat: c.latitude, lng: c.longitude }, title: c.name, zIndex: 1,
+      const marker = new maps.Marker({
+        map, position: { lat: c.latitude, lng: c.longitude }, title: `${c.name} — arraste para corrigir a posição`, zIndex: 1, draggable: true,
         icon: { path: maps.SymbolPath.CIRCLE, fillColor: color(c.weak ? "--map-suspended" : "--map-active"), fillOpacity: 1, strokeColor: color("--card"), strokeWeight: 1, scale: 5 },
-      }));
+      });
+      marker.addListener("dragend", (event: any) => {
+        if (event.latLng) cb.current.onCustomerMove(c.id, event.latLng.lat(), event.latLng.lng());
+      });
+      shapesRef.current.push(marker);
       bounds.extend({ lat: c.latitude, lng: c.longitude });
     }
     for (const n of nodes) {

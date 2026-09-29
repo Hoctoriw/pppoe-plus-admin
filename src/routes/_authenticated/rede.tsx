@@ -143,6 +143,15 @@ function NetworkPage() {
     if (success) setMessage(success);
   }
 
+  async function moveCustomer(customerId: string, latitude: number, longitude: number) {
+    const customer = customers.find((c) => c.id === customerId);
+    if (!customer) return;
+    const { error } = await db.from("customers").update({ latitude, longitude }).eq("id", customerId);
+    if (error) return setMessage(error.message);
+    setCustomers((cur) => cur.map((c) => c.id === customerId ? { ...c, latitude, longitude } : c));
+    setMessage(`Residência de ${customer.full_name} ajustada no mapa.`);
+  }
+
   async function removeSelectedAnchor() {
     if (!selected || selectedAnchor === null) return;
     const anchors = (selected.cable_anchors ?? []).filter((_, index) => index !== selectedAnchor);
@@ -179,7 +188,7 @@ function NetworkPage() {
 
         <section className="mt-6 grid overflow-hidden border bg-card lg:grid-cols-[1fr_400px]">
           <div className="relative min-h-[520px] lg:min-h-[720px]">
-            <NetworkMap nodes={nodes} customers={mapCustomers} selectedId={selectedId} placing={!!placing} onSelect={(id) => { setSelectedId(id); setPlacing(null); }} onMapClick={(a, b) => void handleMapClick(a, b)} onAnchorSelect={setSelectedAnchor} onAnchorMove={(index, point) => { if (!selected) return; const anchors = [...(selected.cable_anchors ?? [])]; anchors[index] = point; void updateAnchors(selected.id, anchors, "Ponto de ancoragem ajustado."); }} />
+            <NetworkMap nodes={nodes} customers={mapCustomers} selectedId={selectedId} placing={!!placing} onSelect={(id) => { setSelectedId(id); setPlacing(null); }} onMapClick={(a, b) => void handleMapClick(a, b)} onAnchorSelect={setSelectedAnchor} onAnchorMove={(index, point) => { if (!selected) return; const anchors = [...(selected.cable_anchors ?? [])]; anchors[index] = point; void updateAnchors(selected.id, anchors, "Ponto de ancoragem ajustado."); }} onCustomerMove={(id, lat, lng) => void moveCustomer(id, lat, lng)} />
             <div className="absolute bottom-4 left-4 flex flex-wrap gap-3 border bg-card/95 px-3 py-2 text-xs shadow backdrop-blur-sm">
               <span className="flex items-center gap-1"><span className="h-3 w-3 bg-ftth-olt" />OLT</span><span className="flex items-center gap-1"><span className="h-3 w-3 bg-ftth-ceo" />CEO</span><span className="flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-ftth-cto" />CTO</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-map-active" />Cliente</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-map-suspended" />Sinal fraco</span>
             </div>
