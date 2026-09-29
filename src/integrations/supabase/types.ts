@@ -297,6 +297,7 @@ export type Database = {
           owner_id: string
           parent_id: string | null
           parent_leg: string
+          parent_port: number | null
           pon_port: number | null
           ports: number
           splitter_ratio: number
@@ -323,6 +324,7 @@ export type Database = {
           owner_id?: string
           parent_id?: string | null
           parent_leg?: string
+          parent_port?: number | null
           pon_port?: number | null
           ports?: number
           splitter_ratio?: number
@@ -349,6 +351,7 @@ export type Database = {
           owner_id?: string
           parent_id?: string | null
           parent_leg?: string
+          parent_port?: number | null
           pon_port?: number | null
           ports?: number
           splitter_ratio?: number
