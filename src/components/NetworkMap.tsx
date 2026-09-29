@@ -14,13 +14,14 @@ type Props = {
   onMapClick: (lat: number, lng: number) => void;
   onAnchorSelect: (index: number) => void;
   onAnchorMove: (index: number, point: CableAnchor) => void;
+  onCustomerMove: (id: string, latitude: number, longitude: number) => void;
 };
 
-export function NetworkMap({ nodes, customers, selectedId, placing, onSelect, onMapClick, onAnchorSelect, onAnchorMove }: Props) {
+export function NetworkMap({ nodes, customers, selectedId, placing, onSelect, onMapClick, onAnchorSelect, onAnchorMove, onCustomerMove }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const shapesRef = useRef<any[]>([]);
-  const cb = useRef({ onSelect, onMapClick, onAnchorSelect, onAnchorMove });
+  const cb = useRef({ onSelect, onMapClick, onAnchorSelect, onAnchorMove, onCustomerMove });
   const fitted = useRef(false);
   const [error, setError] = useState("");
   const [ready, setReady] = useState(false);
