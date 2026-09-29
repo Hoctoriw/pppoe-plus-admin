@@ -15,6 +15,7 @@ export type FtthNode = {
   connector_count: number;
   ports: number;
   cable_fibers: number | null;
+  cable_fiber_number: number;
   cable_length_m: number | null;
   notes: string | null;
   splitter_type: SplitterType;
@@ -88,6 +89,11 @@ export function nodePassLoss(node: FtthNode) {
 }
 
 export type Signal = { input: number | null; output: number | null; passOutput: number | null; cableM: number };
+
+/** A continuidade usa a saída que entrega a maior porcentagem do splitter. */
+export function preferredParentLeg(parent: FtthNode | undefined): ParentLeg {
+  return parent?.splitter_type === "unbalanced" ? "pass" : "tap";
+}
 
 export function computeSignals(nodes: FtthNode[]) {
   const byId = new Map(nodes.map((n) => [n.id, n]));

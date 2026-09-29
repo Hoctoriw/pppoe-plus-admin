@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { computeSignals, CONNECTOR_DB, customerSignal, distanceM, fmtDbm, FIBER_DB_PER_KM, FUSION_DB, MIN_SIGNAL_DBM, NODE_LABEL, nodeLoss, nodePassLoss, SPLITTER_LOSS, UNBALANCED_LOSS, UNBALANCED_TAPS, type CableAnchor, type FtthNode, type NodeType } from "@/lib/ftth";
+import { computeSignals, CONNECTOR_DB, customerSignal, distanceM, fmtDbm, FIBER_DB_PER_KM, FUSION_DB, MIN_SIGNAL_DBM, NODE_LABEL, nodeLoss, preferredParentLeg, SPLITTER_LOSS, UNBALANCED_LOSS, UNBALANCED_TAPS, type CableAnchor, type FtthNode, type NodeType } from "@/lib/ftth";
 
 export const Route = createFileRoute("/_authenticated/rede")({
   head: () => ({ meta: [
@@ -74,6 +74,13 @@ function NetworkPage() {
     return { id: c.id, name: c.full_name, latitude: c.latitude!, longitude: c.longitude!, cto_id: c.cto_id, weak: s !== null && s < MIN_SIGNAL_DBM };
   });
 
+  function nextFiberForParent(parentId: string | null, total = 12) {
+    if (!parentId) return 1;
+    const used = new Set(nodes.filter((node) => node.parent_id === parentId).map((node) => node.cable_fiber_number ?? 1));
+    for (let fiber = 1; fiber <= total; fiber += 1) if (!used.has(fiber)) return fiber;
+    return 1;
+  }
+
   async function handleMapClick(lat: number, lng: number) {
     if (!placing) return;
     if (placing === "anchor") {
@@ -94,7 +101,7 @@ function NetworkPage() {
     const type = placing;
     const count = nodes.filter((n) => n.node_type === type).length + 1;
     const parent = type !== "olt" && selected ? selected.id : null;
-    const row = { ...DEFAULTS[type], owner_id: owner, node_type: type, name: `${type.toUpperCase()}-${String(count).padStart(2, "0")}`, latitude: lat, longitude: lng, parent_id: parent, cable_fibers: type === "olt" ? null : 12, cable_anchors: [] };
+    const row = { ...DEFAULTS[type], owner_id: owner, node_type: type, name: `${type.toUpperCase()}-${String(count).padStart(2, "0")}`, latitude: lat, longitude: lng, parent_id: parent, parent_leg: preferredParentLeg(selected ?? undefined), cable_fibers: type === "olt" ? null : 12, cable_fiber_number: type === "olt" ? 1 : nextFiberForParent(parent), cable_anchors: [] };
     const { data, error } = await db.from("ftth_nodes").insert(row).select().single();
     setPlacing(null);
     if (error) return setMessage(error.message);
@@ -182,7 +189,7 @@ function NetworkPage() {
               <p className="p-4 text-sm text-muted-foreground">Escolha OLT, CEO ou CTO e clique no mapa para criar. Clique num elemento para editar.</p>
               {nodes.map((n) => { const s = signals.get(n.id); return <button key={n.id} onClick={() => setSelectedId(n.id)} className="flex w-full items-center gap-3 p-4 text-left hover:bg-muted">
                 <span className={`h-3 w-3 shrink-0 ${n.node_type === "cto" ? "rounded-full" : ""} bg-ftth-${n.node_type}`} />
-                <div className="min-w-0 flex-1"><p className="truncate font-semibold">{n.name}</p><p className="text-xs text-muted-foreground">{NODE_LABEL[n.node_type]}{n.splitter_type === "unbalanced" ? ` · ${n.splitter_tap}/${100 - n.splitter_tap}` : n.splitter_ratio > 1 ? ` · 1:${n.splitter_ratio}` : ""}{n.parent_id ? ` · de ${byId.get(n.parent_id)?.name ?? "?"}` : ""}</p></div>
+                <div className="min-w-0 flex-1"><p className="truncate font-semibold">{n.name}</p><p className="text-xs text-muted-foreground">{NODE_LABEL[n.node_type]}{n.splitter_type === "unbalanced" ? ` · ${n.splitter_tap}/${100 - n.splitter_tap}` : n.splitter_ratio > 1 ? ` · 1:${n.splitter_ratio}` : ""}{n.parent_id ? ` · fibra ${n.cable_fiber_number ?? 1} de ${byId.get(n.parent_id)?.name ?? "?"}` : ""}</p></div>
                 <span className={`font-mono text-xs ${s?.output !== null && s?.output !== undefined && s.output < MIN_SIGNAL_DBM ? "text-destructive" : ""}`}>{fmtDbm(s?.output ?? null)}</span>
               </button>; })}
               <div className="p-4 text-xs text-muted-foreground">Perdas usadas: fibra {FIBER_DB_PER_KM} dB/km · fusão {FUSION_DB} dB · conector {CONNECTOR_DB} dB · splitter 1:2 {SPLITTER_LOSS[2]} / 1:4 {SPLITTER_LOSS[4]} / 1:8 {SPLITTER_LOSS[8]} / 1:16 {SPLITTER_LOSS[16]} / 1:32 {SPLITTER_LOSS[32]} dB. Limite de sinal: {MIN_SIGNAL_DBM} dBm. Em caixas desbalanceadas a perda depende da derivação escolhida (ex.: 10/90 = 10,7 dB na derivada e 0,7 dB na passagem).</div>
@@ -197,8 +204,8 @@ function NetworkPage() {
               </div>
               {draft.node_type !== "olt" && sig?.input === null && <p className="flex gap-2 text-xs text-destructive"><AlertTriangle className="h-4 w-4 shrink-0" />Ligue esta caixa a uma OLT ou CEO para calcular o sinal.</p>}
               <Field label="Nome"><Input value={draft.name} onChange={(e) => set("name", e.target.value)} /></Field>
-              {draft.node_type !== "olt" && <Field label="Vem de (origem do cabo)"><Select value={draft.parent_id ?? "none"} onValueChange={(v) => set("parent_id", v === "none" ? null : v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Sem origem</SelectItem>{parentOptions.map((p) => <SelectItem key={p.id} value={p.id}>{p.name} ({p.node_type.toUpperCase()})</SelectItem>)}</SelectContent></Select></Field>}
-              {draft.node_type !== "olt" && draft.parent_id && byId.get(draft.parent_id)?.splitter_type === "unbalanced" && <Field label="Saída usada na caixa de origem"><Select value={draft.parent_leg} onValueChange={(v) => set("parent_leg", v as FtthNode["parent_leg"])}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="tap">Derivada (tap)</SelectItem><SelectItem value="pass">Passagem (segue a rota)</SelectItem></SelectContent></Select></Field>}
+              {draft.node_type !== "olt" && <Field label="Vem de (origem do cabo)"><Select value={draft.parent_id ?? "none"} onValueChange={(v) => { const parentId = v === "none" ? null : v; const parent = parentId ? byId.get(parentId) : undefined; setDraft((current) => current ? { ...current, parent_id: parentId, parent_leg: preferredParentLeg(parent), cable_fiber_number: nextFiberForParent(parentId, current.cable_fibers ?? 12) } : current); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Sem origem</SelectItem>{parentOptions.map((p) => <SelectItem key={p.id} value={p.id}>{p.name} ({p.node_type.toUpperCase()})</SelectItem>)}</SelectContent></Select></Field>}
+              {draft.node_type !== "olt" && draft.parent_id && byId.get(draft.parent_id)?.splitter_type === "unbalanced" && <div className="border bg-muted/40 p-3 text-sm"><p className="font-medium">Continuidade pela saída de maior porcentagem</p><p className="mt-1 text-xs text-muted-foreground">A próxima caixa usa automaticamente a passagem de {100 - (byId.get(draft.parent_id)?.splitter_tap ?? 10)}%.</p></div>}
               <div className="grid grid-cols-2 gap-3">
                 {draft.node_type === "olt" ? <><Field label="Potência de saída (dBm)"><Input type="number" step="0.1" value={draft.tx_power_dbm} onChange={(e) => set("tx_power_dbm", num(e.target.value))} /></Field><Field label="Portas PON"><Input type="number" min={0} value={draft.ports} onChange={(e) => set("ports", num(e.target.value))} /></Field></>
                   : <Field label="Porta PON da OLT"><Input type="number" min={1} value={draft.pon_port ?? ""} onChange={(e) => set("pon_port", e.target.value === "" ? null : Number(e.target.value))} /></Field>}
@@ -209,7 +216,7 @@ function NetworkPage() {
                 <Field label="Fusões"><Input type="number" min={0} value={draft.fusion_count} onChange={(e) => set("fusion_count", num(e.target.value))} /></Field>
                 <Field label="Conectores"><Input type="number" min={0} value={draft.connector_count} onChange={(e) => set("connector_count", num(e.target.value))} /></Field>
                 {draft.node_type === "cto" && <Field label="Portas de atendimento"><Input type="number" min={0} max={64} value={draft.ports} onChange={(e) => set("ports", Math.min(64, num(e.target.value)))} /></Field>}
-                {draft.node_type !== "olt" && <><Field label="Fibras do cabo"><Input type="number" min={1} value={draft.cable_fibers ?? ""} onChange={(e) => set("cable_fibers", e.target.value === "" ? null : Number(e.target.value))} /></Field><Field label="Metragem do cabo (m)"><Input type="number" min={0} placeholder={`Auto: ${Math.round(sig?.cableM ?? 0)}`} value={draft.cable_length_m ?? ""} onChange={(e) => set("cable_length_m", e.target.value === "" ? null : Number(e.target.value))} /></Field></>}
+                {draft.node_type !== "olt" && <><Field label="Quantidade de fibras no cabo"><Input type="number" min={1} value={draft.cable_fibers ?? ""} onChange={(e) => { const total = e.target.value === "" ? null : Number(e.target.value); setDraft((current) => current ? { ...current, cable_fibers: total, cable_fiber_number: Math.min(current.cable_fiber_number ?? 1, total ?? 1) } : current); }} /></Field><Field label="Fibra usada nesta caixa"><Select value={String(draft.cable_fiber_number ?? 1)} onValueChange={(v) => set("cable_fiber_number", Number(v))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{Array.from({ length: Math.max(1, draft.cable_fibers ?? 1) }, (_, index) => index + 1).map((fiber) => <SelectItem key={fiber} value={String(fiber)}>Fibra {fiber}</SelectItem>)}</SelectContent></Select></Field><Field label="Metragem do cabo (m)"><Input type="number" min={0} placeholder={`Auto: ${Math.round(sig?.cableM ?? 0)}`} value={draft.cable_length_m ?? ""} onChange={(e) => set("cable_length_m", e.target.value === "" ? null : Number(e.target.value))} /></Field></>}
               </div>
               <Field label="Observações"><Input value={draft.notes ?? ""} onChange={(e) => set("notes", e.target.value || null)} /></Field>
               {draft.node_type !== "olt" && draft.parent_id && <div className="space-y-3 border-t pt-4">
