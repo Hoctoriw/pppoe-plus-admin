@@ -293,9 +293,12 @@ export type Database = {
           notes: string | null
           owner_id: string
           parent_id: string | null
+          parent_leg: string
           pon_port: number | null
           ports: number
           splitter_ratio: number
+          splitter_tap: number
+          splitter_type: string
           tx_power_dbm: number
           updated_at: string
         }
@@ -313,9 +316,12 @@ export type Database = {
           notes?: string | null
           owner_id?: string
           parent_id?: string | null
+          parent_leg?: string
           pon_port?: number | null
           ports?: number
           splitter_ratio?: number
+          splitter_tap?: number
+          splitter_type?: string
           tx_power_dbm?: number
           updated_at?: string
         }
@@ -333,9 +339,12 @@ export type Database = {
           notes?: string | null
           owner_id?: string
           parent_id?: string | null
+          parent_leg?: string
           pon_port?: number | null
           ports?: number
           splitter_ratio?: number
+          splitter_tap?: number
+          splitter_type?: string
           tx_power_dbm?: number
           updated_at?: string
         }
