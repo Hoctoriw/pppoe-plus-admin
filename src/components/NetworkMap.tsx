@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { MapPin } from "lucide-react";
+import { Loader2, MapPin, Search } from "lucide-react";
 import { loadMaps } from "@/components/ConnectionsMap";
+import { geocodePlaceQuery, type PlaceResult } from "@/lib/connections.functions";
 import type { CableAnchor, FtthNode } from "@/lib/ftth";
 
 export type MapCustomer = { id: string; name: string; latitude: number; longitude: number; cto_id: string | null; weak: boolean };
@@ -34,6 +35,7 @@ export function NetworkMap({ nodes, customers, selectedId, placing, onSelect, on
       const map = new maps.Map(hostRef.current, {
         center: { lat: -14.235, lng: -51.9253 }, zoom: 4,
         mapTypeControl: true, streetViewControl: false, clickableIcons: false,
+        zoomControlOptions: { position: maps.ControlPosition.RIGHT_BOTTOM },
         styles: [{ featureType: "poi", stylers: [{ visibility: "off" }] }],
       });
       map.addListener("click", (e: any) => { if (e.latLng) cb.current.onMapClick(e.latLng.lat(), e.latLng.lng()); });
@@ -140,5 +142,68 @@ export function NetworkMap({ nodes, customers, selectedId, placing, onSelect, on
   }, [selectedId]);
 
   if (error) return <div className="flex h-full min-h-96 items-center justify-center bg-muted p-8 text-center text-sm text-muted-foreground"><div><MapPin className="mx-auto mb-3 h-8 w-8" /><p>{error}</p></div></div>;
-  return <div ref={hostRef} className="h-full min-h-[520px] w-full" aria-label="Mapa da rede FTTH" />;
+  return (
+    <div className="relative h-full min-h-[520px] w-full">
+      <div ref={hostRef} className="h-full w-full" aria-label="Mapa da rede FTTH" />
+      <div className="absolute left-3 top-3 z-10"><CitySearch onGo={(result) => {
+        const map = mapRef.current;
+        if (!map) return;
+        if (result.viewport) map.fitBounds({ east: result.viewport.northeast.lng, north: result.viewport.northeast.lat, south: result.viewport.southwest.lat, west: result.viewport.southwest.lng });
+        else { map.panTo({ lat: result.latitude, lng: result.longitude }); map.setZoom(14); }
+      }} /></div>
+    </div>
+  );
+}
+
+function CitySearch({ onGo }: { onGo: (result: PlaceResult) => void }) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<PlaceResult[]>([]);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 3) { setResults([]); setOpen(false); setError(""); return; }
+    setLoading(true);
+    const timer = setTimeout(async () => {
+      try {
+        const found = await geocodePlaceQuery({ data: { query: q } });
+        setResults(found);
+        setOpen(found.length > 0);
+        setError(found.length ? "" : "Nada encontrado. Tente com cidade e estado (ex.: Sorocaba, SP).");
+      } catch (e: unknown) {
+        setResults([]); setOpen(false);
+        setError(e instanceof Error ? e.message : "Falha na busca.");
+      } finally {
+        setLoading(false);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  return <div className="w-72 max-w-[calc(100vw-2rem)]">
+    <div className="flex items-center gap-2 border bg-card/95 px-3 py-2 shadow backdrop-blur-sm">
+      <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+      <input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onFocus={() => { if (results.length) setOpen(true); }}
+        placeholder="Buscar cidade ou endereço"
+        aria-label="Buscar cidade ou endereço no mapa"
+        className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+      />
+      {loading && <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />}
+    </div>
+    {error && !open && <p className="mt-1 border bg-card/95 px-3 py-1.5 text-xs text-muted-foreground shadow backdrop-blur-sm">{error}</p>}
+    {open && <div className="mt-1 max-h-64 overflow-y-auto border bg-card/95 shadow backdrop-blur-sm">
+      {results.map((r) => (
+        <button key={`${r.latitude},${r.longitude},${r.description}`} type="button"
+          className="block w-full px-3 py-2 text-left text-sm hover:bg-muted"
+          onClick={() => { setOpen(false); onGo(r); }}>
+          {r.description}
+        </button>
+      ))}
+    </div>}
+  </div>;
 }
