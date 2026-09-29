@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { computeSignals, CONNECTOR_DB, customerSignal, distanceM, fmtDbm, FIBER_DB_PER_KM, FUSION_DB, MIN_SIGNAL_DBM, NODE_LABEL, nodeLoss, preferredParentLeg, SPLITTER_LOSS, UNBALANCED_LOSS, UNBALANCED_TAPS, type CableAnchor, type FtthNode, type NodeType } from "@/lib/ftth";
+import { computeSignals, CONNECTOR_DB, customerSignal, distanceM, distributionLoss, fmtDbm, FIBER_DB_PER_KM, FUSION_DB, MIN_SIGNAL_DBM, NODE_LABEL, nodeLoss, preferredParentLeg, SPLITTER_LOSS, UNBALANCED_LOSS, UNBALANCED_TAPS, type CableAnchor, type FtthNode, type NodeType } from "@/lib/ftth";
 
 export const Route = createFileRoute("/_authenticated/rede")({
   head: () => ({ meta: [
@@ -26,9 +26,9 @@ export const Route = createFileRoute("/_authenticated/rede")({
 type Cust = { id: string; full_name: string; latitude: number | null; longitude: number | null; cto_id: string | null; cto_port: number | null };
 const db = supabase as any;
 const DEFAULTS: Record<NodeType, Partial<FtthNode>> = {
-  olt: { tx_power_dbm: 5, splitter_ratio: 1, connector_count: 1, fusion_count: 0, ports: 16, splitter_type: "balanced", splitter_tap: 10, parent_leg: "tap" },
-  ceo: { splitter_ratio: 1, connector_count: 0, fusion_count: 2, ports: 0, splitter_type: "balanced", splitter_tap: 10, parent_leg: "tap" },
-  cto: { splitter_ratio: 8, connector_count: 2, fusion_count: 2, ports: 8, splitter_type: "balanced", splitter_tap: 10, parent_leg: "tap" },
+  olt: { tx_power_dbm: 5, splitter_ratio: 1, connector_count: 1, fusion_count: 0, ports: 16, splitter_type: "balanced", splitter_tap: 10, parent_leg: "tap", distribution_ratio: 1 },
+  ceo: { splitter_ratio: 1, connector_count: 0, fusion_count: 2, ports: 0, splitter_type: "balanced", splitter_tap: 10, parent_leg: "tap", distribution_ratio: 1 },
+  cto: { splitter_ratio: 8, connector_count: 2, fusion_count: 2, ports: 8, splitter_type: "balanced", splitter_tap: 10, parent_leg: "tap", distribution_ratio: 1 },
 };
 
 function NetworkPage() {
@@ -67,7 +67,7 @@ function NetworkPage() {
     const cto = c.cto_id ? byId.get(c.cto_id) : undefined;
     if (!cto) return null;
     const drop = c.latitude !== null && c.longitude !== null ? distanceM(cto, { latitude: c.latitude, longitude: c.longitude }) : 0;
-    return customerSignal(signals.get(cto.id)?.output ?? null, drop);
+    return customerSignal(signals.get(cto.id)?.clientOutput ?? null, drop);
   };
   const mapCustomers: MapCustomer[] = customers.filter((c) => c.latitude !== null && c.longitude !== null).map((c) => {
     const s = custSignal(c);
@@ -200,8 +200,8 @@ function NetworkPage() {
                 {draft.node_type !== "olt" && <div><p className="text-xs text-muted-foreground">Sinal chegando</p><p className="font-mono font-semibold">{fmtDbm(sig?.input ?? null)}</p></div>}
                 <div><p className="text-xs text-muted-foreground">Sinal na saída</p><p className={`font-mono font-semibold ${sig?.output != null && sig.output < MIN_SIGNAL_DBM ? "text-destructive" : ""}`}>{fmtDbm(sig?.output ?? null)}</p></div>
                 {draft.node_type !== "olt" && <div><p className="text-xs text-muted-foreground">Cabo</p><p className="font-mono">{Math.round(sig?.cableM ?? 0)} m</p></div>}
-                <div><p className="text-xs text-muted-foreground">Perda na caixa</p><p className="font-mono">{nodeLoss(draft).toFixed(2)} dB</p></div>
-                {draft.splitter_type === "unbalanced" && <div><p className="text-xs text-muted-foreground">Saída de passagem</p><p className={`font-mono font-semibold ${sig?.passOutput != null && sig.passOutput < MIN_SIGNAL_DBM ? "text-destructive" : ""}`}>{fmtDbm(sig?.passOutput ?? null)}</p></div>}
+                <div><p className="text-xs text-muted-foreground">Perda na caixa</p><p className="font-mono">{(nodeLoss(draft) + distributionLoss(draft)).toFixed(2)} dB</p></div>
+                {draft.splitter_type === "unbalanced" && <><div><p className="text-xs text-muted-foreground">Saída de passagem ({100 - draft.splitter_tap}%)</p><p className={`font-mono font-semibold ${sig?.passOutput != null && sig.passOutput < MIN_SIGNAL_DBM ? "text-destructive" : ""}`}>{fmtDbm(sig?.passOutput ?? null)}</p></div><div><p className="text-xs text-muted-foreground">Após o splitter de distribuição</p><p className={`font-mono font-semibold ${sig?.clientOutput != null && sig.clientOutput < MIN_SIGNAL_DBM ? "text-destructive" : ""}`}>{fmtDbm(sig?.clientOutput ?? null)}</p></div></>}
               </div>
               {draft.node_type !== "olt" && sig?.input === null && <p className="flex gap-2 text-xs text-destructive"><AlertTriangle className="h-4 w-4 shrink-0" />Ligue esta caixa a uma OLT ou CEO para calcular o sinal.</p>}
               <Field label="Nome"><Input value={draft.name} onChange={(e) => set("name", e.target.value)} /></Field>
@@ -214,6 +214,7 @@ function NetworkPage() {
                 {draft.splitter_type === "balanced"
                   ? <Field label="Splitter"><Select value={String(draft.splitter_ratio)} onValueChange={(v) => { set("splitter_ratio", Number(v)); if (draft.node_type === "cto") set("ports", Number(v) > 1 ? Number(v) : draft.ports); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{[1, 2, 4, 8, 16, 32, 64].map((r) => <SelectItem key={r} value={String(r)}>{r === 1 ? "Sem splitter" : `1:${r} (${SPLITTER_LOSS[r]} dB)`}</SelectItem>)}</SelectContent></Select></Field>
                   : <Field label="Derivação (tap/passagem)"><Select value={String(draft.splitter_tap)} onValueChange={(v) => set("splitter_tap", Number(v))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{UNBALANCED_TAPS.map((t) => <SelectItem key={t} value={String(t)}>{`${t}/${100 - t} — deriva ${UNBALANCED_LOSS[t]![0]} dB · passa ${UNBALANCED_LOSS[t]![1]} dB`}</SelectItem>)}</SelectContent></Select></Field>}
+                {draft.splitter_type === "unbalanced" && <Field label={`Splitter de distribuição (saída de ${draft.splitter_tap}%)`}><Select value={String(draft.distribution_ratio ?? 1)} onValueChange={(v) => { set("distribution_ratio", Number(v)); if (draft.node_type === "cto" && Number(v) > 1) set("ports", Number(v)); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{[1, 2, 4, 8, 16, 32, 64].map((r) => <SelectItem key={r} value={String(r)}>{r === 1 ? "Sem splitter (direto nas portas)" : `1:${r} (${SPLITTER_LOSS[r]} dB)`}</SelectItem>)}</SelectContent></Select></Field>}
                 <Field label="Fusões"><Input type="number" min={0} value={draft.fusion_count} onChange={(e) => set("fusion_count", num(e.target.value))} /></Field>
                 <Field label="Conectores"><Input type="number" min={0} value={draft.connector_count} onChange={(e) => set("connector_count", num(e.target.value))} /></Field>
                 {draft.node_type === "cto" && <Field label="Portas de atendimento"><Input type="number" min={0} max={64} value={draft.ports} onChange={(e) => set("ports", Math.min(64, num(e.target.value)))} /></Field>}

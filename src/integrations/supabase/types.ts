@@ -286,6 +286,7 @@ export type Database = {
           cable_length_m: number | null
           connector_count: number
           created_at: string
+          distribution_ratio: number
           fusion_count: number
           id: string
           latitude: number
@@ -311,6 +312,7 @@ export type Database = {
           cable_length_m?: number | null
           connector_count?: number
           created_at?: string
+          distribution_ratio?: number
           fusion_count?: number
           id?: string
           latitude: number
@@ -336,6 +338,7 @@ export type Database = {
           cable_length_m?: number | null
           connector_count?: number
           created_at?: string
+          distribution_ratio?: number
           fusion_count?: number
           id?: string
           latitude?: number
