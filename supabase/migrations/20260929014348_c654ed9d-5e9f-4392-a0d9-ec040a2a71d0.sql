@@ -1,0 +1,1 @@
+ALTER TABLE public.ftth_nodes ADD COLUMN parent_port integer CHECK (parent_port IS NULL OR parent_port > 0);
