@@ -68,6 +68,15 @@ export function NetworkMap({ nodes, customers, selectedId, placing, onSelect, on
       });
       line.addListener("click", () => cb.current.onSelect(n.id));
       shapesRef.current.push(line);
+      const path = [{ lat: parent.latitude, lng: parent.longitude }, ...anchors.map((a) => ({ lat: a.latitude, lng: a.longitude })), { lat: n.latitude, lng: n.longitude }];
+      const middle = path[Math.floor(path.length / 2)];
+      if (middle) {
+        shapesRef.current.push(new maps.Marker({
+          map, position: middle, clickable: false, zIndex: 5,
+          label: { text: `F${n.cable_fiber_number ?? 1}`, color: color("--foreground"), fontSize: "10px", fontWeight: "700" },
+          icon: { path: maps.SymbolPath.CIRCLE, fillColor: color("--card"), fillOpacity: 0.95, strokeColor: color(`--ftth-${parent.node_type}`), strokeWeight: 2, scale: 10 },
+        }));
+      }
       if (n.id === selectedId) anchors.forEach((anchor, index) => {
         const marker = new maps.Marker({
           map, position: { lat: anchor.latitude, lng: anchor.longitude }, draggable: true,
