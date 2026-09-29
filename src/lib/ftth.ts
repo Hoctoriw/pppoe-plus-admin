@@ -112,7 +112,8 @@ export function computeSignals(nodes: FtthNode[]) {
     if (node.node_type === "olt") {
       const tx = Number(node.tx_power_dbm);
       const pass = nodePassLoss(node);
-      result = { input: null, output: tx - nodeLoss(node), passOutput: pass === null ? null : tx - pass, cableM: 0 };
+      const out = tx - nodeLoss(node);
+      result = { input: null, output: out, passOutput: pass === null ? null : tx - pass, clientOutput: out - distributionLoss(node), cableM: 0 };
     } else {
       const parent = node.parent_id ? byId.get(node.parent_id) : undefined;
       const cableM = cableLength(node, parent);
@@ -124,10 +125,12 @@ export function computeSignals(nodes: FtthNode[]) {
       }
       const input = parentOut === null ? null : parentOut - (cableM / 1000) * FIBER_DB_PER_KM;
       const pass = nodePassLoss(node);
+      const output = input === null ? null : input - nodeLoss(node);
       result = {
         input,
-        output: input === null ? null : input - nodeLoss(node),
+        output,
         passOutput: input === null || pass === null ? null : input - pass,
+        clientOutput: output === null ? null : output - distributionLoss(node),
         cableM,
       };
     }
