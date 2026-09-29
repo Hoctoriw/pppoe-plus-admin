@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { computeSignals, CONNECTOR_DB, customerSignal, distanceM, fmtDbm, FIBER_DB_PER_KM, FUSION_DB, MIN_SIGNAL_DBM, NODE_LABEL, nodeLoss, preferredParentLeg, SPLITTER_LOSS, UNBALANCED_LOSS, UNBALANCED_TAPS, type CableAnchor, type FtthNode, type NodeType } from "@/lib/ftth";
+import { computeSignals, CONNECTOR_DB, customerSignal, distanceM, distributionLoss, fmtDbm, FIBER_DB_PER_KM, FUSION_DB, MIN_SIGNAL_DBM, NODE_LABEL, nodeLoss, preferredParentLeg, SPLITTER_LOSS, UNBALANCED_LOSS, UNBALANCED_TAPS, type CableAnchor, type FtthNode, type NodeType } from "@/lib/ftth";
 
 export const Route = createFileRoute("/_authenticated/rede")({
   head: () => ({ meta: [
@@ -26,9 +26,9 @@ export const Route = createFileRoute("/_authenticated/rede")({
 type Cust = { id: string; full_name: string; latitude: number | null; longitude: number | null; cto_id: string | null; cto_port: number | null };
 const db = supabase as any;
 const DEFAULTS: Record<NodeType, Partial<FtthNode>> = {
-  olt: { tx_power_dbm: 5, splitter_ratio: 1, connector_count: 1, fusion_count: 0, ports: 16, splitter_type: "balanced", splitter_tap: 10, parent_leg: "tap" },
-  ceo: { splitter_ratio: 1, connector_count: 0, fusion_count: 2, ports: 0, splitter_type: "balanced", splitter_tap: 10, parent_leg: "tap" },
-  cto: { splitter_ratio: 8, connector_count: 2, fusion_count: 2, ports: 8, splitter_type: "balanced", splitter_tap: 10, parent_leg: "tap" },
+  olt: { tx_power_dbm: 5, splitter_ratio: 1, connector_count: 1, fusion_count: 0, ports: 16, splitter_type: "balanced", splitter_tap: 10, parent_leg: "tap", distribution_ratio: 1 },
+  ceo: { splitter_ratio: 1, connector_count: 0, fusion_count: 2, ports: 0, splitter_type: "balanced", splitter_tap: 10, parent_leg: "tap", distribution_ratio: 1 },
+  cto: { splitter_ratio: 8, connector_count: 2, fusion_count: 2, ports: 8, splitter_type: "balanced", splitter_tap: 10, parent_leg: "tap", distribution_ratio: 1 },
 };
 
 function NetworkPage() {
@@ -67,7 +67,7 @@ function NetworkPage() {
     const cto = c.cto_id ? byId.get(c.cto_id) : undefined;
     if (!cto) return null;
     const drop = c.latitude !== null && c.longitude !== null ? distanceM(cto, { latitude: c.latitude, longitude: c.longitude }) : 0;
-    return customerSignal(signals.get(cto.id)?.output ?? null, drop);
+    return customerSignal(signals.get(cto.id)?.clientOutput ?? null, drop);
   };
   const mapCustomers: MapCustomer[] = customers.filter((c) => c.latitude !== null && c.longitude !== null).map((c) => {
     const s = custSignal(c);
