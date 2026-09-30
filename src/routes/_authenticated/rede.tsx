@@ -148,6 +148,8 @@ function NetworkPage() {
     if (!selected) return;
     const anchors = (selected.cable_anchors ?? []).map((anchor, i) => i === index ? { ...anchor, slack_m: Math.max(0, Math.min(500, meters)) } : anchor);
     void updateAnchors(selected.id, anchors);
+  }
+
 
 
   async function moveCustomer(customerId: string, latitude: number, longitude: number) {
