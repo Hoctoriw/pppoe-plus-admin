@@ -18,6 +18,7 @@ export type FtthNode = {
   cable_fiber_number: number;
   parent_port: number | null;
   cable_length_m: number | null;
+  slack_m: number;
   notes: string | null;
   splitter_type: SplitterType;
   splitter_tap: number;
@@ -28,7 +29,8 @@ export type FtthNode = {
 
 export type SplitterType = "balanced" | "unbalanced";
 export type ParentLeg = "tap" | "pass";
-export type CableAnchor = { latitude: number; longitude: number };
+export type CableAnchor = { latitude: number; longitude: number; slack_m?: number | null };
+
 
 export const NODE_LABEL: Record<NodeType, string> = { olt: "OLT", ceo: "CEO / Caixa de primeiro nível", cto: "CTO (atendimento)" };
 export const SPLITTER_LOSS: Record<number, number> = { 1: 0, 2: 3.7, 4: 7.3, 8: 10.5, 16: 13.7, 32: 17.1, 64: 20.5 };
@@ -50,7 +52,14 @@ export function distanceM(a: { latitude: number; longitude: number }, b: { latit
   return 2 * r * Math.asin(Math.sqrt(h));
 }
 
-export function cableLength(node: FtthNode, parent: FtthNode | undefined) {
+/** Soma das reservas técnicas: sobra deixada na caixa + sobras nos pontos de ancoragem. */
+export function slackTotal(node: FtthNode) {
+  const anchors = (node.cable_anchors ?? []).reduce((total, anchor) => total + Number(anchor.slack_m ?? 0), 0);
+  return Number(node.slack_m ?? 0) + anchors;
+}
+
+/** Metragem geográfica do vão (sem reserva técnica). */
+export function spanLength(node: FtthNode, parent: FtthNode | undefined) {
   if (node.cable_length_m !== null && node.cable_length_m !== undefined) return Number(node.cable_length_m);
   if (!parent) return 0;
   const path = [parent, ...(node.cable_anchors ?? []), node];
@@ -62,6 +71,20 @@ export function cableLength(node: FtthNode, parent: FtthNode | undefined) {
   }
   return total;
 }
+
+/** Metragem óptica real do vão: trajeto + reservas técnicas (a luz percorre a sobra também). */
+export function cableLength(node: FtthNode, parent: FtthNode | undefined) {
+  if (!parent && (node.cable_length_m === null || node.cable_length_m === undefined)) return 0;
+  return spanLength(node, parent) + slackTotal(node);
+}
+
+/** Reserva técnica recomendada (metros) conforme o tipo de caixa. */
+export function recommendedSlack(node: FtthNode): { min: number; max: number; where: string } {
+  if (node.node_type === "olt") return { min: 10, max: 20, where: "dentro do DIO/rack, para refazer fusões sem desligar a PON" };
+  if (node.node_type === "ceo") return { min: 15, max: 20, where: "no poste da própria CEO, para descer a caixa até a bancada de fusão" };
+  return { min: 5, max: 10, where: "no poste da CTO, para troca de conectores e remanejo de poste" };
+}
+
 
 export function unbalancedLoss(node: FtthNode): [number, number] {
   return UNBALANCED_LOSS[node.splitter_tap] ?? UNBALANCED_LOSS[10]!;

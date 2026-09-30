@@ -300,6 +300,7 @@ export type Database = {
           parent_port: number | null
           pon_port: number | null
           ports: number
+          slack_m: number
           splitter_ratio: number
           splitter_tap: number
           splitter_type: string
@@ -327,6 +328,7 @@ export type Database = {
           parent_port?: number | null
           pon_port?: number | null
           ports?: number
+          slack_m?: number
           splitter_ratio?: number
           splitter_tap?: number
           splitter_type?: string
@@ -354,6 +356,7 @@ export type Database = {
           parent_port?: number | null
           pon_port?: number | null
           ports?: number
+          slack_m?: number
           splitter_ratio?: number
           splitter_tap?: number
           splitter_type?: string
