@@ -18,6 +18,7 @@ export type FtthNode = {
   cable_fiber_number: number;
   parent_port: number | null;
   cable_length_m: number | null;
+  slack_m: number;
   notes: string | null;
   splitter_type: SplitterType;
   splitter_tap: number;
@@ -28,7 +29,8 @@ export type FtthNode = {
 
 export type SplitterType = "balanced" | "unbalanced";
 export type ParentLeg = "tap" | "pass";
-export type CableAnchor = { latitude: number; longitude: number };
+export type CableAnchor = { latitude: number; longitude: number; slack_m?: number | null };
+
 
 export const NODE_LABEL: Record<NodeType, string> = { olt: "OLT", ceo: "CEO / Caixa de primeiro nível", cto: "CTO (atendimento)" };
 export const SPLITTER_LOSS: Record<number, number> = { 1: 0, 2: 3.7, 4: 7.3, 8: 10.5, 16: 13.7, 32: 17.1, 64: 20.5 };
