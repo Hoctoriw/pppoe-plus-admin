@@ -241,6 +241,37 @@ function NetworkPage() {
                 {draft.node_type !== "olt" && <><Field label="Quantidade de fibras no cabo"><Input type="number" min={1} value={draft.cable_fibers ?? ""} onChange={(e) => { const total = e.target.value === "" ? null : Number(e.target.value); setDraft((current) => current ? { ...current, cable_fibers: total, cable_fiber_number: Math.min(current.cable_fiber_number ?? 1, total ?? 1) } : current); }} /></Field>{(() => { const par = draft.parent_id ? byId.get(draft.parent_id) : undefined; if (!par || par.splitter_type === "unbalanced" || par.splitter_ratio <= 1) return null; const used = new Set(nodes.filter((x) => x.parent_id === par.id && x.id !== draft.id).map((x) => x.parent_port)); return <Field label={`Porta do splitter 1:${par.splitter_ratio} em ${par.name}`}><Select value={draft.parent_port ? String(draft.parent_port) : "none"} onValueChange={(v) => set("parent_port", v === "none" ? null : Number(v))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Não definida</SelectItem>{Array.from({ length: par.splitter_ratio }, (_, i) => i + 1).map((port) => <SelectItem key={port} value={String(port)} disabled={used.has(port)}>Porta {port}{used.has(port) ? " (em uso)" : ""}</SelectItem>)}</SelectContent></Select></Field>; })()}<Field label="Fibra usada nesta caixa"><Select value={String(draft.cable_fiber_number ?? 1)} onValueChange={(v) => set("cable_fiber_number", Number(v))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{Array.from({ length: Math.max(1, draft.cable_fibers ?? 1) }, (_, index) => index + 1).map((fiber) => <SelectItem key={fiber} value={String(fiber)}>Fibra {fiber}</SelectItem>)}</SelectContent></Select></Field><Field label="Metragem do cabo (m)"><Input type="number" min={0} placeholder={`Auto: ${Math.round(sig?.cableM ?? 0)}`} value={draft.cable_length_m ?? ""} onChange={(e) => set("cable_length_m", e.target.value === "" ? null : Number(e.target.value))} /></Field></>}
               </div>
               <Field label="Observações"><Input value={draft.notes ?? ""} onChange={(e) => set("notes", e.target.value || null)} /></Field>
+
+              {(() => {
+                const rec = recommendedSlack(draft);
+                const parentNode = draft.parent_id ? byId.get(draft.parent_id) : undefined;
+                const span = spanLength(draft, parentNode);
+                const anchorSlack = (draft.cable_anchors ?? []).reduce((total, anchor) => total + Number(anchor.slack_m ?? 0), 0);
+                const low = Number(draft.slack_m ?? 0) < rec.min;
+                const longSpan = draft.node_type !== "olt" && span > 500 && anchorSlack === 0;
+                return <div className="space-y-3 border-t pt-4">
+                  <div><p className="flex items-center gap-2 font-semibold"><Cable className="h-4 w-4" />Reserva de fibra</p><p className="text-xs text-muted-foreground">Sobra de cabo enrolada para futuras manutenções. Entra no cálculo do sinal.</p></div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Reserva nesta caixa (m)"><Input type="number" min={0} max={500} value={draft.slack_m ?? 0} onChange={(e) => set("slack_m", Math.max(0, Math.min(500, num(e.target.value))))} /></Field>
+                    <Field label="Reserva nos pontos do cabo"><Input readOnly value={`${Math.round(anchorSlack)} m`} /></Field>
+                  </div>
+                  <div className="flex flex-wrap gap-2">{[rec.min, rec.max, 30].map((meters) => <Button key={meters} type="button" variant="outline" size="sm" onClick={() => set("slack_m", meters)}>{meters} m</Button>)}</div>
+                  {low && <p className="flex gap-2 text-xs text-amber-600"><AlertTriangle className="h-4 w-4 shrink-0" />Recomendado ao menos {rec.min} m nesta caixa: {rec.where}.</p>}
+                  {longSpan && <p className="flex gap-2 text-xs text-amber-600"><AlertTriangle className="h-4 w-4 shrink-0" />Vão de {Math.round(span)} m sem reserva no meio do percurso. Deixe 20–30 m em um ponto de ancoragem.</p>}
+                  <div className="border bg-muted/40 p-3 text-xs text-muted-foreground">
+                    <p className="font-medium text-foreground">Onde deixar reserva</p>
+                    <ul className="mt-1 list-disc space-y-1 pl-4">
+                      <li><span className="font-medium text-foreground">CEO (emenda):</span> 15 a 20 m no próprio poste, para descer a caixa e fundir no chão ou na bancada.</li>
+                      <li><span className="font-medium text-foreground">CTO (atendimento):</span> 5 a 10 m, para trocar conector, remanejar o poste ou reposicionar a caixa.</li>
+                      <li><span className="font-medium text-foreground">OLT / DIO:</span> 10 a 20 m dentro do rack, para refazer fusões sem desligar a PON.</li>
+                      <li><span className="font-medium text-foreground">Rota tronco:</span> 20 a 30 m a cada 500–800 m, em cruzeta ou ferragem, para emendar rápido depois de rompimento.</li>
+                      <li><span className="font-medium text-foreground">Travessias:</span> reserva antes de cruzar avenida, rio ou ferrovia, onde o reparo é mais difícil.</li>
+                      <li><span className="font-medium text-foreground">Evite:</span> reserva solta pendurada, em poste de esquina com muito trânsito de escada, ou em raio menor que 15 cm (dobra demais e perde sinal).</li>
+                    </ul>
+                  </div>
+                </div>;
+              })()}
+
               {draft.node_type !== "olt" && draft.parent_id && <div className="space-y-3 border-t pt-4">
                 <div><p className="flex items-center gap-2 font-semibold"><Anchor className="h-4 w-4" />Trajeto do cabo</p><p className="text-xs text-muted-foreground">{draft.cable_anchors.length ? `${draft.cable_anchors.length} ponto(s) · ${Math.round(sig?.cableM ?? 0)} m pelo trajeto` : "Linha reta entre as caixas"}</p></div>
                 <div className="flex flex-wrap gap-2"><Button type="button" variant={placing === "anchor" ? "default" : "outline"} onClick={() => setPlacing(placing === "anchor" ? null : "anchor")}><Plus />Adicionar ancoragem</Button>{selectedAnchor !== null && <Button type="button" variant="outline" className="text-destructive" onClick={() => void removeSelectedAnchor()}><Trash2 />Excluir ponto {selectedAnchor + 1}</Button>}{draft.cable_anchors.length > 0 && <Button type="button" variant="ghost" onClick={() => { if (confirm("Remover todos os pontos deste cabo?")) { void updateAnchors(draft.id, [], "Trajeto limpo."); setSelectedAnchor(null); } }}>Limpar trajeto</Button>}</div>
