@@ -81,16 +81,19 @@ export function NetworkMap({ nodes, customers, selectedId, placing, onSelect, on
         }));
       }
       if (n.id === selectedId) anchors.forEach((anchor, index) => {
+        const slack = Number(anchor.slack_m ?? 0);
         const marker = new maps.Marker({
           map, position: { lat: anchor.latitude, lng: anchor.longitude }, draggable: true,
-          title: `Ancoragem ${index + 1}`, zIndex: 30,
-          label: { text: String(index + 1), color: color("--primary-foreground"), fontSize: "10px", fontWeight: "700" },
-          icon: { path: maps.SymbolPath.CIRCLE, fillColor: color("--primary"), fillOpacity: 1, strokeColor: color("--card"), strokeWeight: 2, scale: 8 },
+          title: slack > 0 ? `Ancoragem ${index + 1} · reserva de ${slack} m` : `Ancoragem ${index + 1}`,
+          zIndex: 30,
+          label: { text: slack > 0 ? `${index + 1}·${slack}m` : String(index + 1), color: color("--primary-foreground"), fontSize: "10px", fontWeight: "700" },
+          icon: { path: maps.SymbolPath.CIRCLE, fillColor: color(slack > 0 ? "--ftth-ceo" : "--primary"), fillOpacity: 1, strokeColor: color("--card"), strokeWeight: 2, scale: slack > 0 ? 11 : 8 },
         });
         marker.addListener("click", () => cb.current.onAnchorSelect(index));
         marker.addListener("dragend", (event: any) => {
-          if (event.latLng) cb.current.onAnchorMove(index, { latitude: event.latLng.lat(), longitude: event.latLng.lng() });
+          if (event.latLng) cb.current.onAnchorMove(index, { latitude: event.latLng.lat(), longitude: event.latLng.lng(), slack_m: anchor.slack_m ?? 0 });
         });
+
         shapesRef.current.push(marker);
       });
     }
