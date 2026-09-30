@@ -276,6 +276,12 @@ function NetworkPage() {
                 <div><p className="flex items-center gap-2 font-semibold"><Anchor className="h-4 w-4" />Trajeto do cabo</p><p className="text-xs text-muted-foreground">{draft.cable_anchors.length ? `${draft.cable_anchors.length} ponto(s) · ${Math.round(sig?.cableM ?? 0)} m pelo trajeto` : "Linha reta entre as caixas"}</p></div>
                 <div className="flex flex-wrap gap-2"><Button type="button" variant={placing === "anchor" ? "default" : "outline"} onClick={() => setPlacing(placing === "anchor" ? null : "anchor")}><Plus />Adicionar ancoragem</Button>{selectedAnchor !== null && <Button type="button" variant="outline" className="text-destructive" onClick={() => void removeSelectedAnchor()}><Trash2 />Excluir ponto {selectedAnchor + 1}</Button>}{draft.cable_anchors.length > 0 && <Button type="button" variant="ghost" onClick={() => { if (confirm("Remover todos os pontos deste cabo?")) { void updateAnchors(draft.id, [], "Trajeto limpo."); setSelectedAnchor(null); } }}>Limpar trajeto</Button>}</div>
                 {draft.cable_anchors.length > 0 && <p className="text-xs text-muted-foreground">Arraste os pontos numerados no mapa para ajustar o percurso. Toque em um ponto para selecioná-lo.</p>}
+                {draft.cable_anchors.length > 0 && <div className="space-y-2">{draft.cable_anchors.map((anchor, index) => <div key={index} className={`flex items-center gap-2 border p-2 ${selectedAnchor === index ? "border-primary" : ""}`}>
+                  <button type="button" className="w-20 text-left text-xs font-medium" onClick={() => setSelectedAnchor(index)}>Ponto {index + 1}</button>
+                  <Input type="number" min={0} max={500} className="h-9 flex-1" placeholder="Reserva (m)" value={anchor.slack_m ?? 0} onChange={(e) => setAnchorSlack(index, e.target.value === "" ? 0 : Number(e.target.value))} />
+                  <span className="text-xs text-muted-foreground">m de reserva</span>
+                </div>)}</div>}
+
               </div>}
               <div className="flex flex-wrap gap-2"><Button onClick={() => void save()}><Save />Salvar</Button><Button variant="outline" onClick={() => setPlacing("move")}><Move />Mover</Button>{draft.node_type !== "cto" && <><Button variant="outline" onClick={() => setPlacing("ceo")}><Plus />CEO aqui</Button><Button variant="outline" onClick={() => setPlacing("cto")}><Plus />CTO aqui</Button></>}<Button variant="ghost" className="text-destructive" onClick={() => void remove()}><Trash2 />Excluir</Button></div>
 
