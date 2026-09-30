@@ -217,7 +217,9 @@ function NetworkPage() {
               <div className="grid grid-cols-2 gap-2 border bg-muted/40 p-3 text-sm">
                 {draft.node_type !== "olt" && <div><p className="text-xs text-muted-foreground">Sinal chegando</p><p className="font-mono font-semibold">{fmtDbm(sig?.input ?? null)}</p></div>}
                 <div><p className="text-xs text-muted-foreground">Sinal na saída</p><p className={`font-mono font-semibold ${sig?.output != null && sig.output < MIN_SIGNAL_DBM ? "text-destructive" : ""}`}>{fmtDbm(sig?.output ?? null)}</p></div>
-                {draft.node_type !== "olt" && <div><p className="text-xs text-muted-foreground">Cabo</p><p className="font-mono">{Math.round(sig?.cableM ?? 0)} m</p></div>}
+                {draft.node_type !== "olt" && <div><p className="text-xs text-muted-foreground">Cabo (com reserva)</p><p className="font-mono">{Math.round(sig?.cableM ?? 0)} m</p></div>}
+                <div><p className="text-xs text-muted-foreground">Reserva técnica</p><p className="font-mono">{Math.round(slackTotal(draft))} m</p></div>
+
                 <div><p className="text-xs text-muted-foreground">Perda na caixa</p><p className="font-mono">{(nodeLoss(draft) + distributionLoss(draft)).toFixed(2)} dB</p></div>
                 {draft.splitter_type === "unbalanced" && <><div><p className="text-xs text-muted-foreground">Saída de passagem ({100 - draft.splitter_tap}%)</p><p className={`font-mono font-semibold ${sig?.passOutput != null && sig.passOutput < MIN_SIGNAL_DBM ? "text-destructive" : ""}`}>{fmtDbm(sig?.passOutput ?? null)}</p></div><div><p className="text-xs text-muted-foreground">Após o splitter de distribuição</p><p className={`font-mono font-semibold ${sig?.clientOutput != null && sig.clientOutput < MIN_SIGNAL_DBM ? "text-destructive" : ""}`}>{fmtDbm(sig?.clientOutput ?? null)}</p></div></>}
               </div>
