@@ -52,7 +52,7 @@ function NetworkPage() {
       db.from("user_roles").select("owner_id").eq("user_id", user.id).not("owner_id", "is", null).maybeSingle(),
     ]);
     if (n.error) setMessage(n.error.message);
-    setNodes((n.data ?? []).map((x: any) => ({ ...x, tx_power_dbm: Number(x.tx_power_dbm), cable_length_m: x.cable_length_m === null ? null : Number(x.cable_length_m), cable_anchors: Array.isArray(x.cable_anchors) ? x.cable_anchors : [] })));
+    setNodes((n.data ?? []).map((x: any) => ({ ...x, tx_power_dbm: Number(x.tx_power_dbm), slack_m: Number(x.slack_m ?? 0), cable_length_m: x.cable_length_m === null ? null : Number(x.cable_length_m), cable_anchors: Array.isArray(x.cable_anchors) ? x.cable_anchors.map((a: any) => ({ latitude: Number(a.latitude), longitude: Number(a.longitude), slack_m: Number(a.slack_m ?? 0) })) : [] })));
     setCustomers(c.data ?? []);
     if (r.data?.owner_id) setOwner(r.data.owner_id);
   }
