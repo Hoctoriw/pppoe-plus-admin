@@ -86,7 +86,7 @@ function NetworkPage() {
     if (!placing) return;
     if (placing === "anchor") {
       if (!selected || !selected.parent_id) return;
-      const anchors = [...(selected.cable_anchors ?? []), { latitude: lat, longitude: lng }];
+      const anchors = [...(selected.cable_anchors ?? []), { latitude: lat, longitude: lng, slack_m: 0 }];
       await updateAnchors(selected.id, anchors, "Ponto de ancoragem adicionado.");
       setSelectedAnchor(anchors.length - 1);
       return;
