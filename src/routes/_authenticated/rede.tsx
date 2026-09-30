@@ -26,10 +26,11 @@ export const Route = createFileRoute("/_authenticated/rede")({
 type Cust = { id: string; full_name: string; latitude: number | null; longitude: number | null; cto_id: string | null; cto_port: number | null };
 const db = supabase as any;
 const DEFAULTS: Record<NodeType, Partial<FtthNode>> = {
-  olt: { tx_power_dbm: 5, splitter_ratio: 1, connector_count: 1, fusion_count: 0, ports: 16, splitter_type: "balanced", splitter_tap: 10, parent_leg: "tap", distribution_ratio: 1 },
-  ceo: { splitter_ratio: 1, connector_count: 0, fusion_count: 2, ports: 0, splitter_type: "balanced", splitter_tap: 10, parent_leg: "tap", distribution_ratio: 1 },
-  cto: { splitter_ratio: 8, connector_count: 2, fusion_count: 2, ports: 8, splitter_type: "balanced", splitter_tap: 10, parent_leg: "tap", distribution_ratio: 1 },
+  olt: { tx_power_dbm: 5, splitter_ratio: 1, connector_count: 1, fusion_count: 0, ports: 16, splitter_type: "balanced", splitter_tap: 10, parent_leg: "tap", distribution_ratio: 1, slack_m: 10 },
+  ceo: { splitter_ratio: 1, connector_count: 0, fusion_count: 2, ports: 0, splitter_type: "balanced", splitter_tap: 10, parent_leg: "tap", distribution_ratio: 1, slack_m: 15 },
+  cto: { splitter_ratio: 8, connector_count: 2, fusion_count: 2, ports: 8, splitter_type: "balanced", splitter_tap: 10, parent_leg: "tap", distribution_ratio: 1, slack_m: 5 },
 };
+
 
 function NetworkPage() {
   const navigate = useNavigate();
