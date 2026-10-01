@@ -1,5 +1,6 @@
 import { Save, Network } from "lucide-react";
 import { AdminOnly } from "@/components/AdminOnly";
+import { NetworkModuleOnly } from "@/components/NetworkModuleOnly";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
