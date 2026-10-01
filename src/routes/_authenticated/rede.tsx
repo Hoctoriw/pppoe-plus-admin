@@ -20,8 +20,31 @@ export const Route = createFileRoute("/_authenticated/rede")({
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },
   ]}),
-  component: NetworkPage,
+  component: NetworkRouteGate,
 });
+
+// O módulo Rede FTTH é vendido à parte: só abre quando a licença da conta inclui o módulo.
+function NetworkRouteGate() {
+  const access = useNetworkModule();
+  if (access === "loading") return null;
+  if (access === "denied") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background p-6">
+        <div className="max-w-md rounded-xl border bg-card p-8 text-center shadow-sm">
+          <Network className="mx-auto mb-4 h-10 w-10 text-primary" />
+          <h1 className="mb-2 text-xl font-bold">Módulo Rede FTTH não incluído</h1>
+          <p className="mb-6 text-sm text-muted-foreground">
+            Seu plano atual não dá acesso ao mapeamento de rede FTTH. Contrate um plano que inclua o módulo Rede para
+            desenhar caixas, splitters, cabos e calcular o sinal dos clientes.
+          </p>
+          <Button asChild><Link to="/dashboard">Voltar ao painel</Link></Button>
+        </div>
+      </div>
+    );
+  }
+  return <NetworkPage />;
+}
+
 
 type Cust = { id: string; full_name: string; latitude: number | null; longitude: number | null; cto_id: string | null; cto_port: number | null };
 const db = supabase as any;
