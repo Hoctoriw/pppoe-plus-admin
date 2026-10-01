@@ -243,7 +243,7 @@ export const createLicensePayment = createServerFn({ method: "POST" })
     const { data: plan } = await db.from("license_plans").select("*").eq("id", data.planId).eq("active", true).maybeSingle();
     if (!plan) throw new Error("Plano indisponível.");
     const txid = "NX" + crypto.randomUUID().replace(/-/g, "").slice(0, 20).toUpperCase();
-    const { data: row, error } = await db.from("license_payments").insert({ user_id: context.userId, plan_id: plan.id, plan_name: plan.name, days: plan.days, amount: plan.price, txid }).select("id, txid, amount").single();
+    const { data: row, error } = await db.from("license_payments").insert({ user_id: context.userId, plan_id: plan.id, plan_name: plan.name, days: plan.days, amount: plan.price, txid, includes_network: !!plan.includes_network }).select("id, txid, amount").single();
     if (error) throw new Error(error.message);
     return { id: row.id as string, txid: row.txid as string, amount: Number(row.amount) };
   });
@@ -268,10 +268,13 @@ export const reviewLicensePayment = createServerFn({ method: "POST" })
     const { data: p } = await db.from("license_payments").select("*").eq("id", data.id).eq("status", "pending").maybeSingle();
     if (!p) throw new Error("Pagamento não encontrado ou já revisado.");
     if (data.approve) {
-      const { data: cur } = await db.from("licenses").select("expires_at").eq("user_id", p.user_id).maybeSingle();
-      const base = cur && new Date(cur.expires_at) > new Date() ? new Date(cur.expires_at) : new Date();
+      const { data: cur } = await db.from("licenses").select("expires_at, has_network").eq("user_id", p.user_id).maybeSingle();
+      const active = cur && new Date(cur.expires_at) > new Date();
+      const base = active ? new Date(cur!.expires_at) : new Date();
       const expires_at = new Date(base.getTime() + p.days * 86400000).toISOString();
-      const { error } = await db.from("licenses").upsert({ user_id: p.user_id, expires_at }, { onConflict: "user_id" });
+      // O módulo Rede passa a valer pelo plano pago; mantém se já tinha e a licença segue ativa
+      const has_network = !!p.includes_network || (active && !!cur?.has_network);
+      const { error } = await db.from("licenses").upsert({ user_id: p.user_id, expires_at, has_network }, { onConflict: "user_id" });
       if (error) throw new Error(error.message);
     }
     await db.from("license_payments").update({ status: data.approve ? "approved" : "rejected" }).eq("id", data.id);
