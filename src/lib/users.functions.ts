@@ -352,7 +352,7 @@ export const createAutoLicensePayment = createServerFn({ method: "POST" })
     const { data: prof } = await db.from("profiles").select("full_name").eq("id", context.userId).maybeSingle();
     const { data: u } = await db.auth.admin.getUserById(context.userId);
     const txid = "NX" + crypto.randomUUID().replace(/-/g, "").slice(0, 20).toUpperCase();
-    const { data: row, error } = await db.from("license_payments").insert({ user_id: context.userId, plan_id: plan.id, plan_name: plan.name, days: plan.days, amount: plan.price, txid }).select("id").single();
+    const { data: row, error } = await db.from("license_payments").insert({ user_id: context.userId, plan_id: plan.id, plan_name: plan.name, days: plan.days, amount: plan.price, txid, includes_network: !!plan.includes_network }).select("id").single();
     if (error) throw new Error(error.message);
     const { createLicensePix } = await import("./billing.server");
     const pix = await createLicensePix(s, { id: context.userId, name: prof?.full_name ?? "", email: u?.user?.email ?? null, cpfCnpj: data.cpfCnpj }, Number(plan.price), `Licença Nexora - ${plan.name}`, `license:${row.id}`);
