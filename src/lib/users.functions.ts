@@ -283,7 +283,7 @@ export const reviewLicensePayment = createServerFn({ method: "POST" })
     if (!p) throw new Error("Pagamento não encontrado ou já revisado.");
     if (data.approve) {
       const { data: cur } = await db.from("licenses").select("expires_at, has_network").eq("user_id", p.user_id).maybeSingle();
-      const active = cur && new Date(cur.expires_at) > new Date();
+      const active = !!cur && new Date(cur.expires_at) > new Date();
       const base = active ? new Date(cur!.expires_at) : new Date();
       const expires_at = new Date(base.getTime() + p.days * 86400000).toISOString();
       // O módulo Rede passa a valer pelo plano pago; mantém se já tinha e a licença segue ativa
