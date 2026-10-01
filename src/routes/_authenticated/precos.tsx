@@ -46,7 +46,7 @@ function PricesPage() {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
     const price = Number(String(f.get("price")).replace(",", "."));
-    void run(async () => { await save({ data: { ...(id ? { id } : {}), name: String(f.get("name")), days: Number(f.get("days")), price, active: f.get("active") === "on" } }); if (!id) (e.target as HTMLFormElement).reset(); });
+    void run(async () => { await save({ data: { ...(id ? { id } : {}), name: String(f.get("name")), days: Number(f.get("days")), price, active: f.get("active") === "on", includes_network: f.get("includes_network") === "on" } }); if (!id) (e.target as HTMLFormElement).reset(); });
   }
 
   return <div className="min-h-screen bg-background p-4 md:p-8"><div className="mx-auto max-w-5xl">
