@@ -37,15 +37,15 @@ const PERMISSIONS: { label: string; roles: Record<Role, boolean> }[] = [
 ];
 
 function UsersPage() {
-  const list = useServerFn(listUsers), setRole = useServerFn(setUserRole), setActive = useServerFn(setUserActive), licList = useServerFn(listLicenses), extend = useServerFn(extendLicense), deleteAcc = useServerFn(deleteUserAccount);
-  const [lic, setLic] = useState<Record<string, string>>({});
+  const list = useServerFn(listUsers), setRole = useServerFn(setUserRole), setActive = useServerFn(setUserActive), licList = useServerFn(listLicenses), extend = useServerFn(extendLicense), deleteAcc = useServerFn(deleteUserAccount), setNetwork = useServerFn(setLicenseNetwork);
+  const [lic, setLic] = useState<Record<string, { expires_at: string; has_network: boolean }>>({});
   const [users, setUsers] = useState<UserRow[]>([]);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [denied, setDenied] = useState(false);
 
   async function load() {
-    try { setUsers(await list()); setLic(Object.fromEntries((await licList()).map(l => [l.user_id, l.expires_at]))); setDenied(false); }
+    try { setUsers(await list()); setLic(Object.fromEntries((await licList()).map(l => [l.user_id, { expires_at: l.expires_at, has_network: l.has_network }]))); setDenied(false); }
     catch (e) { setDenied(true); setMsg((e as Error).message); }
   }
   useEffect(() => { void load(); }, []);
