@@ -207,18 +207,19 @@ export const deleteTeamUser = createServerFn({ method: "POST" })
 export const listLicensePlans = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await context.supabase.from("license_plans").select("id, name, days, price, active").order("days");
+    const { data, error } = await context.supabase.from("license_plans").select("id, name, days, price, active, includes_network").order("days");
     if (error) throw new Error(error.message);
-    return (data ?? []).map((p: any) => ({ ...p, price: Number(p.price) })) as { id: string; name: string; days: number; price: number; active: boolean }[];
+    return (data ?? []).map((p: any) => ({ ...p, price: Number(p.price), includes_network: !!p.includes_network })) as { id: string; name: string; days: number; price: number; active: boolean; includes_network: boolean }[];
   });
 
 export const saveLicensePlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ id: z.string().uuid().optional(), name: z.string().trim().min(1).max(60), days: z.number().int().min(1).max(3650), price: z.number().positive().max(100000), active: z.boolean() }).parse(d))
+  .inputValidator((d) => z.object({ id: z.string().uuid().optional(), name: z.string().trim().min(1).max(60), days: z.number().int().min(1).max(3650), price: z.number().positive().max(100000), active: z.boolean(), includes_network: z.boolean().optional() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const db = await admin();
-    const { id, ...row } = data;
+    const { id, includes_network, ...rest } = data;
+    const row = { ...rest, includes_network: !!includes_network };
     const { error } = id ? await db.from("license_plans").update(row).eq("id", id) : await db.from("license_plans").insert(row);
     if (error) throw new Error(error.message);
     return { ok: true };
