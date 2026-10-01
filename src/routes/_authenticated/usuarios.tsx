@@ -5,7 +5,7 @@ import { ArrowLeft, Check, Minus, RefreshCw, ShieldCheck, Trash2, UserCog } from
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { listUsers, setUserActive, setUserRole, listLicenses, extendLicense, deleteUserAccount } from "@/lib/users.functions";
+import { listUsers, setUserActive, setUserRole, listLicenses, extendLicense, deleteUserAccount, setLicenseNetwork } from "@/lib/users.functions";
 
 export const Route = createFileRoute("/_authenticated/usuarios")({
   head: () => ({ meta: [
@@ -37,15 +37,15 @@ const PERMISSIONS: { label: string; roles: Record<Role, boolean> }[] = [
 ];
 
 function UsersPage() {
-  const list = useServerFn(listUsers), setRole = useServerFn(setUserRole), setActive = useServerFn(setUserActive), licList = useServerFn(listLicenses), extend = useServerFn(extendLicense), deleteAcc = useServerFn(deleteUserAccount);
-  const [lic, setLic] = useState<Record<string, string>>({});
+  const list = useServerFn(listUsers), setRole = useServerFn(setUserRole), setActive = useServerFn(setUserActive), licList = useServerFn(listLicenses), extend = useServerFn(extendLicense), deleteAcc = useServerFn(deleteUserAccount), setNetwork = useServerFn(setLicenseNetwork);
+  const [lic, setLic] = useState<Record<string, { expires_at: string; has_network: boolean }>>({});
   const [users, setUsers] = useState<UserRow[]>([]);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [denied, setDenied] = useState(false);
 
   async function load() {
-    try { setUsers(await list()); setLic(Object.fromEntries((await licList()).map(l => [l.user_id, l.expires_at]))); setDenied(false); }
+    try { setUsers(await list()); setLic(Object.fromEntries((await licList()).map(l => [l.user_id, { expires_at: l.expires_at, has_network: l.has_network }]))); setDenied(false); }
     catch (e) { setDenied(true); setMsg((e as Error).message); }
   }
   useEffect(() => { void load(); }, []);
@@ -76,7 +76,7 @@ function UsersPage() {
                 className={`rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors ${has ? "border-primary bg-primary text-primary-foreground" : "text-muted-foreground hover:border-primary hover:text-foreground"}`}>{ROLE_LABEL[r]}</button>;
             })}</div></TableCell>
             <TableCell className="text-xs text-muted-foreground">{new Date(u.created_at).toLocaleDateString("pt-BR")}</TableCell>
-            <TableCell>{u.roles.includes("admin") ? <Badge>Administrador</Badge> : (() => { const e = lic[u.id]; const ok = !!e && new Date(e) > new Date(); return <div className="space-y-1"><Badge variant={ok ? "default" : "destructive"}>{ok ? `Até ${new Date(e!).toLocaleDateString("pt-BR")}` : "Expirada"}</Badge><div className="flex flex-wrap gap-1">{[30, 365].map(d => <button key={d} type="button" disabled={busy} className="rounded border px-1.5 py-0.5 text-[11px] hover:border-primary" onClick={() => run(async () => extend({ data: { userId: u.id, days: d } }))}>+{d === 30 ? "30 dias" : "1 ano"}</button>)}{ok && <button type="button" disabled={busy} className="rounded border px-1.5 py-0.5 text-[11px] text-destructive hover:border-destructive" onClick={() => run(async () => extend({ data: { userId: u.id, days: 0 } }))}>Bloquear</button>}</div></div>; })()}</TableCell>
+            <TableCell>{u.roles.includes("admin") ? <Badge>Administrador</Badge> : (() => { const l = lic[u.id]; const e = l?.expires_at; const ok = !!e && new Date(e) > new Date(); const net = !!l?.has_network; return <div className="space-y-1"><Badge variant={ok ? "default" : "destructive"}>{ok ? `Até ${new Date(e!).toLocaleDateString("pt-BR")}` : "Expirada"}</Badge><div className="flex flex-wrap gap-1">{[30, 365].map(d => <button key={d} type="button" disabled={busy} className="rounded border px-1.5 py-0.5 text-[11px] hover:border-primary" onClick={() => run(async () => extend({ data: { userId: u.id, days: d } }))}>+{d === 30 ? "30 dias" : "1 ano"}</button>)}{ok && <button type="button" disabled={busy} className="rounded border px-1.5 py-0.5 text-[11px] text-destructive hover:border-destructive" onClick={() => run(async () => extend({ data: { userId: u.id, days: 0 } }))}>Bloquear</button>}</div><button type="button" disabled={busy} title="Liberar ou bloquear a aba Rede FTTH desta conta" className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${net ? "border-primary bg-primary text-primary-foreground" : "text-muted-foreground hover:border-primary"}`} onClick={() => run(async () => setNetwork({ data: { userId: u.id, enabled: !net } }))}>Rede FTTH {net ? "liberada" : "bloqueada"}</button></div>; })()}</TableCell>
             <TableCell><Badge variant={u.active ? "default" : "secondary"}>{u.active ? "Ativo" : "Desativado"}</Badge></TableCell>
             <TableCell className="text-right"><div className="flex justify-end gap-2"><Button size="sm" variant="outline" disabled={busy} onClick={() => run(async () => setActive({ data: { userId: u.id, active: !u.active } }))}>{u.active ? "Desativar" : "Reativar"}</Button>{!u.roles.includes("admin") && <Button size="sm" variant="destructive" disabled={busy} onClick={() => { if (window.confirm(`Excluir a conta de ${u.full_name || u.email}? Todos os dados do painel dessa conta (clientes, planos, roteadores e cobranças) serão apagados. Essa ação não pode ser desfeita.`)) void run(async () => deleteAcc({ data: { userId: u.id } })); }}><Trash2 className="h-4 w-4" />Excluir</Button>}</div></TableCell>
           </TableRow>)}

@@ -75,15 +75,16 @@ export const getMyLicense = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
-    if (isAdmin) return { valid: true, admin: true, expires_at: null as string | null };
+    if (isAdmin) return { valid: true, admin: true, expires_at: null as string | null, network: true };
     // Funcionários usam a licença da conta principal
     const db = await admin();
     const { data: roles } = await db.from("user_roles").select("owner_id").eq("user_id", context.userId);
     const ownerId = (roles ?? []).find((r) => r.owner_id)?.owner_id as string | undefined;
     const licenseUser = ownerId ?? context.userId;
-    const { data } = await db.from("licenses").select("expires_at").eq("user_id", licenseUser).maybeSingle();
+    const { data } = await db.from("licenses").select("expires_at, has_network").eq("user_id", licenseUser).maybeSingle();
     const exp = (data?.expires_at as string | undefined) ?? null;
-    return { valid: !!exp && new Date(exp) > new Date(), admin: false, expires_at: exp };
+    const valid = !!exp && new Date(exp) > new Date();
+    return { valid, admin: false, expires_at: exp, network: valid && !!(data as any)?.has_network };
   });
 
 export const listLicenses = createServerFn({ method: "GET" })
@@ -91,8 +92,21 @@ export const listLicenses = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertAdmin(context);
     const db = await admin();
-    const { data } = await db.from("licenses").select("user_id, expires_at");
-    return (data ?? []) as { user_id: string; expires_at: string }[];
+    const { data } = await db.from("licenses").select("user_id, expires_at, has_network");
+    return (data ?? []).map((l: any) => ({ user_id: l.user_id as string, expires_at: l.expires_at as string, has_network: !!l.has_network }));
+  });
+
+export const setLicenseNetwork = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ userId: z.string().uuid(), enabled: z.boolean() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const db = await admin();
+    const { data: cur } = await db.from("licenses").select("expires_at").eq("user_id", data.userId).maybeSingle();
+    const expires_at = (cur?.expires_at as string | undefined) ?? new Date().toISOString();
+    const { error } = await db.from("licenses").upsert({ user_id: data.userId, expires_at, has_network: data.enabled }, { onConflict: "user_id" });
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
 
 export const extendLicense = createServerFn({ method: "POST" })
@@ -207,18 +221,19 @@ export const deleteTeamUser = createServerFn({ method: "POST" })
 export const listLicensePlans = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await context.supabase.from("license_plans").select("id, name, days, price, active").order("days");
+    const { data, error } = await context.supabase.from("license_plans").select("id, name, days, price, active, includes_network").order("days");
     if (error) throw new Error(error.message);
-    return (data ?? []).map((p: any) => ({ ...p, price: Number(p.price) })) as { id: string; name: string; days: number; price: number; active: boolean }[];
+    return (data ?? []).map((p: any) => ({ ...p, price: Number(p.price), includes_network: !!p.includes_network })) as { id: string; name: string; days: number; price: number; active: boolean; includes_network: boolean }[];
   });
 
 export const saveLicensePlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ id: z.string().uuid().optional(), name: z.string().trim().min(1).max(60), days: z.number().int().min(1).max(3650), price: z.number().positive().max(100000), active: z.boolean() }).parse(d))
+  .inputValidator((d) => z.object({ id: z.string().uuid().optional(), name: z.string().trim().min(1).max(60), days: z.number().int().min(1).max(3650), price: z.number().positive().max(100000), active: z.boolean(), includes_network: z.boolean().optional() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const db = await admin();
-    const { id, ...row } = data;
+    const { id, includes_network, ...rest } = data;
+    const row = { ...rest, includes_network: !!includes_network };
     const { error } = id ? await db.from("license_plans").update(row).eq("id", id) : await db.from("license_plans").insert(row);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -242,7 +257,7 @@ export const createLicensePayment = createServerFn({ method: "POST" })
     const { data: plan } = await db.from("license_plans").select("*").eq("id", data.planId).eq("active", true).maybeSingle();
     if (!plan) throw new Error("Plano indisponível.");
     const txid = "NX" + crypto.randomUUID().replace(/-/g, "").slice(0, 20).toUpperCase();
-    const { data: row, error } = await db.from("license_payments").insert({ user_id: context.userId, plan_id: plan.id, plan_name: plan.name, days: plan.days, amount: plan.price, txid }).select("id, txid, amount").single();
+    const { data: row, error } = await db.from("license_payments").insert({ user_id: context.userId, plan_id: plan.id, plan_name: plan.name, days: plan.days, amount: plan.price, txid, includes_network: !!plan.includes_network }).select("id, txid, amount").single();
     if (error) throw new Error(error.message);
     return { id: row.id as string, txid: row.txid as string, amount: Number(row.amount) };
   });
@@ -267,10 +282,13 @@ export const reviewLicensePayment = createServerFn({ method: "POST" })
     const { data: p } = await db.from("license_payments").select("*").eq("id", data.id).eq("status", "pending").maybeSingle();
     if (!p) throw new Error("Pagamento não encontrado ou já revisado.");
     if (data.approve) {
-      const { data: cur } = await db.from("licenses").select("expires_at").eq("user_id", p.user_id).maybeSingle();
-      const base = cur && new Date(cur.expires_at) > new Date() ? new Date(cur.expires_at) : new Date();
+      const { data: cur } = await db.from("licenses").select("expires_at, has_network").eq("user_id", p.user_id).maybeSingle();
+      const active = !!cur && new Date(cur.expires_at) > new Date();
+      const base = active ? new Date(cur!.expires_at) : new Date();
       const expires_at = new Date(base.getTime() + p.days * 86400000).toISOString();
-      const { error } = await db.from("licenses").upsert({ user_id: p.user_id, expires_at }, { onConflict: "user_id" });
+      // O módulo Rede passa a valer pelo plano pago; mantém se já tinha e a licença segue ativa
+      const has_network = !!p.includes_network || (active && !!cur?.has_network);
+      const { error } = await db.from("licenses").upsert({ user_id: p.user_id, expires_at, has_network }, { onConflict: "user_id" });
       if (error) throw new Error(error.message);
     }
     await db.from("license_payments").update({ status: data.approve ? "approved" : "rejected" }).eq("id", data.id);
@@ -287,9 +305,11 @@ async function loadLicenseSettings(db: any) {
 export async function approveLicensePaymentRow(db: any, p: any) {
   const { data: upd } = await db.from("license_payments").update({ status: "approved" }).eq("id", p.id).eq("status", "pending").select("id");
   if (!upd?.length) return;
-  const { data: cur } = await db.from("licenses").select("expires_at").eq("user_id", p.user_id).maybeSingle();
-  const base = cur && new Date(cur.expires_at) > new Date() ? new Date(cur.expires_at) : new Date();
-  await db.from("licenses").upsert({ user_id: p.user_id, expires_at: new Date(base.getTime() + p.days * 86400000).toISOString() }, { onConflict: "user_id" });
+  const { data: cur } = await db.from("licenses").select("expires_at, has_network").eq("user_id", p.user_id).maybeSingle();
+  const active = cur && new Date(cur.expires_at) > new Date();
+  const base = active ? new Date(cur.expires_at) : new Date();
+  const has_network = !!p.includes_network || (active && !!cur.has_network);
+  await db.from("licenses").upsert({ user_id: p.user_id, expires_at: new Date(base.getTime() + p.days * 86400000).toISOString(), has_network }, { onConflict: "user_id" });
 }
 
 export const getLicenseBank = createServerFn({ method: "GET" })
@@ -332,7 +352,7 @@ export const createAutoLicensePayment = createServerFn({ method: "POST" })
     const { data: prof } = await db.from("profiles").select("full_name").eq("id", context.userId).maybeSingle();
     const { data: u } = await db.auth.admin.getUserById(context.userId);
     const txid = "NX" + crypto.randomUUID().replace(/-/g, "").slice(0, 20).toUpperCase();
-    const { data: row, error } = await db.from("license_payments").insert({ user_id: context.userId, plan_id: plan.id, plan_name: plan.name, days: plan.days, amount: plan.price, txid }).select("id").single();
+    const { data: row, error } = await db.from("license_payments").insert({ user_id: context.userId, plan_id: plan.id, plan_name: plan.name, days: plan.days, amount: plan.price, txid, includes_network: !!plan.includes_network }).select("id").single();
     if (error) throw new Error(error.message);
     const { createLicensePix } = await import("./billing.server");
     const pix = await createLicensePix(s, { id: context.userId, name: prof?.full_name ?? "", email: u?.user?.email ?? null, cpfCnpj: data.cpfCnpj }, Number(plan.price), `Licença Nexora - ${plan.name}`, `license:${row.id}`);

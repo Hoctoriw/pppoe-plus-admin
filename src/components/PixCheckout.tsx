@@ -54,7 +54,7 @@ export function PixCheckout() {
     {msg && <p className="text-sm text-destructive">{msg}</p>}
     {auto && <input value={doc} onChange={e => setDoc(e.target.value)} placeholder="Seu CPF ou CNPJ" className="w-full rounded-md border bg-background px-3 py-2 text-sm" />}
     {plans.map(p => <button key={p.id} type="button" onClick={() => choose(p)} className="flex w-full items-center justify-between rounded-lg border p-3 text-left hover:border-primary">
-      <span><b>{p.name}</b><span className="block text-xs text-muted-foreground">{p.days} dias</span></span><span className="font-bold text-primary">{brl(p.price)}</span>
+      <span><b>{p.name}</b><span className="block text-xs text-muted-foreground">{p.days} dias{p.includes_network ? " · inclui Rede FTTH" : ""}</span></span><span className="font-bold text-primary">{brl(p.price)}</span>
     </button>)}
     {!plans.length && !msg && <p className="text-sm text-muted-foreground">Nenhum plano disponível.</p>}
   </div>;
