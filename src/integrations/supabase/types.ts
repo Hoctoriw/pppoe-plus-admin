@@ -460,6 +460,7 @@ export type Database = {
           created_at: string
           days: number
           id: string
+          includes_network: boolean
           pix_payload: string | null
           plan_id: string | null
           plan_name: string
@@ -474,6 +475,7 @@ export type Database = {
           created_at?: string
           days: number
           id?: string
+          includes_network?: boolean
           pix_payload?: string | null
           plan_id?: string | null
           plan_name: string
@@ -488,6 +490,7 @@ export type Database = {
           created_at?: string
           days?: number
           id?: string
+          includes_network?: boolean
           pix_payload?: string | null
           plan_id?: string | null
           plan_name?: string
@@ -513,6 +516,7 @@ export type Database = {
           created_at: string
           days: number
           id: string
+          includes_network: boolean
           name: string
           price: number
           updated_at: string
@@ -522,6 +526,7 @@ export type Database = {
           created_at?: string
           days: number
           id?: string
+          includes_network?: boolean
           name: string
           price: number
           updated_at?: string
@@ -531,6 +536,7 @@ export type Database = {
           created_at?: string
           days?: number
           id?: string
+          includes_network?: boolean
           name?: string
           price?: number
           updated_at?: string
@@ -568,18 +574,21 @@ export type Database = {
         Row: {
           created_at: string
           expires_at: string
+          has_network: boolean
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
           expires_at: string
+          has_network?: boolean
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
           expires_at?: string
+          has_network?: boolean
           updated_at?: string
           user_id?: string
         }
