@@ -75,15 +75,16 @@ export const getMyLicense = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
-    if (isAdmin) return { valid: true, admin: true, expires_at: null as string | null };
+    if (isAdmin) return { valid: true, admin: true, expires_at: null as string | null, network: true };
     // Funcionários usam a licença da conta principal
     const db = await admin();
     const { data: roles } = await db.from("user_roles").select("owner_id").eq("user_id", context.userId);
     const ownerId = (roles ?? []).find((r) => r.owner_id)?.owner_id as string | undefined;
     const licenseUser = ownerId ?? context.userId;
-    const { data } = await db.from("licenses").select("expires_at").eq("user_id", licenseUser).maybeSingle();
+    const { data } = await db.from("licenses").select("expires_at, has_network").eq("user_id", licenseUser).maybeSingle();
     const exp = (data?.expires_at as string | undefined) ?? null;
-    return { valid: !!exp && new Date(exp) > new Date(), admin: false, expires_at: exp };
+    const valid = !!exp && new Date(exp) > new Date();
+    return { valid, admin: false, expires_at: exp, network: valid && !!(data as any)?.has_network };
   });
 
 export const listLicenses = createServerFn({ method: "GET" })
@@ -91,8 +92,21 @@ export const listLicenses = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertAdmin(context);
     const db = await admin();
-    const { data } = await db.from("licenses").select("user_id, expires_at");
-    return (data ?? []) as { user_id: string; expires_at: string }[];
+    const { data } = await db.from("licenses").select("user_id, expires_at, has_network");
+    return (data ?? []).map((l: any) => ({ user_id: l.user_id as string, expires_at: l.expires_at as string, has_network: !!l.has_network }));
+  });
+
+export const setLicenseNetwork = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ userId: z.string().uuid(), enabled: z.boolean() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const db = await admin();
+    const { data: cur } = await db.from("licenses").select("expires_at").eq("user_id", data.userId).maybeSingle();
+    const expires_at = (cur?.expires_at as string | undefined) ?? new Date().toISOString();
+    const { error } = await db.from("licenses").upsert({ user_id: data.userId, expires_at, has_network: data.enabled }, { onConflict: "user_id" });
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
 
 export const extendLicense = createServerFn({ method: "POST" })
@@ -291,9 +305,11 @@ async function loadLicenseSettings(db: any) {
 export async function approveLicensePaymentRow(db: any, p: any) {
   const { data: upd } = await db.from("license_payments").update({ status: "approved" }).eq("id", p.id).eq("status", "pending").select("id");
   if (!upd?.length) return;
-  const { data: cur } = await db.from("licenses").select("expires_at").eq("user_id", p.user_id).maybeSingle();
-  const base = cur && new Date(cur.expires_at) > new Date() ? new Date(cur.expires_at) : new Date();
-  await db.from("licenses").upsert({ user_id: p.user_id, expires_at: new Date(base.getTime() + p.days * 86400000).toISOString() }, { onConflict: "user_id" });
+  const { data: cur } = await db.from("licenses").select("expires_at, has_network").eq("user_id", p.user_id).maybeSingle();
+  const active = cur && new Date(cur.expires_at) > new Date();
+  const base = active ? new Date(cur.expires_at) : new Date();
+  const has_network = !!p.includes_network || (active && !!cur.has_network);
+  await db.from("licenses").upsert({ user_id: p.user_id, expires_at: new Date(base.getTime() + p.days * 86400000).toISOString(), has_network }, { onConflict: "user_id" });
 }
 
 export const getLicenseBank = createServerFn({ method: "GET" })
