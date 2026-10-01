@@ -66,21 +66,23 @@ function PricesPage() {
     </section>
 
     <section className="mt-6 border bg-card">
-      <div className="border-b p-4 font-bold">Planos</div>
+      <div className="border-b p-4"><p className="font-bold">Planos</p><p className="text-xs text-muted-foreground">Marque <strong>Rede FTTH</strong> nos planos que dão acesso à aba Rede. Quem paga um plano sem essa marcação não vê a aba.</p></div>
       <div className="divide-y">
-        {plans.map(p => <form key={p.id + p.price + p.days + p.name + p.active} onSubmit={e => submit(e, p.id)} className="grid grid-cols-2 items-center gap-2 p-3 md:grid-cols-[2fr_1fr_1fr_auto_auto_auto]">
+        {plans.map(p => <form key={p.id + p.price + p.days + p.name + p.active + p.includes_network} onSubmit={e => submit(e, p.id)} className="grid grid-cols-2 items-center gap-2 p-3 md:grid-cols-[2fr_1fr_1fr_auto_auto_auto_auto]">
           <Input name="name" defaultValue={p.name} required />
           <Input name="days" type="number" min={1} defaultValue={p.days} required title="Dias" />
           <Input name="price" defaultValue={p.price.toFixed(2).replace(".", ",")} required title="Valor (R$)" />
           <label className="flex items-center gap-1 text-sm"><input type="checkbox" name="active" defaultChecked={p.active} />Ativo</label>
+          <label className="flex items-center gap-1 text-sm" title="Inclui o módulo Rede FTTH"><input type="checkbox" name="includes_network" defaultChecked={p.includes_network} />Rede FTTH</label>
           <Button size="sm" disabled={busy}>Salvar</Button>
           <Button type="button" size="sm" variant="ghost" disabled={busy} onClick={() => confirm(`Excluir o plano ${p.name}?`) && run(() => del({ data: { id: p.id } }))}><Trash2 className="text-destructive" /></Button>
         </form>)}
-        <form onSubmit={e => submit(e)} className="grid grid-cols-2 items-center gap-2 bg-muted/40 p-3 md:grid-cols-[2fr_1fr_1fr_auto_auto]">
+        <form onSubmit={e => submit(e)} className="grid grid-cols-2 items-center gap-2 bg-muted/40 p-3 md:grid-cols-[2fr_1fr_1fr_auto_auto_auto]">
           <Input name="name" placeholder="Nome (ex: Trimestral)" required />
           <Input name="days" type="number" min={1} placeholder="Dias" required />
           <Input name="price" placeholder="Valor R$" required />
           <label className="flex items-center gap-1 text-sm"><input type="checkbox" name="active" defaultChecked />Ativo</label>
+          <label className="flex items-center gap-1 text-sm" title="Inclui o módulo Rede FTTH"><input type="checkbox" name="includes_network" />Rede FTTH</label>
           <Button size="sm" disabled={busy}><Plus />Adicionar</Button>
         </form>
       </div>

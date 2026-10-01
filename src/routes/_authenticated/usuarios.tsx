@@ -5,7 +5,7 @@ import { ArrowLeft, Check, Minus, RefreshCw, ShieldCheck, Trash2, UserCog } from
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { listUsers, setUserActive, setUserRole, listLicenses, extendLicense, deleteUserAccount } from "@/lib/users.functions";
+import { listUsers, setUserActive, setUserRole, listLicenses, extendLicense, deleteUserAccount, setLicenseNetwork } from "@/lib/users.functions";
 
 export const Route = createFileRoute("/_authenticated/usuarios")({
   head: () => ({ meta: [
