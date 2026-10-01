@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Anchor, Box, Cable, ChevronRight, CircleDollarSign, LayoutDashboard, LogOut, Menu, Move, Network, Package, Plus, Radio, Router as RouterIcon, Save, Server, ShieldCheck, Split, Trash2, UserPlus, Users, Wifi, X } from "lucide-react";
 import { AdminOnly } from "@/components/AdminOnly";
+import { useNetworkModule } from "@/components/NetworkModuleOnly";
 import { NetworkMap, type MapCustomer } from "@/components/NetworkMap";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
