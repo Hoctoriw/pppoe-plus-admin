@@ -5,9 +5,9 @@
 # Com o 3º argumento, a ISO instala o SISTEMA COMPLETO on-premise (painel web + banco + RADIUS) acessível pelo IP.
 # Resultado: nexora-radius.iso  (ATENÇÃO: a instalação APAGA o primeiro disco)
 set -euo pipefail
-PANEL_URL="${1:-}"; ROOTPW="${2:-}"; REPO_URL="${3:-}"
+PANEL_URL="${1:-}"; ROOTPW="${2:-}"; REPO_URL="${3:-}"; SYNC_KEY="${4:-}"
 if [ -z "$PANEL_URL" ] || [ -z "$ROOTPW" ]; then
-  echo "Uso: bash radius-iso-build.sh URL_DO_PAINEL SENHA_ROOT"; exit 1; fi
+  echo "Uso: bash radius-iso-build.sh URL_DO_PAINEL SENHA_ROOT [URL_DO_REPOSITORIO_GIT] [CHAVE_DE_SINCRONISMO]"; exit 1; fi
 PANEL_URL="${PANEL_URL%/}"
 command -v xorriso >/dev/null || { echo "Instale o xorriso (apt install xorriso)"; exit 1; }
 command -v curl >/dev/null || { echo "Instale o curl"; exit 1; }
@@ -24,6 +24,11 @@ mkdir -p "$W/nexora"
 if [ -n "$REPO_URL" ]; then
   curl -fsSL "$PANEL_URL/nexora-onprem-install.sh" -o "$W/nexora/onprem.sh"
   printf '#!/bin/bash\nset -e\nbash /opt/nexora/onprem.sh %q main\n' "$REPO_URL" > "$W/nexora/pair.sh"
+  if [ -n "$SYNC_KEY" ]; then
+    printf 'ONLINE_URL=%s\nSYNC_KEY=%s\n' "$PANEL_URL" "$SYNC_KEY" > "$W/nexora/sync.env"
+    echo "==> Chave de sincronismo embutida: o servidor já nasce conectado ao painel online."
+    echo "    ATENÇÃO: guarde esta ISO com cuidado — ela dá acesso aos dados da sua conta."
+  fi
 else
   curl -fsSL "$PANEL_URL/radius-pair.sh" -o "$W/nexora/pair.sh"
 fi

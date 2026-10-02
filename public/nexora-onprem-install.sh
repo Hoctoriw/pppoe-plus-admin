@@ -278,6 +278,14 @@ EOS
 chmod 700 /usr/local/bin/nexora-cloud-pair
 echo '*/2 * * * * root /usr/local/bin/nexora-cloud-pair >/dev/null 2>&1' > /etc/cron.d/nexora-cloud-pair
 
+# ISO gerada com chave embutida: já nasce conectada ao painel online (zero toque).
+if [ -f "$BASE/sync.env" ]; then
+  log "Chave do painel online encontrada: ativando a sincronização automática"
+  chmod 600 "$BASE/sync.env"
+  echo '*/3 * * * * root /usr/local/bin/nexora-sync >> /var/log/nexora-sync.log 2>&1' > /etc/cron.d/nexora-sync
+  /usr/local/bin/nexora-sync >> /var/log/nexora-sync.log 2>&1 || echo "Primeira cópia falhou; tenta de novo em 3 minutos."
+fi
+
 cat > /etc/issue <<EOF
 Nexora ISP (servidor local) — acesse no navegador: http://\4/
 Atualizar: nexora-update
