@@ -8,27 +8,43 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { applyRadius, connectionStatus, deleteRouter, getRadiusInstall, listRouters, saveRadiusConfig, saveRouter, syncPlans, testRadius, testRouter } from "@/lib/mikrotik.functions";
+import { listRadiusAppliances } from "@/lib/radius-appliance.functions";
 
 function RadiusInstaller() {
   const get = useServerFn(getRadiusInstall);
-  const [cmd, setCmd] = useState("");
+  const listApp = useServerFn(listRadiusAppliances);
+  const [token, setToken] = useState("");
   const [err, setErr] = useState("");
+  const [apps, setApps] = useState<Awaited<ReturnType<typeof listRadiusAppliances>>>([]);
   const origin = typeof window === "undefined" ? "" : window.location.origin;
+  useEffect(() => { const f = () => listApp().then(setApps).catch(() => {}); void f(); const t = setInterval(f, 30000); return () => clearInterval(t); }, []);
   async function reveal() {
-    try { const { token } = await get(); setCmd(`curl -fsSL ${origin}/radius-install.sh -o install.sh && sudo bash install.sh ${origin} ${token}`); }
-    catch (e) { setErr(e instanceof Error ? e.message : "Erro"); }
+    try { setToken((await get()).token); } catch (e) { setErr(e instanceof Error ? e.message : "Erro"); }
   }
+  const online = (d: string) => Date.now() - new Date(d).getTime() < 3 * 60_000;
   return <div className="border bg-card p-5 text-sm">
-    <h2 className="font-bold">Servidor RADIUS próprio (instalação automática)</h2>
-    <ol className="mt-2 list-decimal space-y-1 pl-5 text-muted-foreground">
-      <li>Instale <b>Debian 12</b> limpo na máquina que será o servidor RADIUS, com IP fixo e acesso à internet.</li>
-      <li>Entre como root e rode o comando abaixo. Ele instala e configura o FreeRADIUS consultando o cadastro deste painel.</li>
-      <li>Autorize cada MikroTik: <code className="font-mono">nexora-radius-add-router NOME IP_DO_ROTEADOR SEGREDO</code> (o mesmo segredo configurado no cartão do roteador acima).</li>
-    </ol>
-    {cmd ? <pre className="mt-3 overflow-x-auto whitespace-pre-wrap break-all rounded-md bg-muted p-3 font-mono text-xs">{cmd}</pre>
-      : <Button className="mt-3" size="sm" onClick={reveal}>Gerar comando de instalação</Button>}
+    <h2 className="font-bold">Servidor RADIUS próprio (ISO autoinstalável)</h2>
+    <p className="mt-1 text-muted-foreground">Gere uma ISO que instala sozinha um servidor RADIUS completo. Ele fica ligado direto a este painel: autoriza automaticamente os roteadores com RADIUS ativo, envia o status a cada minuto e recebe atualizações futuras sem você mexer.</p>
+
+    <div className="mt-4">
+      <p className="font-semibold">Servidores conectados</p>
+      {apps.length ? <ul className="mt-2 space-y-2">{apps.map(a => <li key={a.hostname} className="flex flex-wrap items-center gap-2 rounded-md border p-3">
+        {online(a.last_seen_at) && a.radius_ok ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <XCircle className="h-4 w-4 text-destructive" />}
+        <span className="font-semibold">{a.hostname}</span><span className="font-mono text-xs">{a.local_ip}</span>
+        <Badge variant="outline">v{a.version || "?"}</Badge>
+        <span className="text-xs text-muted-foreground">{online(a.last_seen_at) ? (a.radius_ok ? "online" : "RADIUS parado") : "offline"} · último contato {new Date(a.last_seen_at).toLocaleString("pt-BR")} · {a.uptime}</span>
+      </li>)}</ul> : <p className="mt-1 text-xs text-muted-foreground">Nenhum servidor conectado ainda.</p>}
+    </div>
+
+    {!token ? <Button className="mt-4" size="sm" onClick={reveal}>Gerar comandos da ISO e instalação</Button> : <div className="mt-4 space-y-3">
+      <div><p className="font-semibold">Opção 1 — Gerar a ISO (num computador com Linux)</p>
+        <pre className="mt-1 overflow-x-auto whitespace-pre-wrap break-all rounded-md bg-muted p-3 font-mono text-xs">{`sudo apt install -y xorriso curl\ncurl -fsSL ${origin}/radius-iso-build.sh -o build.sh && bash build.sh ${origin} ${token} SENHA_ROOT`}</pre>
+        <p className="text-xs text-muted-foreground">Grave a <b>nexora-radius.iso</b> num pendrive (Rufus/Balena Etcher) ou use numa máquina virtual (Proxmox, VMware, VirtualBox). <b>A instalação apaga o disco.</b></p></div>
+      <div><p className="font-semibold">Opção 2 — Debian 12 já instalado</p>
+        <pre className="mt-1 overflow-x-auto whitespace-pre-wrap break-all rounded-md bg-muted p-3 font-mono text-xs">{`curl -fsSL ${origin}/radius-install.sh -o install.sh && sudo bash install.sh ${origin} ${token}`}</pre></div>
+    </div>}
     {err && <p className="mt-2 text-xs text-destructive">{err}</p>}
-    <p className="mt-2 text-xs text-muted-foreground">O comando contém a chave de acesso do servidor RADIUS — não compartilhe. Use o endereço do painel publicado para produção. Clientes suspensos ou cancelados são negados automaticamente; PPPoE autentica por usuário/senha e IPoE pelo MAC.</p>
+    <p className="mt-2 text-xs text-muted-foreground">Os comandos contêm a chave de acesso — não compartilhe. Use o endereço do painel publicado para produção. Depois de instalado, aponte cada roteador para o IP do servidor no cartão acima.</p>
   </div>;
 }
 
