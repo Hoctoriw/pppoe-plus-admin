@@ -69,7 +69,9 @@ d-i partman/confirm boolean true
 d-i partman/confirm_nooverwrite boolean true
 d-i apt-setup/cdrom/set-first boolean false
 tasksel tasksel/first multiselect standard, ssh-server
-d-i pkgsel/include string curl ca-certificates
+d-i pkgsel/include string curl ca-certificates psmisc
+d-i pkgsel/upgrade select none
+d-i pkgsel/update-policy select none
 popularity-contest popularity-contest/participate boolean false
 d-i grub-installer/only_debian boolean true
 d-i grub-installer/bootdev string default
