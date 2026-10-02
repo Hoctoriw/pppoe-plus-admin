@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # Nexora ISP — gera uma ISO Debian 12 genérica do servidor RADIUS (sem chaves secretas).
 # No primeiro boot a máquina mostra um código temporário; você o digita no painel para vincular.
-# Uso (em qualquer Linux): bash radius-iso-build.sh URL_DO_PAINEL SENHA_ROOT
+# Uso (em qualquer Linux): bash radius-iso-build.sh URL_DO_PAINEL SENHA_ROOT [URL_DO_REPOSITORIO_GIT]
+# Com o 3º argumento, a ISO instala o SISTEMA COMPLETO on-premise (painel web + banco + RADIUS) acessível pelo IP.
 # Resultado: nexora-radius.iso  (ATENÇÃO: a instalação APAGA o primeiro disco)
 set -euo pipefail
-PANEL_URL="${1:-}"; ROOTPW="${2:-}"
+PANEL_URL="${1:-}"; ROOTPW="${2:-}"; REPO_URL="${3:-}"
 if [ -z "$PANEL_URL" ] || [ -z "$ROOTPW" ]; then
   echo "Uso: bash radius-iso-build.sh URL_DO_PAINEL SENHA_ROOT"; exit 1; fi
 PANEL_URL="${PANEL_URL%/}"
@@ -20,7 +21,12 @@ W=$(mktemp -d); trap 'rm -rf "$W"' EXIT
 [ -f "$NAME" ] || { echo "==> Baixando $NAME"; curl -L -o "$NAME" "$BASE/$NAME"; }
 
 mkdir -p "$W/nexora"
-curl -fsSL "$PANEL_URL/radius-pair.sh" -o "$W/nexora/pair.sh"
+if [ -n "$REPO_URL" ]; then
+  curl -fsSL "$PANEL_URL/nexora-onprem-install.sh" -o "$W/nexora/onprem.sh"
+  printf '#!/bin/bash\nset -e\nbash /opt/nexora/onprem.sh %q main\n' "$REPO_URL" > "$W/nexora/pair.sh"
+else
+  curl -fsSL "$PANEL_URL/radius-pair.sh" -o "$W/nexora/pair.sh"
+fi
 printf 'PANEL_URL=%q\n' "$PANEL_URL" > "$W/nexora/env"
 cat > "$W/nexora/nexora-firstboot.service" <<'EOF'
 [Unit]
@@ -28,8 +34,10 @@ Description=Nexora RADIUS pareamento e instalação no primeiro boot
 After=network-online.target
 Wants=network-online.target
 ConditionPathExists=!/opt/nexora/agent.sh
+ConditionPathExists=!/opt/nexora/app/.output
 [Service]
 Type=oneshot
+TimeoutStartSec=0
 ExecStart=/bin/bash /opt/nexora/pair.sh
 ExecStartPost=/bin/systemctl disable nexora-firstboot.service
 Restart=on-failure
