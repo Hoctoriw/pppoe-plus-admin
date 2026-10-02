@@ -21,13 +21,40 @@ function attr(body: any, name: string): string {
 
 const MAC = /^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$/;
 
+export const AGENT_VERSION = "1.0.0";
+
 export const Route = createFileRoute("/api/public/radius/$action")({
   server: {
     handlers: {
+      GET: async ({ request, params }) => {
+        if (!authorized(request)) return new Response("Unauthorized", { status: 403 });
+        if (params.action === "version") return Response.json({ version: AGENT_VERSION });
+        if (params.action !== "clients") return new Response("Not found", { status: 404 });
+        // Lista de roteadores autorizados (clients.conf do FreeRADIUS)
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { data } = await supabaseAdmin.from("routers").select("id, base_url, radius_secret").eq("radius_enabled", true);
+        const lines: string[] = [];
+        for (const r of data ?? []) {
+          let host = "";
+          try { host = new URL(r.base_url).hostname; } catch { continue; }
+          const secret = String(r.radius_secret ?? "").replace(/[^\x21-\x7e]/g, "").replace(/["\\]/g, "");
+          if (!host || !secret || !/^[A-Za-z0-9.:-]+$/.test(host)) continue;
+          lines.push(`client nx_${r.id.replace(/-/g, "")} {\n  ipaddr = ${host}\n  secret = "${secret}"\n  nas_type = other\n}`);
+        }
+        return new Response(lines.join("\n") + "\n", { headers: { "Content-Type": "text/plain" } });
+      },
       POST: async ({ request, params }) => {
         if (!authorized(request)) return new Response("Unauthorized", { status: 403 });
         const body = await request.json().catch(() => ({}));
 
+        if (params.action === "heartbeat") {
+          const s = (v: unknown, n: number) => String(v ?? "").slice(0, n);
+          const hostname = s(body?.hostname, 80).replace(/[^A-Za-z0-9._-]/g, "");
+          if (!hostname) return new Response("Missing hostname", { status: 400 });
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          await (supabaseAdmin as any).from("radius_appliances").upsert({ hostname, local_ip: s(body?.local_ip, 64), version: s(body?.version, 20), radius_ok: body?.radius_ok === true, uptime: s(body?.uptime, 80), last_seen_at: new Date().toISOString() });
+          return Response.json({ version: AGENT_VERSION });
+        }
         if (params.action === "accounting") return new Response(null, { status: 204 });
         if (params.action !== "authorize") return new Response("Not found", { status: 404 });
 
