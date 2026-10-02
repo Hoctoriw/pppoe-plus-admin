@@ -199,10 +199,11 @@ set -euo pipefail
 [ -f /opt/nexora/sync.env ] || { echo "Rode antes: nexora-sync-setup URL CHAVE"; exit 1; }
 . /opt/nexora/sync.env
 PSQL(){ docker exec -i supabase-db psql -v ON_ERROR_STOP=1 -U postgres -d postgres -qtA "$@"; }
-OWNER=$(PSQL -c "select user_id from public.user_roles where role='admin' order by user_id limit 1")
-[ -n "$OWNER" ] || { echo "Crie a conta local e rode nexora-make-admin antes de sincronizar."; exit 1; }
+OWNER=$(PSQL -c "select user_id from public.user_roles where role='admin' order by user_id limit 1" | tr -d '[:space:]')
+if [ -z "$OWNER" ]; then echo "$(date '+%F %T') aguardando a primeira conta ser criada no painel local"; exit 0; fi
 F=$(mktemp); trap 'rm -f $F' EXIT
-curl -fsS -H "Authorization: Bearer $SYNC_KEY" "$ONLINE_URL/api/public/onprem/export" -o "$F"
+curl -fsS --max-time 120 -H "Authorization: Bearer $SYNC_KEY" "$ONLINE_URL/api/public/onprem/export" -o "$F" \
+  || { echo "$(date '+%F %T') falha ao baixar da nuvem (chave inválida ou painel não publicado)"; exit 1; }
 PSQL >/dev/null <<'SQL'
 create or replace function public.nexora_sync_upsert(_t text, _rows jsonb, _owner uuid) returns int
 language plpgsql security definer set search_path=public as $$
@@ -219,13 +220,34 @@ begin
 end $$;
 SQL
 docker cp "$F" supabase-db:/tmp/nx.json
-docker exec supabase-db chmod 644 /tmp/nx.json
 for t in plans routers bank_accounts ftth_nodes customers customer_equipment invoices; do
-  n=$(PSQL -c "select public.nexora_sync_upsert('$t', pg_read_file('/tmp/nx.json')::jsonb->'$t', '$OWNER')")
+  n=$(docker exec -i supabase-db sh -c "psql -v ON_ERROR_STOP=1 -U postgres -d postgres -qtA -v data=\"\$(cat /tmp/nx.json)\" -c \"select public.nexora_sync_upsert('$t', (:'data')::jsonb->'$t', '$OWNER')\"" 2>&1 | tail -1) || true
   echo "$(date '+%F %T') $t: $n"
 done
+docker exec supabase-db rm -f /tmp/nx.json
 EOS
 chmod 700 /usr/local/bin/nexora-sync /usr/local/bin/nexora-sync-setup
+
+# A primeira conta criada no painel local vira a conta principal automaticamente.
+PSQL <<'SQL'
+create or replace function public.nexora_first_admin() returns trigger
+language plpgsql security definer set search_path=public as $$
+begin
+  if not exists (select 1 from public.user_roles where role='admin') then
+    insert into public.user_roles(user_id, role) values (new.id, 'admin') on conflict do nothing;
+  end if;
+  return new;
+end $$;
+drop trigger if exists nexora_first_admin on auth.users;
+create trigger nexora_first_admin after insert on auth.users for each row execute function public.nexora_first_admin();
+SQL
+
+# Se a ISO veio com chave de sincronização, liga o sincronismo automaticamente.
+if [ -f /opt/nexora/sync.env ]; then
+  chmod 600 /opt/nexora/sync.env
+  echo '*/5 * * * * root /usr/local/bin/nexora-sync >> /var/log/nexora-sync.log 2>&1' > /etc/cron.d/nexora-sync
+  /usr/local/bin/nexora-sync || true
+fi
 
 cat > /etc/issue <<EOF
 Nexora ISP (servidor local) — acesse no navegador: http://\4/
