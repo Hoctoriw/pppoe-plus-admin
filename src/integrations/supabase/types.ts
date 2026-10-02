@@ -594,6 +594,27 @@ export type Database = {
         }
         Relationships: []
       }
+      onprem_sync_tokens: {
+        Row: {
+          created_at: string
+          last_used_at: string | null
+          owner_id: string
+          token_hash: string
+        }
+        Insert: {
+          created_at?: string
+          last_used_at?: string | null
+          owner_id: string
+          token_hash: string
+        }
+        Update: {
+          created_at?: string
+          last_used_at?: string | null
+          owner_id?: string
+          token_hash?: string
+        }
+        Relationships: []
+      }
       plans: {
         Row: {
           created_at: string
