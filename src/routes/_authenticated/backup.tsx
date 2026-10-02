@@ -22,7 +22,7 @@ export const Route = createFileRoute("/_authenticated/backup")({
 });
 
 // No servidor instalado (on-premise) o painel roda com projeto "local".
-const IS_LOCAL = import.meta.env.VITE_SUPABASE_PROJECT_ID === "local";
+const IS_LOCAL = import.meta.env["VITE_SUPABASE_PROJECT_ID"] === "local";
 
 function BackupPage() {
   const get = useServerFn(getBackupSettings);
