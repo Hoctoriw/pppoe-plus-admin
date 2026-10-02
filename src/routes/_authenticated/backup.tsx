@@ -173,8 +173,12 @@ function OnpremSync() {
       <p className="text-xs text-muted-foreground">Situação: {state?.exists ? `chave ativa · última cópia ${state.last_used_at ? new Date(state.last_used_at).toLocaleString("pt-BR") : "ainda não feita"}` : "nenhuma chave gerada"}</p>
       <Button variant="outline" onClick={async () => { setErr(null); try { const r = await gen(); setToken(r.token); setState({ exists: true, last_used_at: null }); } catch (e) { setErr((e as Error).message); } }}><KeyRound />{state?.exists ? "Gerar nova chave" : "Gerar chave"}</Button>
       {token && (
-        <div className="space-y-1">
-          <p className="text-xs font-semibold">Rode no servidor local (a chave aparece só agora):</p>
+        <div className="space-y-2">
+          <p className="text-xs font-semibold">Gerar a ISO já conectada (zero toque — recomendado):</p>
+          <pre className="overflow-x-auto rounded bg-muted p-3 text-xs">{`curl -fsSL ${panel}/radius-iso-build.sh -o build.sh
+bash build.sh ${panel} SUA_SENHA_ROOT https://github.com/SEU_USUARIO/SEU_REPOSITORIO.git ${token}`}</pre>
+          <p className="text-xs text-muted-foreground">A máquina instalada por essa ISO já liga sincronizando com esta conta. Guarde a ISO com cuidado; se ela se perder, gere uma nova chave aqui.</p>
+          <p className="text-xs font-semibold">Ou, num servidor já instalado:</p>
           <pre className="overflow-x-auto rounded bg-muted p-3 text-xs">{`sudo nexora-sync-setup ${panel} ${token}`}</pre>
         </div>
       )}
