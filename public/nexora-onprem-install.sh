@@ -255,6 +255,16 @@ cat > /usr/local/bin/nexora-cloud-pair <<'EOS'
 set -euo pipefail
 if [ -f /opt/nexora/sync.env ]; then exit 0; fi
 PSQL(){ docker exec -i supabase-db psql -U postgres -d postgres -qtA "$@"; }
+# Login nativo: a conta da nuvem já entregou a chave (status 'ready').
+READY=$(PSQL -c "select online_url||'|'||poll_secret from public.cloud_pairing_state where status='ready' order by created_at desc limit 1" 2>/dev/null) || READY=""
+if [ -n "$READY" ]; then
+  URL=${READY%%|*}; TOKEN=${READY#*|}
+  printf 'ONLINE_URL=%s\nSYNC_KEY=%s\n' "$URL" "$TOKEN" > /opt/nexora/sync.env; chmod 600 /opt/nexora/sync.env
+  echo '*/3 * * * * root /usr/local/bin/nexora-sync >> /var/log/nexora-sync.log 2>&1' > /etc/cron.d/nexora-sync
+  PSQL -c "update public.cloud_pairing_state set status='connected', poll_secret='-' where status='ready'" >/dev/null
+  /usr/local/bin/nexora-sync >/dev/null 2>&1 || true
+  exit 0
+fi
 ROW=$(PSQL -c "select online_url||'|'||code||'|'||poll_secret from public.cloud_pairing_state where status='pending' order by created_at desc limit 1" 2>/dev/null) || exit 0
 [ -n "$ROW" ] || exit 0
 URL=$(echo "$ROW" | awk -F'|' '{print $1}')

@@ -26,6 +26,7 @@ import { Route as AuthenticatedRedeRouteImport } from './routes/_authenticated/r
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as ApiPublicHooksDailyBackupRouteImport } from './routes/api/public/hooks/daily-backup'
 import { Route as ApiPublicHooksSyncMikrotikRouteImport } from './routes/api/public/hooks/sync-mikrotik'
+import { Route as ApiPublicOnpremCloudLoginRouteImport } from './routes/api/public/onprem.cloud-login'
 import { Route as ApiPublicOnpremExportRouteImport } from './routes/api/public/onprem.export'
 import { Route as ApiPublicOnpremPairRequestRouteImport } from './routes/api/public/onprem.pair-request'
 import { Route as ApiPublicOnpremPairStatusRouteImport } from './routes/api/public/onprem.pair-status'
@@ -120,6 +121,12 @@ const ApiPublicHooksSyncMikrotikRoute =
     path: '/api/public/hooks/sync-mikrotik',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicOnpremCloudLoginRoute =
+  ApiPublicOnpremCloudLoginRouteImport.update({
+    id: '/api/public/onprem/cloud-login',
+    path: '/api/public/onprem/cloud-login',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicOnpremExportRoute = ApiPublicOnpremExportRouteImport.update({
   id: '/api/public/onprem/export',
   path: '/api/public/onprem/export',
@@ -176,6 +183,7 @@ export interface FileRoutesByFullPath {
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
   '/api/public/hooks/sync-mikrotik': typeof ApiPublicHooksSyncMikrotikRoute
+  '/api/public/onprem/cloud-login': typeof ApiPublicOnpremCloudLoginRoute
   '/api/public/onprem/export': typeof ApiPublicOnpremExportRoute
   '/api/public/onprem/pair-request': typeof ApiPublicOnpremPairRequestRoute
   '/api/public/onprem/pair-status': typeof ApiPublicOnpremPairStatusRoute
@@ -201,6 +209,7 @@ export interface FileRoutesByTo {
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
   '/api/public/hooks/sync-mikrotik': typeof ApiPublicHooksSyncMikrotikRoute
+  '/api/public/onprem/cloud-login': typeof ApiPublicOnpremCloudLoginRoute
   '/api/public/onprem/export': typeof ApiPublicOnpremExportRoute
   '/api/public/onprem/pair-request': typeof ApiPublicOnpremPairRequestRoute
   '/api/public/onprem/pair-status': typeof ApiPublicOnpremPairStatusRoute
@@ -228,6 +237,7 @@ export interface FileRoutesById {
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
   '/api/public/hooks/sync-mikrotik': typeof ApiPublicHooksSyncMikrotikRoute
+  '/api/public/onprem/cloud-login': typeof ApiPublicOnpremCloudLoginRoute
   '/api/public/onprem/export': typeof ApiPublicOnpremExportRoute
   '/api/public/onprem/pair-request': typeof ApiPublicOnpremPairRequestRoute
   '/api/public/onprem/pair-status': typeof ApiPublicOnpremPairStatusRoute
@@ -255,6 +265,7 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/api/public/hooks/daily-backup'
     | '/api/public/hooks/sync-mikrotik'
+    | '/api/public/onprem/cloud-login'
     | '/api/public/onprem/export'
     | '/api/public/onprem/pair-request'
     | '/api/public/onprem/pair-status'
@@ -280,6 +291,7 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/api/public/hooks/daily-backup'
     | '/api/public/hooks/sync-mikrotik'
+    | '/api/public/onprem/cloud-login'
     | '/api/public/onprem/export'
     | '/api/public/onprem/pair-request'
     | '/api/public/onprem/pair-status'
@@ -306,6 +318,7 @@ export interface FileRouteTypes {
     | '/_authenticated/usuarios'
     | '/api/public/hooks/daily-backup'
     | '/api/public/hooks/sync-mikrotik'
+    | '/api/public/onprem/cloud-login'
     | '/api/public/onprem/export'
     | '/api/public/onprem/pair-request'
     | '/api/public/onprem/pair-status'
@@ -322,6 +335,7 @@ export interface RootRouteChildren {
   BloqueadoRoute: typeof BloqueadoRoute
   ApiPublicHooksDailyBackupRoute: typeof ApiPublicHooksDailyBackupRoute
   ApiPublicHooksSyncMikrotikRoute: typeof ApiPublicHooksSyncMikrotikRoute
+  ApiPublicOnpremCloudLoginRoute: typeof ApiPublicOnpremCloudLoginRoute
   ApiPublicOnpremExportRoute: typeof ApiPublicOnpremExportRoute
   ApiPublicOnpremPairRequestRoute: typeof ApiPublicOnpremPairRequestRoute
   ApiPublicOnpremPairStatusRoute: typeof ApiPublicOnpremPairStatusRoute
@@ -452,6 +466,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksSyncMikrotikRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/onprem/cloud-login': {
+      id: '/api/public/onprem/cloud-login'
+      path: '/api/public/onprem/cloud-login'
+      fullPath: '/api/public/onprem/cloud-login'
+      preLoaderRoute: typeof ApiPublicOnpremCloudLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/onprem/export': {
       id: '/api/public/onprem/export'
       path: '/api/public/onprem/export'
@@ -542,6 +563,7 @@ const rootRouteChildren: RootRouteChildren = {
   BloqueadoRoute: BloqueadoRoute,
   ApiPublicHooksDailyBackupRoute: ApiPublicHooksDailyBackupRoute,
   ApiPublicHooksSyncMikrotikRoute: ApiPublicHooksSyncMikrotikRoute,
+  ApiPublicOnpremCloudLoginRoute: ApiPublicOnpremCloudLoginRoute,
   ApiPublicOnpremExportRoute: ApiPublicOnpremExportRoute,
   ApiPublicOnpremPairRequestRoute: ApiPublicOnpremPairRequestRoute,
   ApiPublicOnpremPairStatusRoute: ApiPublicOnpremPairStatusRoute,

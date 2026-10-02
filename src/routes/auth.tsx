@@ -6,6 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
+import { loginWithCloudAccount } from "@/lib/onprem-login.functions";
+
+const IS_LOCAL = import.meta.env["VITE_SUPABASE_PROJECT_ID"] === "local";
+const CLOUD_URL = "https://pppoe-plus-admin.lovable.app";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [
@@ -25,6 +29,7 @@ function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [cloud, setCloud] = useState(IS_LOCAL);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setLoading(true); setMessage("");
@@ -32,7 +37,14 @@ function AuthPage() {
     const email = String(form.get("email") ?? "");
     const password = String(form.get("password") ?? "");
     const fullName = String(form.get("fullName") ?? "");
-    if (mode === "login") {
+    if (mode === "login" && IS_LOCAL && cloud) {
+      try {
+        await loginWithCloudAccount({ data: { url: CLOUD_URL, email, password } });
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) setMessage("Conta criada, mas não foi possível entrar. Tente de novo.");
+        else navigate({ to: "/dashboard", replace: true });
+      } catch (e) { setMessage(e instanceof Error ? e.message : "Falha ao entrar com a conta da nuvem."); }
+    } else if (mode === "login") {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) setMessage("E-mail ou senha inválidos.");
       else navigate({ to: "/dashboard", replace: true });
@@ -68,6 +80,7 @@ function AuthPage() {
           {mode === "signup" && <div className="space-y-2"><Label htmlFor="fullName">Nome completo</Label><Input id="fullName" name="fullName" required placeholder="Seu nome" /></div>}
           <div className="space-y-2"><Label htmlFor="email">E-mail</Label><Input id="email" name="email" type="email" required placeholder="voce@provedor.com.br" /></div>
           <div className="space-y-2"><Label htmlFor="password">Senha</Label><div className="relative"><Input id="password" name="password" type={showPassword ? "text" : "password"} required minLength={6} className="pr-10" /><Button type="button" variant="ghost" size="icon" aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"} className="absolute right-0 top-0" onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff /> : <Eye />}</Button></div></div>
+          {IS_LOCAL && mode === "login" && <label className="flex items-start gap-2 rounded-md border border-border p-3 text-sm"><input type="checkbox" className="mt-1" checked={cloud} onChange={(e) => setCloud(e.target.checked)} /><span><strong>Entrar com minha conta da nuvem</strong><br /><span className="text-muted-foreground">Usa o mesmo e-mail e senha do painel online e liga a sincronização automática.</span></span></label>}
           {message && <p className="rounded-md bg-muted px-3 py-2 text-sm text-foreground">{message}</p>}
           <Button type="submit" className="h-11 w-full" disabled={loading}>{loading ? "Aguarde..." : mode === "login" ? "Entrar" : "Criar conta"}</Button>
         </form>
