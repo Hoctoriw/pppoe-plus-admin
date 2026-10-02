@@ -227,9 +227,40 @@ done
 EOS
 chmod 700 /usr/local/bin/nexora-sync /usr/local/bin/nexora-sync-setup
 
+log "Conexão automática com o painel online (pareamento pelo navegador)"
+cat > /usr/local/bin/nexora-cloud-pair <<'EOS'
+#!/bin/bash
+# Se houver pareamento pendente com o painel online (página Backup), conclui a conexão sozinho.
+set -euo pipefail
+if [ -f /opt/nexora/sync.env ]; then exit 0; fi
+PSQL(){ docker exec -i supabase-db psql -U postgres -d postgres -qtA "$@"; }
+ROW=$(PSQL -c "select online_url||'|'||code||'|'||poll_secret from public.cloud_pairing_state where status='pending' order by created_at desc limit 1" 2>/dev/null) || exit 0
+[ -n "$ROW" ] || exit 0
+URL=$(echo "$ROW" | awk -F'|' '{print $1}')
+CODE=$(echo "$ROW" | awk -F'|' '{print $2}')
+SECRET=$(echo "$ROW" | awk -F'|' '{print $3}')
+[ -n "$URL" ] && [ -n "$CODE" ] && [ -n "$SECRET" ] || exit 0
+RES=$(curl -fsS -m 20 -X POST "$URL/api/public/onprem/pair-status" -H 'content-type: application/json' \
+  -d "{\"code\":\"$CODE\",\"poll_secret\":\"$SECRET\"}" 2>/dev/null) || exit 0
+STATUS=$(echo "$RES" | jq -r '.status // empty')
+if [ "$STATUS" = "approved" ]; then
+  TOKEN=$(echo "$RES" | jq -r '.token // empty')
+  if [ -n "$TOKEN" ]; then
+    printf 'ONLINE_URL=%s\nSYNC_KEY=%s\n' "$URL" "$TOKEN" > /opt/nexora/sync.env
+    chmod 600 /opt/nexora/sync.env
+    echo '*/15 * * * * root /usr/local/bin/nexora-sync >> /var/log/nexora-sync.log 2>&1' > /etc/cron.d/nexora-sync
+    PSQL -c "update public.cloud_pairing_state set status='connected' where code='$CODE'" >/dev/null
+    /usr/local/bin/nexora-sync >/dev/null 2>&1 || true
+  fi
+fi
+EOS
+chmod 700 /usr/local/bin/nexora-cloud-pair
+echo '*/2 * * * * root /usr/local/bin/nexora-cloud-pair >/dev/null 2>&1' > /etc/cron.d/nexora-cloud-pair
+
 cat > /etc/issue <<EOF
 Nexora ISP (servidor local) — acesse no navegador: http://\4/
 Atualizar: nexora-update
+Conectar ao painel online: página Backup > Conectar com a nuvem
 
 EOF
 
@@ -239,6 +270,6 @@ echo " Nexora ISP pronto!  Acesse: http://$IP/"
 echo " Crie a primeira conta pela tela de login (ela vira a principal)."
 echo " Segredos locais: $BASE/secrets.env (guarde uma cópia)."
 echo " Para atualizar no futuro: nexora-update"
-echo " Sincronizar com o painel online: gere a chave na página Backup e rode nexora-sync-setup"
+echo " Sincronizar com o painel online: página Backup > Conectar com a nuvem (automático)"
 echo " SSH liberado: ssh root@$IP"
 echo "================================================================"
