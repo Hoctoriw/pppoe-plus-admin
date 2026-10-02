@@ -1,10 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Download, Mail, Save, Upload } from "lucide-react";
+import { ArrowLeft, Download, KeyRound, Mail, Save, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { downloadBackup, getBackupSettings, restoreBackup, saveBackupEmail, sendBackupNow } from "@/lib/backup.functions";
+import { downloadBackup, generateOnpremSyncToken, getBackupSettings, getOnpremSyncInfo, restoreBackup, saveBackupEmail, sendBackupNow } from "@/lib/backup.functions";
 
 export const Route = createFileRoute("/_authenticated/backup")({
   head: () => ({
