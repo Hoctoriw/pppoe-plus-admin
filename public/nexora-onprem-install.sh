@@ -242,7 +242,7 @@ SQL
 docker cp "$F" supabase-db:/tmp/nx.json
 docker exec supabase-db chmod 644 /tmp/nx.json
 for t in plans routers bank_accounts ftth_nodes customers customer_equipment invoices; do
-  n=$(PSQL -c "select public.nexora_sync_upsert('$t', pg_read_file('/tmp/nx.json')::jsonb->'$t', '$OWNER')")
+  n=$(PSQL -c "set session_replication_role=replica; select public.nexora_sync_upsert('$t', pg_read_file('/tmp/nx.json')::jsonb->'$t', '$OWNER')")
   echo "$(date '+%F %T') $t: $n"
 done
 EOS

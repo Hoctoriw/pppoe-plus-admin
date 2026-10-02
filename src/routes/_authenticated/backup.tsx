@@ -103,7 +103,7 @@ function OnpremPairingApproval() {
       <h2 className="text-sm font-semibold">Autorizar servidor local</h2>
       <p className="text-xs text-muted-foreground">No servidor instalado na sua rede, abra a página Backup, clique em “Conectar com a nuvem” e digite aqui o código de 6 números que aparecer. Ele vale por 15 minutos e o servidor conecta sozinho logo depois.</p>
       {done ? (
-        <p className="text-sm text-primary">Servidor autorizado! Em até 1 minuto ele se conecta e começa a copiar os dados a cada 15 minutos.</p>
+        <p className="text-sm text-primary">Servidor autorizado! Em até 1 minuto ele se conecta e começa a copiar os dados a cada 3 minutos, nos dois sentidos.</p>
       ) : (
         <div className="flex gap-2">
           <Input inputMode="numeric" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} placeholder="000000" className="w-32 tracking-[0.3em]" />
@@ -136,17 +136,17 @@ function CloudPairingCard() {
     <section className="space-y-3 rounded-lg border bg-card p-5">
       <h2 className="text-sm font-semibold">Conectar com a nuvem</h2>
       {state?.status === "connected" ? (
-        <p className="text-sm text-primary">Conectado a {state.online_url}. A cópia dos dados roda a cada 15 minutos, em segundo plano.</p>
+        <p className="text-sm text-primary">Conectado a {state.online_url}. A cópia dos dados roda a cada 3 minutos, nos dois sentidos, em segundo plano.</p>
       ) : state?.status === "pending" ? (
         <>
           <p className="text-xs text-muted-foreground">No painel online ({state.online_url}), abra a página <strong>Backup</strong>, ache o cartão <strong>Autorizar servidor local</strong> e digite este código:</p>
           <p className="text-center text-4xl font-extrabold tracking-[0.4em]">{state.code}</p>
-          <p className="text-xs text-muted-foreground">O código vale por 15 minutos. Assim que autorizar, este servidor se conecta sozinho em até 1 minuto e começa a copiar os dados a cada 15 minutos.</p>
+          <p className="text-xs text-muted-foreground">O código vale por 15 minutos. Assim que autorizar, este servidor se conecta sozinho em até 1 minuto e começa a copiar os dados a cada 3 minutos, nos dois sentidos.</p>
           <Button variant="outline" disabled={busy} onClick={connect}>Gerar novo código</Button>
         </>
       ) : (
         <>
-          <p className="text-xs text-muted-foreground">Este servidor passa a copiar sozinho clientes, planos, roteadores, rede FTTH e cobranças do painel online, a cada 15 minutos. Digite o endereço do painel online e clique em Conectar.</p>
+          <p className="text-xs text-muted-foreground">Este servidor passa a copiar sozinho clientes, planos, roteadores, rede FTTH e cobranças do painel online, a cada 3 minutos, nos dois sentidos. Digite o endereço do painel online e clique em Conectar.</p>
           <div className="flex gap-2">
             <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://seu-painel.lovable.app" />
             <Button disabled={busy} onClick={connect}>{busy ? "Conectando..." : "Conectar"}</Button>
@@ -169,7 +169,7 @@ function OnpremSync() {
   return (
     <section className="space-y-3 rounded-lg border bg-card p-5">
       <h2 className="text-sm font-semibold">Gerar chave manualmente (alternativa)</h2>
-      <p className="text-xs text-muted-foreground">O servidor instalado na sua rede copia daqui, a cada 15 minutos, clientes, planos, roteadores, rede FTTH e cobranças. Gere a chave e rode o comando no servidor local. Gerar de novo invalida a chave anterior.</p>
+      <p className="text-xs text-muted-foreground">O servidor instalado na sua rede copia daqui, a cada 3 minutos, nos dois sentidos, clientes, planos, roteadores, rede FTTH e cobranças. Gere a chave e rode o comando no servidor local. Gerar de novo invalida a chave anterior.</p>
       <p className="text-xs text-muted-foreground">Situação: {state?.exists ? `chave ativa · última cópia ${state.last_used_at ? new Date(state.last_used_at).toLocaleString("pt-BR") : "ainda não feita"}` : "nenhuma chave gerada"}</p>
       <Button variant="outline" onClick={async () => { setErr(null); try { const r = await gen(); setToken(r.token); setState({ exists: true, last_used_at: null }); } catch (e) { setErr((e as Error).message); } }}><KeyRound />{state?.exists ? "Gerar nova chave" : "Gerar chave"}</Button>
       {token && (
