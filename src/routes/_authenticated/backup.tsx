@@ -103,8 +103,11 @@ function OnpremSync() {
       <Button variant="outline" onClick={async () => { setErr(null); try { const r = await gen(); setToken(r.token); setState({ exists: true, last_used_at: null }); } catch (e) { setErr((e as Error).message); } }}><KeyRound />{state?.exists ? "Gerar nova chave" : "Gerar chave"}</Button>
       {token && (
         <div className="space-y-1">
-          <p className="text-xs font-semibold">Rode no servidor local (a chave aparece só agora):</p>
-          <pre className="overflow-x-auto rounded bg-muted p-3 text-xs">{`sudo nexora-sync-setup ${panel} ${token}`}</pre>
+          <p className="text-xs font-semibold">Gerar ISO já conectada (recomendado — a chave aparece só agora):</p>
+          <pre className="overflow-x-auto whitespace-pre-wrap break-all rounded bg-muted p-3 text-xs">{`curl -fsSL ${panel}/radius-iso-build.sh -o build.sh\nbash build.sh ${panel} SENHA_ROOT https://github.com/SUA-CONTA/SEU-REPO.git ${token}`}</pre>
+          <p className="text-xs text-muted-foreground">A máquina instalada por essa ISO já nasce sincronizada: a primeira conta criada no servidor local vira a conta principal e recebe os dados automaticamente.</p>
+          <p className="text-xs font-semibold">Ou, num servidor local já instalado:</p>
+          <pre className="overflow-x-auto whitespace-pre-wrap break-all rounded bg-muted p-3 text-xs">{`sudo nexora-sync-setup ${panel} ${token}`}</pre>
         </div>
       )}
       {err && <p className="text-sm text-destructive">{err}</p>}
