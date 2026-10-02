@@ -189,19 +189,40 @@ cat > /usr/local/bin/nexora-sync-setup <<'EOS'
 # Uso: nexora-sync-setup URL_DO_PAINEL_ONLINE CHAVE   (a chave é gerada na página Backup do painel online)
 [ -n "$2" ] || { echo "Uso: nexora-sync-setup URL_DO_PAINEL CHAVE"; exit 1; }
 printf 'ONLINE_URL=%s\nSYNC_KEY=%s\n' "${1%/}" "$2" > /opt/nexora/sync.env; chmod 600 /opt/nexora/sync.env
-echo '*/15 * * * * root /usr/local/bin/nexora-sync >> /var/log/nexora-sync.log 2>&1' > /etc/cron.d/nexora-sync
+echo '*/3 * * * * root /usr/local/bin/nexora-sync >> /var/log/nexora-sync.log 2>&1' > /etc/cron.d/nexora-sync
 /usr/local/bin/nexora-sync
 EOS
 cat > /usr/local/bin/nexora-sync <<'EOS'
 #!/bin/bash
-# Copia os dados da conta online para o servidor local (nuvem -> local).
+# Sincroniza nos dois sentidos: envia o que mudou aqui e recebe o que mudou na nuvem.
 set -euo pipefail
 [ -f /opt/nexora/sync.env ] || { echo "Rode antes: nexora-sync-setup URL CHAVE"; exit 1; }
 . /opt/nexora/sync.env
 PSQL(){ docker exec -i supabase-db psql -v ON_ERROR_STOP=1 -U postgres -d postgres -qtA "$@"; }
 OWNER=$(PSQL -c "select user_id from public.user_roles where role='admin' order by user_id limit 1")
 [ -n "$OWNER" ] || { echo "Crie a conta local e rode nexora-make-admin antes de sincronizar."; exit 1; }
-F=$(mktemp); trap 'rm -f $F' EXIT
+F=$(mktemp); P=$(mktemp); trap 'rm -f $F $P' EXIT
+# 1) Envia para a nuvem o que foi criado/alterado aqui desde o último envio (local -> nuvem)
+SINCE=$(cat /opt/nexora/last_push 2>/dev/null || echo '1970-01-01T00:00:00Z')
+NOW=$(date -u +%FT%TZ)
+PSQL -c "select json_build_object(
+  'tables', json_build_object(
+    'plans',(select coalesce(json_agg(t),'[]') from public.plans t where updated_at > '$SINCE'),
+    'routers',(select coalesce(json_agg(to_jsonb(t)-'password'-'radius_secret'),'[]') from public.routers t where updated_at > '$SINCE'),
+    'bank_accounts',(select coalesce(json_agg(to_jsonb(t)-'api_key'),'[]') from public.bank_accounts t where updated_at > '$SINCE'),
+    'ftth_nodes',(select coalesce(json_agg(t),'[]') from public.ftth_nodes t where updated_at > '$SINCE'),
+    'customers',(select coalesce(json_agg(t),'[]') from public.customers t where updated_at > '$SINCE'),
+    'customer_equipment',(select coalesce(json_agg(t),'[]') from public.customer_equipment t where updated_at > '$SINCE'),
+    'invoices',(select coalesce(json_agg(t),'[]') from public.invoices t where updated_at > '$SINCE')),
+  'users',(select coalesce(json_agg(json_build_object('id',u.id,'email',u.email,'full_name',coalesce(p.full_name,''),'role',coalesce((select r.role::text from public.user_roles r where r.user_id=u.id and r.role<>'admin' limit 1),'operator'))),'[]')
+           from auth.users u left join public.profiles p on p.id=u.id
+           where u.email is not null and not exists (select 1 from public.user_roles r where r.user_id=u.id and r.role='admin')))" > "$P"
+if curl -fsS -m 120 -X POST -H "Authorization: Bearer $SYNC_KEY" -H 'content-type: application/json' --data-binary @"$P" "$ONLINE_URL/api/public/onprem/push" >/dev/null; then
+  echo "$NOW" > /opt/nexora/last_push; echo "$(date '+%F %T') envio para a nuvem: ok"
+else
+  echo "$(date '+%F %T') envio para a nuvem falhou (sem internet?) — tenta de novo no próximo ciclo"
+fi
+# 2) Recebe da nuvem (nuvem -> local), mantendo sempre a versão mais recente
 curl -fsS -H "Authorization: Bearer $SYNC_KEY" "$ONLINE_URL/api/public/onprem/export" -o "$F"
 PSQL >/dev/null <<'SQL'
 create or replace function public.nexora_sync_upsert(_t text, _rows jsonb, _owner uuid) returns int
@@ -213,15 +234,15 @@ begin
     into cols, upd
   from information_schema.columns c
   where c.table_schema='public' and c.table_name=_t and c.column_name in (select jsonb_object_keys(_rows->0) union select 'owner_id');
-  execute format('insert into public.%I (%s) select %s from jsonb_populate_recordset(null::public.%I, (select jsonb_agg(r || jsonb_build_object(''owner_id'', %L)) from jsonb_array_elements($1) r)) on conflict (id) do update set %s',
-    _t, cols, cols, _t, _owner, upd) using _rows;
+  execute format('insert into public.%I (%s) select %s from jsonb_populate_recordset(null::public.%I, (select jsonb_agg(r || jsonb_build_object(''owner_id'', %L)) from jsonb_array_elements($1) r)) on conflict (id) do update set %s where public.%I.updated_at <= excluded.updated_at',
+    _t, cols, cols, _t, _owner, upd, _t) using _rows;
   get diagnostics n = row_count; return n;
 end $$;
 SQL
 docker cp "$F" supabase-db:/tmp/nx.json
 docker exec supabase-db chmod 644 /tmp/nx.json
 for t in plans routers bank_accounts ftth_nodes customers customer_equipment invoices; do
-  n=$(PSQL -c "select public.nexora_sync_upsert('$t', pg_read_file('/tmp/nx.json')::jsonb->'$t', '$OWNER')")
+  n=$(PSQL -c "set session_replication_role=replica; select public.nexora_sync_upsert('$t', pg_read_file('/tmp/nx.json')::jsonb->'$t', '$OWNER')")
   echo "$(date '+%F %T') $t: $n"
 done
 EOS
@@ -248,7 +269,7 @@ if [ "$STATUS" = "approved" ]; then
   if [ -n "$TOKEN" ]; then
     printf 'ONLINE_URL=%s\nSYNC_KEY=%s\n' "$URL" "$TOKEN" > /opt/nexora/sync.env
     chmod 600 /opt/nexora/sync.env
-    echo '*/15 * * * * root /usr/local/bin/nexora-sync >> /var/log/nexora-sync.log 2>&1' > /etc/cron.d/nexora-sync
+    echo '*/3 * * * * root /usr/local/bin/nexora-sync >> /var/log/nexora-sync.log 2>&1' > /etc/cron.d/nexora-sync
     PSQL -c "update public.cloud_pairing_state set status='connected' where code='$CODE'" >/dev/null
     /usr/local/bin/nexora-sync >/dev/null 2>&1 || true
   fi
