@@ -166,6 +166,14 @@ cat > /usr/local/bin/nexora-update <<EOF
 REPO_URL="$REPO" bash $BASE/app/public/nexora-onprem-install.sh "$REPO" "$BRANCH"
 EOF
 chmod +x /usr/local/bin/nexora-update
+cat > /usr/local/bin/nexora-make-admin <<EOF
+#!/bin/bash
+# Uso: nexora-make-admin email@da.conta
+[ -n "\$1" ] || { echo "Uso: nexora-make-admin email"; exit 1; }
+PGPASSWORD=$POSTGRES_PASSWORD psql -h 127.0.0.1 -U postgres -d postgres -c "insert into public.user_roles(user_id, role) select id, 'admin' from auth.users where email='\$1' on conflict do nothing"
+EOF
+chmod 700 /usr/local/bin/nexora-make-admin
+
 
 cat > /etc/issue <<EOF
 Nexora ISP (servidor local) — acesse no navegador: http://\4/
