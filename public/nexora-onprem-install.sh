@@ -218,9 +218,10 @@ begin
   get diagnostics n = row_count; return n;
 end $$;
 SQL
-JSON=$(cat "$F")
+docker cp "$F" supabase-db:/tmp/nx.json
+docker exec supabase-db chmod 644 /tmp/nx.json
 for t in plans routers bank_accounts ftth_nodes customers customer_equipment invoices; do
-  n=$(printf '%s' "$JSON" | docker exec -i supabase-db sh -c "psql -v ON_ERROR_STOP=1 -U postgres -d postgres -qtA -v t=$t -v o=$OWNER -c \"select 1\" >/dev/null; cat > /tmp/nx.json; psql -v ON_ERROR_STOP=1 -U postgres -d postgres -qtA -c \"select public.nexora_sync_upsert('$t', (pg_read_file('/tmp/nx.json')::jsonb)->'$t', '$OWNER')\"")
+  n=$(PSQL -c "select public.nexora_sync_upsert('$t', pg_read_file('/tmp/nx.json')::jsonb->'$t', '$OWNER')")
   echo "$(date '+%F %T') $t: $n"
 done
 EOS
