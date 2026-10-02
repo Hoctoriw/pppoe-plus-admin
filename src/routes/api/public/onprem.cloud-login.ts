@@ -17,7 +17,7 @@ export const Route = createFileRoute("/api/public/onprem/cloud-login")({
         const parsed = bodySchema.safeParse(body);
         if (!parsed.success) return json({ error: "Dados inválidos" }, 400);
 
-        const anon = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, { auth: { persistSession: false, autoRefreshToken: false } });
+        const anon = createClient(process.env['SUPABASE_URL']!, process.env['SUPABASE_PUBLISHABLE_KEY']!, { auth: { persistSession: false, autoRefreshToken: false } });
         const { data: auth, error } = await anon.auth.signInWithPassword(parsed.data);
         if (error || !auth.user) return json({ error: "E-mail ou senha da nuvem inválidos." }, 401);
         const user = auth.user;

@@ -10,7 +10,7 @@ export const loginWithCloudAccount = createServerFn({ method: "POST" })
     password: z.string().min(6).max(200),
   }).parse(d))
   .handler(async ({ data }) => {
-    const local = String(process.env.SUPABASE_URL ?? "");
+    const local = String(process.env['SUPABASE_URL'] ?? "");
     if (!/^http:\/\/(127\.0\.0\.1|localhost)/.test(local)) throw new Error("Disponível apenas no servidor local.");
     const url = data.url.replace(/\/+$/, "");
     let res: Response;
