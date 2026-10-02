@@ -16,3 +16,5 @@
 - FTTH data is client-edited under tenant RLS; each child stores cable data, selected fiber, and ordered anchors, with live signal and routed-distance calculation. New children of unbalanced splitters default to the higher-percentage pass output.
 - On-premise: public/nexora-onprem-install.sh builds the app with NITRO_PRESET=node-server and runs it behind Nginx with self-hosted Supabase in Docker — why: lets ISPs run the full panel offline on their own IP.
 - On-premise sync is one-way cloud→local: the local server pulls /api/public/onprem/export with a per-owner token (sha256 in onprem_sync_tokens) and upserts into its local admin account via docker exec into supabase-db — why: host port 5432 is the Supavisor pooler, and each token must only expose one tenant.
+
+- Cloud→local sync has a native pairing path: local panel (Backup page) requests a 6-digit code at /api/public/onprem/pair-request, owner approves it in the online Backup page, and the local cron (nexora-cloud-pair) polls /api/public/onprem/pair-status to receive the sync token once — why: avoids copying long keys in the terminal; manual nexora-sync-setup key remains as fallback.

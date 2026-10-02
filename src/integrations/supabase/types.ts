@@ -95,6 +95,36 @@ export type Database = {
         }
         Relationships: []
       }
+      cloud_pairing_state: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          online_url: string
+          owner_id: string
+          poll_secret: string
+          status: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          online_url: string
+          owner_id?: string
+          poll_secret: string
+          status?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          online_url?: string
+          owner_id?: string
+          poll_secret?: string
+          status?: string
+        }
+        Relationships: []
+      }
       customer_equipment: {
         Row: {
           brand: string | null
@@ -591,6 +621,42 @@ export type Database = {
           has_network?: boolean
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      onprem_pairings: {
+        Row: {
+          code: string
+          created_at: string
+          expires_at: string
+          hostname: string | null
+          issued_token: string | null
+          local_ip: string | null
+          owner_id: string | null
+          poll_hash: string
+          status: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          expires_at: string
+          hostname?: string | null
+          issued_token?: string | null
+          local_ip?: string | null
+          owner_id?: string | null
+          poll_hash: string
+          status?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          expires_at?: string
+          hostname?: string | null
+          issued_token?: string | null
+          local_ip?: string | null
+          owner_id?: string | null
+          poll_hash?: string
+          status?: string
         }
         Relationships: []
       }

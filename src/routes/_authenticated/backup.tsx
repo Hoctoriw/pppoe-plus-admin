@@ -5,6 +5,7 @@ import { ArrowLeft, Download, KeyRound, Mail, Save, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { downloadBackup, generateOnpremSyncToken, getBackupSettings, getOnpremSyncInfo, restoreBackup, saveBackupEmail, sendBackupNow } from "@/lib/backup.functions";
+import { approveOnpremPairing, getCloudPairingState, requestCloudPairing, type CloudPairingState } from "@/lib/onprem-pair.functions";
 
 export const Route = createFileRoute("/_authenticated/backup")({
   head: () => ({
@@ -19,6 +20,9 @@ export const Route = createFileRoute("/_authenticated/backup")({
   }),
   component: BackupPage,
 });
+
+// No servidor instalado (on-premise) o painel roda com projeto "local".
+const IS_LOCAL = import.meta.env["VITE_SUPABASE_PROJECT_ID"] === "local";
 
 function BackupPage() {
   const get = useServerFn(getBackupSettings);
@@ -81,9 +85,76 @@ function BackupPage() {
         }} />
         <Button variant="outline" disabled={busy || !isOwner} onClick={() => fileRef.current?.click()}><Upload />Escolher arquivo e restaurar</Button>
       </section>
-      {isOwner && <OnpremSync />}
+      {isOwner && (IS_LOCAL ? <CloudPairingCard /> : <><OnpremPairingApproval /><OnpremSync /></>)}
       {msg && <p className={msg.ok ? "text-sm text-primary" : "text-sm text-destructive"}>{msg.text}</p>}
     </main>
+  );
+}
+
+// Painel ONLINE: autorizar o servidor local pelo código de 6 números (sem colar chaves no terminal).
+function OnpremPairingApproval() {
+  const approve = useServerFn(approveOnpremPairing);
+  const [code, setCode] = useState("");
+  const [done, setDone] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  return (
+    <section className="space-y-3 rounded-lg border bg-card p-5">
+      <h2 className="text-sm font-semibold">Autorizar servidor local</h2>
+      <p className="text-xs text-muted-foreground">No servidor instalado na sua rede, abra a página Backup, clique em “Conectar com a nuvem” e digite aqui o código de 6 números que aparecer. Ele vale por 15 minutos e o servidor conecta sozinho logo depois.</p>
+      {done ? (
+        <p className="text-sm text-primary">Servidor autorizado! Em até 1 minuto ele se conecta e começa a copiar os dados a cada 15 minutos.</p>
+      ) : (
+        <div className="flex gap-2">
+          <Input inputMode="numeric" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} placeholder="000000" className="w-32 tracking-[0.3em]" />
+          <Button disabled={busy || code.length !== 6} onClick={async () => { setBusy(true); setErr(null); try { await approve({ data: { code } }); setDone(true); } catch (e) { setErr((e as Error).message); } setBusy(false); }}>Autorizar</Button>
+        </div>
+      )}
+      {err && <p className="text-sm text-destructive">{err}</p>}
+    </section>
+  );
+}
+
+// Painel LOCAL: pedir o código e mostrar a situação da conexão com a nuvem.
+function CloudPairingCard() {
+  const getState = useServerFn(getCloudPairingState);
+  const request = useServerFn(requestCloudPairing);
+  const [state, setState] = useState<CloudPairingState>(null);
+  const [url, setUrl] = useState("https://pppoe-plus-admin.lovable.app");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => { getState().then(setState).catch(() => {}); }, []);
+  async function connect() {
+    setBusy(true); setErr(null);
+    try {
+      const r = await request({ data: { url } });
+      setState({ online_url: r.online_url, code: r.code, status: "pending", created_at: new Date().toISOString() });
+    } catch (e) { setErr((e as Error).message); }
+    setBusy(false);
+  }
+  return (
+    <section className="space-y-3 rounded-lg border bg-card p-5">
+      <h2 className="text-sm font-semibold">Conectar com a nuvem</h2>
+      {state?.status === "connected" ? (
+        <p className="text-sm text-primary">Conectado a {state.online_url}. A cópia dos dados roda a cada 15 minutos, em segundo plano.</p>
+      ) : state?.status === "pending" ? (
+        <>
+          <p className="text-xs text-muted-foreground">No painel online ({state.online_url}), abra a página <strong>Backup</strong>, ache o cartão <strong>Autorizar servidor local</strong> e digite este código:</p>
+          <p className="text-center text-4xl font-extrabold tracking-[0.4em]">{state.code}</p>
+          <p className="text-xs text-muted-foreground">O código vale por 15 minutos. Assim que autorizar, este servidor se conecta sozinho em até 1 minuto e começa a copiar os dados a cada 15 minutos.</p>
+          <Button variant="outline" disabled={busy} onClick={connect}>Gerar novo código</Button>
+        </>
+      ) : (
+        <>
+          <p className="text-xs text-muted-foreground">Este servidor passa a copiar sozinho clientes, planos, roteadores, rede FTTH e cobranças do painel online, a cada 15 minutos. Digite o endereço do painel online e clique em Conectar.</p>
+          <div className="flex gap-2">
+            <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://seu-painel.lovable.app" />
+            <Button disabled={busy} onClick={connect}>{busy ? "Conectando..." : "Conectar"}</Button>
+          </div>
+        </>
+      )}
+      {err && <p className="text-sm text-destructive">{err}</p>}
+    </section>
   );
 }
 
@@ -97,7 +168,7 @@ function OnpremSync() {
   const panel = typeof window !== "undefined" ? window.location.origin : "";
   return (
     <section className="space-y-3 rounded-lg border bg-card p-5">
-      <h2 className="text-sm font-semibold">Sincronizar com servidor local</h2>
+      <h2 className="text-sm font-semibold">Gerar chave manualmente (alternativa)</h2>
       <p className="text-xs text-muted-foreground">O servidor instalado na sua rede copia daqui, a cada 15 minutos, clientes, planos, roteadores, rede FTTH e cobranças. Gere a chave e rode o comando no servidor local. Gerar de novo invalida a chave anterior.</p>
       <p className="text-xs text-muted-foreground">Situação: {state?.exists ? `chave ativa · última cópia ${state.last_used_at ? new Date(state.last_used_at).toLocaleString("pt-BR") : "ainda não feita"}` : "nenhuma chave gerada"}</p>
       <Button variant="outline" onClick={async () => { setErr(null); try { const r = await gen(); setToken(r.token); setState({ exists: true, last_used_at: null }); } catch (e) { setErr((e as Error).message); } }}><KeyRound />{state?.exists ? "Gerar nova chave" : "Gerar chave"}</Button>
