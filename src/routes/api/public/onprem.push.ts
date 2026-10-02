@@ -76,6 +76,7 @@ export const Route = createFileRoute("/api/public/onprem/push")({
         for (const u of body.users) {
           if (u.id === owner) continue;
           const { data: got } = await db.auth.admin.getUserById(u.id);
+          let created = false;
           if (!got?.user) {
             const { error } = await db.auth.admin.createUser({
               id: u.id,
@@ -85,12 +86,14 @@ export const Route = createFileRoute("/api/public/onprem/push")({
               user_metadata: { full_name: u.full_name },
             });
             if (error) continue; // e-mail já usado por outra conta na nuvem: ignora
+            created = true;
           }
           const { data: roles } = await db.from("user_roles").select("id, owner_id").eq("user_id", u.id);
           const mine = (roles ?? []).find((r: any) => r.owner_id === owner);
           const foreign = (roles ?? []).find((r: any) => r.owner_id && r.owner_id !== owner);
           if (foreign) continue;
           if (!mine) {
+            if (!created) continue; // conta já existente na nuvem e independente: nunca é tomada
             await db.from("user_roles").delete().eq("user_id", u.id).is("owner_id", null);
             await db.from("user_roles").insert({ user_id: u.id, role: u.role, owner_id: owner });
           }

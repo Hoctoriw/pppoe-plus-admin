@@ -29,6 +29,7 @@ import { Route as ApiPublicHooksSyncMikrotikRouteImport } from './routes/api/pub
 import { Route as ApiPublicOnpremExportRouteImport } from './routes/api/public/onprem.export'
 import { Route as ApiPublicOnpremPairRequestRouteImport } from './routes/api/public/onprem.pair-request'
 import { Route as ApiPublicOnpremPairStatusRouteImport } from './routes/api/public/onprem.pair-status'
+import { Route as ApiPublicOnpremPushRouteImport } from './routes/api/public/onprem.push'
 import { Route as ApiPublicRadiusActionRouteImport } from './routes/api/public/radius.$action'
 import { Route as ApiPublicWebhooksAsaasRouteImport } from './routes/api/public/webhooks/asaas'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
@@ -136,6 +137,11 @@ const ApiPublicOnpremPairStatusRoute =
     path: '/api/public/onprem/pair-status',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicOnpremPushRoute = ApiPublicOnpremPushRouteImport.update({
+  id: '/api/public/onprem/push',
+  path: '/api/public/onprem/push',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicRadiusActionRoute = ApiPublicRadiusActionRouteImport.update({
   id: '/api/public/radius/$action',
   path: '/api/public/radius/$action',
@@ -173,6 +179,7 @@ export interface FileRoutesByFullPath {
   '/api/public/onprem/export': typeof ApiPublicOnpremExportRoute
   '/api/public/onprem/pair-request': typeof ApiPublicOnpremPairRequestRoute
   '/api/public/onprem/pair-status': typeof ApiPublicOnpremPairStatusRoute
+  '/api/public/onprem/push': typeof ApiPublicOnpremPushRoute
   '/api/public/radius/$action': typeof ApiPublicRadiusActionRoute
   '/api/public/webhooks/asaas': typeof ApiPublicWebhooksAsaasRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -197,6 +204,7 @@ export interface FileRoutesByTo {
   '/api/public/onprem/export': typeof ApiPublicOnpremExportRoute
   '/api/public/onprem/pair-request': typeof ApiPublicOnpremPairRequestRoute
   '/api/public/onprem/pair-status': typeof ApiPublicOnpremPairStatusRoute
+  '/api/public/onprem/push': typeof ApiPublicOnpremPushRoute
   '/api/public/radius/$action': typeof ApiPublicRadiusActionRoute
   '/api/public/webhooks/asaas': typeof ApiPublicWebhooksAsaasRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -223,6 +231,7 @@ export interface FileRoutesById {
   '/api/public/onprem/export': typeof ApiPublicOnpremExportRoute
   '/api/public/onprem/pair-request': typeof ApiPublicOnpremPairRequestRoute
   '/api/public/onprem/pair-status': typeof ApiPublicOnpremPairStatusRoute
+  '/api/public/onprem/push': typeof ApiPublicOnpremPushRoute
   '/api/public/radius/$action': typeof ApiPublicRadiusActionRoute
   '/api/public/webhooks/asaas': typeof ApiPublicWebhooksAsaasRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -249,6 +258,7 @@ export interface FileRouteTypes {
     | '/api/public/onprem/export'
     | '/api/public/onprem/pair-request'
     | '/api/public/onprem/pair-status'
+    | '/api/public/onprem/push'
     | '/api/public/radius/$action'
     | '/api/public/webhooks/asaas'
     | '/lovable/email/transactional/preview'
@@ -273,6 +283,7 @@ export interface FileRouteTypes {
     | '/api/public/onprem/export'
     | '/api/public/onprem/pair-request'
     | '/api/public/onprem/pair-status'
+    | '/api/public/onprem/push'
     | '/api/public/radius/$action'
     | '/api/public/webhooks/asaas'
     | '/lovable/email/transactional/preview'
@@ -298,6 +309,7 @@ export interface FileRouteTypes {
     | '/api/public/onprem/export'
     | '/api/public/onprem/pair-request'
     | '/api/public/onprem/pair-status'
+    | '/api/public/onprem/push'
     | '/api/public/radius/$action'
     | '/api/public/webhooks/asaas'
     | '/lovable/email/transactional/preview'
@@ -313,6 +325,7 @@ export interface RootRouteChildren {
   ApiPublicOnpremExportRoute: typeof ApiPublicOnpremExportRoute
   ApiPublicOnpremPairRequestRoute: typeof ApiPublicOnpremPairRequestRoute
   ApiPublicOnpremPairStatusRoute: typeof ApiPublicOnpremPairStatusRoute
+  ApiPublicOnpremPushRoute: typeof ApiPublicOnpremPushRoute
   ApiPublicRadiusActionRoute: typeof ApiPublicRadiusActionRoute
   ApiPublicWebhooksAsaasRoute: typeof ApiPublicWebhooksAsaasRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
@@ -460,6 +473,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicOnpremPairStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/onprem/push': {
+      id: '/api/public/onprem/push'
+      path: '/api/public/onprem/push'
+      fullPath: '/api/public/onprem/push'
+      preLoaderRoute: typeof ApiPublicOnpremPushRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/radius/$action': {
       id: '/api/public/radius/$action'
       path: '/api/public/radius/$action'
@@ -525,6 +545,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicOnpremExportRoute: ApiPublicOnpremExportRoute,
   ApiPublicOnpremPairRequestRoute: ApiPublicOnpremPairRequestRoute,
   ApiPublicOnpremPairStatusRoute: ApiPublicOnpremPairStatusRoute,
+  ApiPublicOnpremPushRoute: ApiPublicOnpremPushRoute,
   ApiPublicRadiusActionRoute: ApiPublicRadiusActionRoute,
   ApiPublicWebhooksAsaasRoute: ApiPublicWebhooksAsaasRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
