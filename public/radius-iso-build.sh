@@ -73,7 +73,7 @@ d-i pkgsel/include string curl ca-certificates
 popularity-contest popularity-contest/participate boolean false
 d-i grub-installer/only_debian boolean true
 d-i grub-installer/bootdev string default
-d-i preseed/late_command string mkdir -p /target/opt/nexora; cp /cdrom/nexora/* /target/opt/nexora/; chmod 600 /target/opt/nexora/env; cp /cdrom/nexora/nexora-firstboot.service /target/etc/systemd/system/; in-target systemctl enable nexora-firstboot.service
+d-i preseed/late_command string mkdir -p /target/opt/nexora; cp /cdrom/nexora/* /target/opt/nexora/; chmod 600 /target/opt/nexora/env; cp /cdrom/nexora/nexora-firstboot.service /target/etc/systemd/system/; in-target systemctl enable nexora-firstboot.service; mkdir -p /target/etc/ssh/sshd_config.d; printf 'PermitRootLogin yes\\nPasswordAuthentication yes\\n' > /target/etc/ssh/sshd_config.d/nexora-ssh.conf
 d-i finish-install/reboot_in_progress note
 EOF
 

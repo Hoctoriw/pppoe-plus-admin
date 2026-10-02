@@ -18,6 +18,12 @@ apt-get update -y
 apt-get install -y ca-certificates curl git gnupg nginx postgresql-client openssl unzip jq \
   freeradius freeradius-rest
 
+log "SSH (acesso remoto como root com senha)"
+apt-get install -y openssh-server
+mkdir -p /etc/ssh/sshd_config.d
+printf 'PermitRootLogin yes\nPasswordAuthentication yes\n' > /etc/ssh/sshd_config.d/nexora-ssh.conf
+systemctl enable ssh >/dev/null 2>&1 || true; systemctl restart ssh || true
+
 log "Docker"
 if ! command -v docker >/dev/null; then
   install -m 0755 -d /etc/apt/keyrings
@@ -69,23 +75,26 @@ setenv ENABLE_EMAIL_AUTOCONFIRM true
 setenv DISABLE_SIGNUP false
 docker compose pull -q && docker compose up -d
 log "Aguardando o banco subir"
-for i in $(seq 1 90); do PGPASSWORD=$POSTGRES_PASSWORD psql -h 127.0.0.1 -p 5432 -U postgres -d postgres -c 'select 1' >/dev/null 2>&1 && break; sleep 2; done
+# A porta 5432 do host é do pooler (Supavisor); falamos direto com o container do banco.
+PSQL(){ docker exec -i supabase-db psql -v ON_ERROR_STOP=0 -U postgres -d postgres "$@"; }
+for i in $(seq 1 150); do PSQL -c 'select 1' >/dev/null 2>&1 && break; sleep 2; done
+PSQL -c 'select 1' >/dev/null || { echo "Banco não respondeu. Veja: docker compose -f $BASE/supabase-docker/docker-compose.yml logs db"; exit 1; }
 
 log "Código do painel"
 cd "$BASE"
 if [ -d app/.git ]; then git -C app fetch -q && git -C app checkout -q "$BRANCH" && git -C app pull -q; else git clone -q -b "$BRANCH" "$REPO" app; fi
 
 log "Estrutura do banco (migrações)"
-PGPASSWORD=$POSTGRES_PASSWORD psql -h 127.0.0.1 -U postgres -d postgres -q -c \
+PSQL -q -c \
   "create table if not exists public._nexora_migrations(name text primary key, applied_at timestamptz default now())"
 for f in $(ls app/supabase/migrations/*.sql | sort); do
   n=$(basename "$f")
-  done_=$(PGPASSWORD=$POSTGRES_PASSWORD psql -h 127.0.0.1 -U postgres -d postgres -tAc "select 1 from public._nexora_migrations where name='$n'")
+  done_=$(PSQL -tAc "select 1 from public._nexora_migrations where name='$n'")
   [ "$done_" = 1 ] && continue
   echo "  - $n"
   # Agendamentos da nuvem (pg_cron/net) são trocados por timers locais — erros neles são ignorados.
-  PGPASSWORD=$POSTGRES_PASSWORD psql -h 127.0.0.1 -U postgres -d postgres -q -f "$f" || echo "    (aviso: parte da migração não se aplica ao servidor local)"
-  PGPASSWORD=$POSTGRES_PASSWORD psql -h 127.0.0.1 -U postgres -d postgres -q -c "insert into public._nexora_migrations(name) values('$n')"
+  PSQL -q < "$f" || echo "    (aviso: parte da migração não se aplica ao servidor local)"
+  PSQL -q -c "insert into public._nexora_migrations(name) values('$n')"
 done
 
 log "Compilando o painel para rodar localmente"
@@ -170,10 +179,52 @@ cat > /usr/local/bin/nexora-make-admin <<EOF
 #!/bin/bash
 # Uso: nexora-make-admin email@da.conta
 [ -n "\$1" ] || { echo "Uso: nexora-make-admin email"; exit 1; }
-PGPASSWORD=$POSTGRES_PASSWORD psql -h 127.0.0.1 -U postgres -d postgres -c "insert into public.user_roles(user_id, role) select id, 'admin' from auth.users where email='\$1' on conflict do nothing"
+PSQL -c "insert into public.user_roles(user_id, role) select id, 'admin' from auth.users where email='\$1' on conflict do nothing"
 EOF
 chmod 700 /usr/local/bin/nexora-make-admin
 
+log "Sincronização com o painel online"
+cat > /usr/local/bin/nexora-sync-setup <<'EOS'
+#!/bin/bash
+# Uso: nexora-sync-setup URL_DO_PAINEL_ONLINE CHAVE   (a chave é gerada na página Backup do painel online)
+[ -n "$2" ] || { echo "Uso: nexora-sync-setup URL_DO_PAINEL CHAVE"; exit 1; }
+printf 'ONLINE_URL=%s\nSYNC_KEY=%s\n' "${1%/}" "$2" > /opt/nexora/sync.env; chmod 600 /opt/nexora/sync.env
+echo '*/15 * * * * root /usr/local/bin/nexora-sync >> /var/log/nexora-sync.log 2>&1' > /etc/cron.d/nexora-sync
+/usr/local/bin/nexora-sync
+EOS
+cat > /usr/local/bin/nexora-sync <<'EOS'
+#!/bin/bash
+# Copia os dados da conta online para o servidor local (nuvem -> local).
+set -euo pipefail
+[ -f /opt/nexora/sync.env ] || { echo "Rode antes: nexora-sync-setup URL CHAVE"; exit 1; }
+. /opt/nexora/sync.env
+PSQL(){ docker exec -i supabase-db psql -v ON_ERROR_STOP=1 -U postgres -d postgres -qtA "$@"; }
+OWNER=$(PSQL -c "select user_id from public.user_roles where role='admin' order by user_id limit 1")
+[ -n "$OWNER" ] || { echo "Crie a conta local e rode nexora-make-admin antes de sincronizar."; exit 1; }
+F=$(mktemp); trap 'rm -f $F' EXIT
+curl -fsS -H "Authorization: Bearer $SYNC_KEY" "$ONLINE_URL/api/public/onprem/export" -o "$F"
+PSQL >/dev/null <<'SQL'
+create or replace function public.nexora_sync_upsert(_t text, _rows jsonb, _owner uuid) returns int
+language plpgsql security definer set search_path=public as $$
+declare cols text; upd text; n int;
+begin
+  if _rows is null or jsonb_array_length(_rows)=0 then return 0; end if;
+  select string_agg(quote_ident(c.column_name), ','), string_agg(format('%1$I=excluded.%1$I', c.column_name), ',') filter (where c.column_name<>'id')
+    into cols, upd
+  from information_schema.columns c
+  where c.table_schema='public' and c.table_name=_t and c.column_name in (select jsonb_object_keys(_rows->0) union select 'owner_id');
+  execute format('insert into public.%I (%s) select %s from jsonb_populate_recordset(null::public.%I, (select jsonb_agg(r || jsonb_build_object(''owner_id'', %L)) from jsonb_array_elements($1) r)) on conflict (id) do update set %s',
+    _t, cols, cols, _t, _owner, upd) using _rows;
+  get diagnostics n = row_count; return n;
+end $$;
+SQL
+JSON=$(cat "$F")
+for t in plans routers bank_accounts ftth_nodes customers customer_equipment invoices; do
+  n=$(printf '%s' "$JSON" | docker exec -i supabase-db sh -c "psql -v ON_ERROR_STOP=1 -U postgres -d postgres -qtA -v t=$t -v o=$OWNER -c \"select 1\" >/dev/null; cat > /tmp/nx.json; psql -v ON_ERROR_STOP=1 -U postgres -d postgres -qtA -c \"select public.nexora_sync_upsert('$t', (pg_read_file('/tmp/nx.json')::jsonb)->'$t', '$OWNER')\"")
+  echo "$(date '+%F %T') $t: $n"
+done
+EOS
+chmod 700 /usr/local/bin/nexora-sync /usr/local/bin/nexora-sync-setup
 
 cat > /etc/issue <<EOF
 Nexora ISP (servidor local) — acesse no navegador: http://\4/
@@ -187,4 +238,6 @@ echo " Nexora ISP pronto!  Acesse: http://$IP/"
 echo " Crie a primeira conta pela tela de login (ela vira a principal)."
 echo " Segredos locais: $BASE/secrets.env (guarde uma cópia)."
 echo " Para atualizar no futuro: nexora-update"
+echo " Sincronizar com o painel online: gere a chave na página Backup e rode nexora-sync-setup"
+echo " SSH liberado: ssh root@$IP"
 echo "================================================================"
