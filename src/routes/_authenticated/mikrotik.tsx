@@ -55,6 +55,10 @@ function RadiusInstaller() {
       <div><p className="font-semibold">Opção 2 — Debian 12 já instalado</p>
         <pre className="mt-1 overflow-x-auto whitespace-pre-wrap break-all rounded-md bg-muted p-3 font-mono text-xs">{`sudo mkdir -p /opt/nexora && echo 'PANEL_URL=${origin}' | sudo tee /opt/nexora/env >/dev/null\ncurl -fsSL ${origin}/radius-pair.sh | sudo bash`}</pre>
         <p className="text-xs text-muted-foreground">O código aparece na tela; digite-o acima.</p></div>
+      <div className="rounded-md border border-primary/40 bg-primary/5 p-3"><p className="font-semibold">Opção 3 — Sistema completo no seu servidor (estilo MK-AUTH)</p>
+        <p className="mt-1 text-xs text-muted-foreground">Instala o painel inteiro, o banco de dados e o RADIUS na sua máquina. Depois é só abrir <b>http://IP-DO-SERVIDOR/</b> no navegador, mesmo sem internet. Precisa do endereço do repositório do painel no GitHub.</p>
+        <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-all rounded-md bg-muted p-3 font-mono text-xs">{`# Gerar a ISO completa\ncurl -fsSL ${origin}/radius-iso-build.sh -o build.sh && bash build.sh ${origin} SENHA_ROOT https://github.com/SUA-CONTA/SEU-REPO.git\n\n# Ou num Debian 12 já instalado\ncurl -fsSL ${origin}/nexora-onprem-install.sh | sudo bash -s https://github.com/SUA-CONTA/SEU-REPO.git`}</pre>
+        <p className="mt-1 text-xs text-muted-foreground">Crie sua conta na tela de login e rode <code className="font-mono">nexora-make-admin seu@email</code> no servidor para virar a conta principal. Para atualizar: <code className="font-mono">nexora-update</code>.</p></div>
     </div>
     <p className="mt-2 text-xs text-muted-foreground">Use o endereço do painel publicado para produção. Depois de instalado, aponte cada roteador para o IP do servidor no cartão acima.</p>
   </div>;
