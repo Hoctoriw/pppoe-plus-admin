@@ -5,6 +5,7 @@ import { ArrowLeft, Download, KeyRound, Mail, Save, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { downloadBackup, generateOnpremSyncToken, getBackupSettings, getOnpremSyncInfo, restoreBackup, saveBackupEmail, sendBackupNow } from "@/lib/backup.functions";
+import { approveOnpremPairing, getCloudPairingState, requestCloudPairing, type CloudPairingState } from "@/lib/onprem-pair.functions";
 
 export const Route = createFileRoute("/_authenticated/backup")({
   head: () => ({
@@ -19,6 +20,9 @@ export const Route = createFileRoute("/_authenticated/backup")({
   }),
   component: BackupPage,
 });
+
+// No servidor instalado (on-premise) o painel roda com projeto "local".
+const IS_LOCAL = import.meta.env.VITE_SUPABASE_PROJECT_ID === "local";
 
 function BackupPage() {
   const get = useServerFn(getBackupSettings);
