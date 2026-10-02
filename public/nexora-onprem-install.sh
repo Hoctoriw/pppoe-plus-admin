@@ -288,6 +288,67 @@ EOS
 chmod 700 /usr/local/bin/nexora-cloud-pair
 echo '*/2 * * * * root /usr/local/bin/nexora-cloud-pair >/dev/null 2>&1' > /etc/cron.d/nexora-cloud-pair
 
+log "Troca de IP pelo painel (página Rede do servidor) e pelo terminal (nexora-ip)"
+cat > /usr/local/bin/nexora-ip <<'EOS'
+#!/bin/bash
+# Uso: nexora-ip dhcp | nexora-ip IP/PREFIXO GATEWAY DNS1 [DNS2] | nexora-ip status
+B=/opt/nexora
+IF=$(ip -o route show default 2>/dev/null | awk '{print $5; exit}')
+[ -n "$IF" ] || IF=$(ip -o link | awk -F': ' '$2!="lo" && $2!~/^(docker|br-|veth)/{print $2; exit}')
+status(){
+  A=$(ip -o -4 addr show dev "$IF" | awk '{print $4; exit}')
+  GW=$(ip -o route show default | awk '{print $3; exit}')
+  DNS=$(awk '/^nameserver/{printf "%s\"%s\"", (n++?",":""), $2}' /etc/resolv.conf)
+  M=static; grep -q "iface $IF inet dhcp" /etc/network/interfaces 2>/dev/null && M=dhcp
+  printf '{"iface":"%s","ip":"%s","cidr":"%s","gateway":"%s","dns":[%s],"mode":"%s","result":"%s"}\n' \
+    "$IF" "${A%/*}" "${A#*/}" "$GW" "$DNS" "$M" "$(cat $B/net-result 2>/dev/null)" > $B/net-status.json
+}
+apply(){
+  cp /etc/network/interfaces /etc/network/interfaces.bak 2>/dev/null || true
+  { echo "auto lo"; echo "iface lo inet loopback"; echo; echo "allow-hotplug $IF"; echo "auto $IF"
+    if [ "$1" = dhcp ]; then echo "iface $IF inet dhcp"
+    else echo "iface $IF inet static"; echo "  address $1"; echo "  gateway $2"; fi; } > /etc/network/interfaces
+  if [ "$1" != dhcp ]; then { echo "nameserver $3"; [ -n "$4" ] && echo "nameserver $4"; } > /etc/resolv.conf; fi
+  ip addr flush dev "$IF"; systemctl restart networking || { ifdown "$IF"; ifup "$IF"; }
+  sleep 3; NEW=$(ip -o -4 addr show dev "$IF" | awk '{print $4; exit}'); NEW=${NEW%/*}
+  if [ -n "$NEW" ]; then
+    sed -i "s#^SITE_URL=.*#SITE_URL=http://$NEW#; s#^API_EXTERNAL_URL=.*#API_EXTERNAL_URL=http://$NEW:8000#; s#^SUPABASE_PUBLIC_URL=.*#SUPABASE_PUBLIC_URL=http://$NEW:8000#" $B/supabase-docker/.env 2>/dev/null
+    (cd $B/supabase-docker && docker compose up -d >/dev/null 2>&1) || true
+  fi
+  echo "$(date '+%d/%m %H:%M') ${NEW:-sem IP}" > $B/net-result
+}
+case "$1" in
+  status) ;;
+  dhcp) apply dhcp ;;
+  "") if [ -f $B/net-request.json ]; then
+        R=$(cat $B/net-request.json); rm -f $B/net-request.json
+        if [ "$(echo "$R" | jq -r .mode)" = dhcp ]; then apply dhcp
+        else apply "$(echo "$R" | jq -r '.ip+"/"+(.prefix|tostring)')" "$(echo "$R" | jq -r .gateway)" "$(echo "$R" | jq -r .dns1)" "$(echo "$R" | jq -r .dns2)"; fi
+      fi ;;
+  *) apply "$1" "$2" "$3" "$4" ;;
+esac
+status
+EOS
+chmod 700 /usr/local/bin/nexora-ip
+cat > /etc/systemd/system/nexora-netapply.path <<'EOF'
+[Unit]
+Description=Aplica a rede pedida pelo painel
+[Path]
+PathExists=/opt/nexora/net-request.json
+[Install]
+WantedBy=multi-user.target
+EOF
+cat > /etc/systemd/system/nexora-netapply.service <<'EOF'
+[Unit]
+Description=Aplica a rede pedida pelo painel
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/nexora-ip
+EOF
+echo '* * * * * root /usr/local/bin/nexora-ip status >/dev/null 2>&1' > /etc/cron.d/nexora-ip
+systemctl daemon-reload; systemctl enable --now nexora-netapply.path
+/usr/local/bin/nexora-ip status || true
+
 cat > /etc/issue <<EOF
 Nexora ISP (servidor local) — acesse no navegador: http://\4/
 Atualizar: nexora-update

@@ -80,11 +80,20 @@ EOF
 echo "==> Montando ISO"
 xorriso -osirrox on -indev "$NAME" -extract /isolinux/txt.cfg "$W/txt.cfg" -extract /boot/grub/grub.cfg "$W/grub.cfg" >/dev/null 2>&1
 chmod u+w "$W"/*.cfg
-P='auto=true priority=critical preseed/file=/cdrom/preseed.cfg'
+# Instalação só em modo texto (sem o instalador gráfico) e sem menu.
+P='auto=true priority=critical preseed/file=/cdrom/preseed.cfg vga=normal fb=false DEBIAN_FRONTEND=newt'
 sed -i "s#append #append $P #" "$W/txt.cfg"
 sed -i "0,/linux\s\+\/install.amd\/vmlinuz/s##linux /install.amd/vmlinuz $P#" "$W/grub.cfg"
-sed -i 's/^default .*/default install/; s/^timeout .*/timeout 30/' "$W/txt.cfg" || true
-sed -i '1i set timeout=3\nset default=0' "$W/grub.cfg"
+printf 'default install\nlabel install\n  kernel /install.amd/vmlinuz\n  append %s initrd=/install.amd/initrd.gz --- quiet\n' "$P" > "$W/txt.cfg"
+printf 'default install\nprompt 0\ntimeout 1\ninclude txt.cfg\n' > "$W/isolinux.cfg"
+cat > "$W/grub.cfg" <<GRUB
+set timeout=0
+set default=0
+menuentry "Nexora ISP - instalacao automatica (texto)" {
+  linux /install.amd/vmlinuz $P --- quiet
+  initrd /install.amd/initrd.gz
+}
+GRUB
 
 xorriso -indev "$NAME" -outdev nexora-radius.iso \
   -map "$W/preseed.cfg" /preseed.cfg -map "$W/nexora" /nexora \
