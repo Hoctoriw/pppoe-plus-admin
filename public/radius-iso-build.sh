@@ -5,8 +5,7 @@
 # Com o 3º argumento, a ISO instala o SISTEMA COMPLETO on-premise (painel web + banco + RADIUS) acessível pelo IP.
 # Resultado: nexora-radius.iso  (ATENÇÃO: a instalação APAGA o primeiro disco)
 set -euo pipefail
-PANEL_URL="${1:-}"; ROOTPW="${2:-}"; REPO_URL="${3:-}"; SYNC_KEY="${4:-}"
-# 4º argumento opcional: chave de sincronização (página Backup) — a máquina já nasce conectada à nuvem.
+PANEL_URL="${1:-}"; ROOTPW="${2:-}"; REPO_URL="${3:-}"
 if [ -z "$PANEL_URL" ] || [ -z "$ROOTPW" ]; then
   echo "Uso: bash radius-iso-build.sh URL_DO_PAINEL SENHA_ROOT"; exit 1; fi
 PANEL_URL="${PANEL_URL%/}"
@@ -29,11 +28,6 @@ else
   curl -fsSL "$PANEL_URL/radius-pair.sh" -o "$W/nexora/pair.sh"
 fi
 printf 'PANEL_URL=%q\n' "$PANEL_URL" > "$W/nexora/env"
-if [ -n "$SYNC_KEY" ]; then
-  [[ "$SYNC_KEY" =~ ^nxs_[a-f0-9]{64}$ ]] || { echo "Chave de sincronização inválida."; exit 1; }
-  printf 'ONLINE_URL=%s\nSYNC_KEY=%s\n' "$PANEL_URL" "$SYNC_KEY" > "$W/nexora/sync.env"
-  chmod 600 "$W/nexora/sync.env"
-fi
 cat > "$W/nexora/nexora-firstboot.service" <<'EOF'
 [Unit]
 Description=Nexora RADIUS pareamento e instalação no primeiro boot
