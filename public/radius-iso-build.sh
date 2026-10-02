@@ -29,7 +29,7 @@ Wants=network-online.target
 ConditionPathExists=/opt/nexora/env
 [Service]
 Type=oneshot
-ExecStart=/bin/bash -c '. /opt/nexora/env && bash /opt/nexora/install.sh "$PANEL_URL" "$TOKEN" && rm -f /opt/nexora/env'
+ExecStart=/bin/bash -c '. /opt/nexora/env && bash /opt/nexora/install.sh "$PANEL_URL" "$TOKEN" && systemctl disable nexora-firstboot.service'
 Restart=on-failure
 RestartSec=30
 [Install]
