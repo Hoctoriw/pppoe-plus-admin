@@ -666,6 +666,33 @@ export type Database = {
         }
         Relationships: []
       }
+      radius_appliances: {
+        Row: {
+          hostname: string
+          last_seen_at: string
+          local_ip: string | null
+          radius_ok: boolean
+          uptime: string | null
+          version: string | null
+        }
+        Insert: {
+          hostname: string
+          last_seen_at?: string
+          local_ip?: string | null
+          radius_ok?: boolean
+          uptime?: string | null
+          version?: string | null
+        }
+        Update: {
+          hostname?: string
+          last_seen_at?: string
+          local_ip?: string | null
+          radius_ok?: boolean
+          uptime?: string | null
+          version?: string | null
+        }
+        Relationships: []
+      }
       routers: {
         Row: {
           active: boolean

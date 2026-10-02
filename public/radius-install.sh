@@ -83,10 +83,36 @@ chmod +x /usr/local/bin/nexora-radius-add-router
 
 if command -v ufw >/dev/null; then ufw allow 1812/udp; ufw allow 1813/udp; fi
 
+echo "==> Instalando agente de conexão com o painel (sincronização e atualizações)"
+mkdir -p /opt/nexora
+printf 'PANEL_URL=%q\nTOKEN=%q\n' "$PANEL_URL" "$TOKEN" > /opt/nexora/env; chmod 600 /opt/nexora/env
+curl -fsSL "$PANEL_URL/radius-agent.sh" -o /opt/nexora/agent.sh; chmod 700 /opt/nexora/agent.sh
+[ -n "${3:-}" ] && echo "$3" > /opt/nexora/version
+cat > /etc/systemd/system/nexora-agent.service <<'EOF'
+[Unit]
+Description=Nexora RADIUS Agent
+After=network-online.target
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /opt/nexora/agent.sh
+EOF
+cat > /etc/systemd/system/nexora-agent.timer <<'EOF'
+[Unit]
+Description=Nexora RADIUS Agent a cada minuto
+[Timer]
+OnBootSec=30
+OnUnitActiveSec=60
+[Install]
+WantedBy=timers.target
+EOF
+systemctl daemon-reload
+systemctl enable --now nexora-agent.timer
+
 echo "==> Validando configuração"
 freeradius -C
 systemctl enable freeradius
 systemctl restart freeradius
+bash /opt/nexora/agent.sh || true
 echo
-echo "Servidor RADIUS pronto. IP deste servidor: $(hostname -I | awk '{print $1}')"
-echo "Agora autorize cada MikroTik:  nexora-radius-add-router NOME IP_DO_ROTEADOR SEGREDO"
+echo "Servidor RADIUS pronto e conectado ao painel. IP deste servidor: $(hostname -I | awk '{print $1}')"
+echo "Os roteadores com RADIUS ativo no painel são autorizados automaticamente."
