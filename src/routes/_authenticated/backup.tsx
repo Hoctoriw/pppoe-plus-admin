@@ -117,6 +117,48 @@ function OnpremPairingApproval() {
 
 // Painel LOCAL: pedir o código e mostrar a situação da conexão com a nuvem.
 function CloudPairingCard() {
+  const getState = useServerFn(getCloudPairingState);
+  const request = useServerFn(requestCloudPairing);
+  const [state, setState] = useState<CloudPairingState>(null);
+  const [url, setUrl] = useState("https://pppoe-plus-admin.lovable.app");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => { getState().then(setState).catch(() => {}); }, []);
+  async function connect() {
+    setBusy(true); setErr(null);
+    try {
+      const r = await request({ data: { url } });
+      setState({ online_url: r.online_url, code: r.code, status: "pending", created_at: new Date().toISOString() });
+    } catch (e) { setErr((e as Error).message); }
+    setBusy(false);
+  }
+  return (
+    <section className="space-y-3 rounded-lg border bg-card p-5">
+      <h2 className="text-sm font-semibold">Conectar com a nuvem</h2>
+      {state?.status === "connected" ? (
+        <p className="text-sm text-primary">Conectado a {state.online_url}. A cópia dos dados roda a cada 15 minutos, em segundo plano.</p>
+      ) : state?.status === "pending" ? (
+        <>
+          <p className="text-xs text-muted-foreground">No painel online ({state.online_url}), abra a página <strong>Backup</strong>, ache o cartão <strong>Autorizar servidor local</strong> e digite este código:</p>
+          <p className="text-center text-4xl font-extrabold tracking-[0.4em]">{state.code}</p>
+          <p className="text-xs text-muted-foreground">O código vale por 15 minutos. Assim que autorizar, este servidor se conecta sozinho em até 1 minuto e começa a copiar os dados a cada 15 minutos.</p>
+          <Button variant="outline" disabled={busy} onClick={connect}>Gerar novo código</Button>
+        </>
+      ) : (
+        <>
+          <p className="text-xs text-muted-foreground">Este servidor passa a copiar sozinho clientes, planos, roteadores, rede FTTH e cobranças do painel online, a cada 15 minutos. Digite o endereço do painel online e clique em Conectar.</p>
+          <div className="flex gap-2">
+            <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://seu-painel.lovable.app" />
+            <Button disabled={busy} onClick={connect}>{busy ? "Conectando..." : "Conectar"}</Button>
+          </div>
+        </>
+      )}
+      {err && <p className="text-sm text-destructive">{err}</p>}
+    </section>
+  );
+}
+
+function OnpremSync() {
   const info = useServerFn(getOnpremSyncInfo);
   const gen = useServerFn(generateOnpremSyncToken);
   const [state, setState] = useState<{ exists: boolean; last_used_at: string | null } | null>(null);
@@ -126,7 +168,7 @@ function CloudPairingCard() {
   const panel = typeof window !== "undefined" ? window.location.origin : "";
   return (
     <section className="space-y-3 rounded-lg border bg-card p-5">
-      <h2 className="text-sm font-semibold">Sincronizar com servidor local</h2>
+      <h2 className="text-sm font-semibold">Gerar chave manualmente (alternativa)</h2>
       <p className="text-xs text-muted-foreground">O servidor instalado na sua rede copia daqui, a cada 15 minutos, clientes, planos, roteadores, rede FTTH e cobranças. Gere a chave e rode o comando no servidor local. Gerar de novo invalida a chave anterior.</p>
       <p className="text-xs text-muted-foreground">Situação: {state?.exists ? `chave ativa · última cópia ${state.last_used_at ? new Date(state.last_used_at).toLocaleString("pt-BR") : "ainda não feita"}` : "nenhuma chave gerada"}</p>
       <Button variant="outline" onClick={async () => { setErr(null); try { const r = await gen(); setToken(r.token); setState({ exists: true, last_used_at: null }); } catch (e) { setErr((e as Error).message); } }}><KeyRound />{state?.exists ? "Gerar nova chave" : "Gerar chave"}</Button>
