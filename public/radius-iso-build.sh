@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Nexora ISP — gera uma ISO Debian 12 que instala sozinha o servidor RADIUS
-# Uso (em qualquer Linux): bash radius-iso-build.sh URL_DO_PAINEL TOKEN SENHA_ROOT
+# Nexora ISP — gera uma ISO Debian 12 genérica do servidor RADIUS (sem chaves secretas).
+# No primeiro boot a máquina mostra um código temporário; você o digita no painel para vincular.
+# Uso (em qualquer Linux): bash radius-iso-build.sh URL_DO_PAINEL SENHA_ROOT
 # Resultado: nexora-radius.iso  (ATENÇÃO: a instalação APAGA o primeiro disco)
 set -euo pipefail
-PANEL_URL="${1:-}"; TOKEN="${2:-}"; ROOTPW="${3:-}"
-if [ -z "$PANEL_URL" ] || [ -z "$TOKEN" ] || [ -z "$ROOTPW" ]; then
-  echo "Uso: bash radius-iso-build.sh URL_DO_PAINEL TOKEN SENHA_ROOT"; exit 1; fi
+PANEL_URL="${1:-}"; ROOTPW="${2:-}"
+if [ -z "$PANEL_URL" ] || [ -z "$ROOTPW" ]; then
+  echo "Uso: bash radius-iso-build.sh URL_DO_PAINEL SENHA_ROOT"; exit 1; fi
 PANEL_URL="${PANEL_URL%/}"
 command -v xorriso >/dev/null || { echo "Instale o xorriso (apt install xorriso)"; exit 1; }
 command -v curl >/dev/null || { echo "Instale o curl"; exit 1; }
@@ -19,17 +20,18 @@ W=$(mktemp -d); trap 'rm -rf "$W"' EXIT
 [ -f "$NAME" ] || { echo "==> Baixando $NAME"; curl -L -o "$NAME" "$BASE/$NAME"; }
 
 mkdir -p "$W/nexora"
-curl -fsSL "$PANEL_URL/radius-install.sh" -o "$W/nexora/install.sh"
-printf 'PANEL_URL=%q\nTOKEN=%q\n' "$PANEL_URL" "$TOKEN" > "$W/nexora/env"
+curl -fsSL "$PANEL_URL/radius-pair.sh" -o "$W/nexora/pair.sh"
+printf 'PANEL_URL=%q\n' "$PANEL_URL" > "$W/nexora/env"
 cat > "$W/nexora/nexora-firstboot.service" <<'EOF'
 [Unit]
-Description=Nexora RADIUS primeira inicialização
+Description=Nexora RADIUS pareamento e instalação no primeiro boot
 After=network-online.target
 Wants=network-online.target
-ConditionPathExists=/opt/nexora/env
+ConditionPathExists=!/opt/nexora/agent.sh
 [Service]
 Type=oneshot
-ExecStart=/bin/bash -c '. /opt/nexora/env && bash /opt/nexora/install.sh "$PANEL_URL" "$TOKEN" && systemctl disable nexora-firstboot.service'
+ExecStart=/bin/bash /opt/nexora/pair.sh
+ExecStartPost=/bin/systemctl disable nexora-firstboot.service
 Restart=on-failure
 RestartSec=30
 [Install]
