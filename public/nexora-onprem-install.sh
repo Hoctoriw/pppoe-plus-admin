@@ -14,6 +14,18 @@ BASE=/opt/nexora; mkdir -p "$BASE"; cd "$BASE"
 log(){ echo -e "\n==> $*"; }
 
 log "Pacotes do sistema"
+# Atualizações automáticas do Debian seguram a trava do apt no primeiro boot: desliga e espera liberar.
+systemctl stop unattended-upgrades apt-daily.service apt-daily-upgrade.service apt-daily.timer apt-daily-upgrade.timer 2>/dev/null || true
+systemctl disable unattended-upgrades apt-daily.timer apt-daily-upgrade.timer 2>/dev/null || true
+for i in $(seq 1 60); do
+  fuser /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/lib/apt/lists/lock >/dev/null 2>&1 || break
+  echo "Aguardando outra instalação do sistema terminar..."; sleep 5
+done
+pkill -9 -x apt-get 2>/dev/null || true; pkill -9 -x apt 2>/dev/null || true
+rm -f /var/lib/apt/lists/lock /var/cache/apt/archives/lock /var/lib/dpkg/lock /var/lib/dpkg/lock-frontend
+dpkg --configure -a || true
+export APT_OPTS="-o DPkg::Lock::Timeout=600"
+echo 'DPkg::Lock::Timeout "600";' > /etc/apt/apt.conf.d/90nexora-lock
 apt-get update -y
 apt-get install -y ca-certificates curl git gnupg nginx postgresql-client openssl unzip jq \
   freeradius freeradius-rest
