@@ -672,6 +672,7 @@ export type Database = {
           last_seen_at: string
           local_ip: string | null
           radius_ok: boolean
+          token_hash: string | null
           uptime: string | null
           version: string | null
         }
@@ -680,6 +681,7 @@ export type Database = {
           last_seen_at?: string
           local_ip?: string | null
           radius_ok?: boolean
+          token_hash?: string | null
           uptime?: string | null
           version?: string | null
         }
@@ -688,8 +690,42 @@ export type Database = {
           last_seen_at?: string
           local_ip?: string | null
           radius_ok?: boolean
+          token_hash?: string | null
           uptime?: string | null
           version?: string | null
+        }
+        Relationships: []
+      }
+      radius_pairings: {
+        Row: {
+          code: string
+          created_at: string
+          expires_at: string
+          hostname: string
+          issued_token: string | null
+          local_ip: string | null
+          poll_hash: string
+          status: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          expires_at: string
+          hostname: string
+          issued_token?: string | null
+          local_ip?: string | null
+          poll_hash: string
+          status?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          expires_at?: string
+          hostname?: string
+          issued_token?: string | null
+          local_ip?: string | null
+          poll_hash?: string
+          status?: string
         }
         Relationships: []
       }
