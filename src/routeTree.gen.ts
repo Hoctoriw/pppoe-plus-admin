@@ -26,6 +26,7 @@ import { Route as AuthenticatedRedeRouteImport } from './routes/_authenticated/r
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as ApiPublicHooksDailyBackupRouteImport } from './routes/api/public/hooks/daily-backup'
 import { Route as ApiPublicHooksSyncMikrotikRouteImport } from './routes/api/public/hooks/sync-mikrotik'
+import { Route as ApiPublicOnpremExportRouteImport } from './routes/api/public/onprem.export'
 import { Route as ApiPublicRadiusActionRouteImport } from './routes/api/public/radius.$action'
 import { Route as ApiPublicWebhooksAsaasRouteImport } from './routes/api/public/webhooks/asaas'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
@@ -116,6 +117,11 @@ const ApiPublicHooksSyncMikrotikRoute =
     path: '/api/public/hooks/sync-mikrotik',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicOnpremExportRoute = ApiPublicOnpremExportRouteImport.update({
+  id: '/api/public/onprem/export',
+  path: '/api/public/onprem/export',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicRadiusActionRoute = ApiPublicRadiusActionRouteImport.update({
   id: '/api/public/radius/$action',
   path: '/api/public/radius/$action',
@@ -150,6 +156,7 @@ export interface FileRoutesByFullPath {
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
   '/api/public/hooks/sync-mikrotik': typeof ApiPublicHooksSyncMikrotikRoute
+  '/api/public/onprem/export': typeof ApiPublicOnpremExportRoute
   '/api/public/radius/$action': typeof ApiPublicRadiusActionRoute
   '/api/public/webhooks/asaas': typeof ApiPublicWebhooksAsaasRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -171,6 +178,7 @@ export interface FileRoutesByTo {
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
   '/api/public/hooks/sync-mikrotik': typeof ApiPublicHooksSyncMikrotikRoute
+  '/api/public/onprem/export': typeof ApiPublicOnpremExportRoute
   '/api/public/radius/$action': typeof ApiPublicRadiusActionRoute
   '/api/public/webhooks/asaas': typeof ApiPublicWebhooksAsaasRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -194,6 +202,7 @@ export interface FileRoutesById {
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
   '/api/public/hooks/sync-mikrotik': typeof ApiPublicHooksSyncMikrotikRoute
+  '/api/public/onprem/export': typeof ApiPublicOnpremExportRoute
   '/api/public/radius/$action': typeof ApiPublicRadiusActionRoute
   '/api/public/webhooks/asaas': typeof ApiPublicWebhooksAsaasRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -217,6 +226,7 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/api/public/hooks/daily-backup'
     | '/api/public/hooks/sync-mikrotik'
+    | '/api/public/onprem/export'
     | '/api/public/radius/$action'
     | '/api/public/webhooks/asaas'
     | '/lovable/email/transactional/preview'
@@ -238,6 +248,7 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/api/public/hooks/daily-backup'
     | '/api/public/hooks/sync-mikrotik'
+    | '/api/public/onprem/export'
     | '/api/public/radius/$action'
     | '/api/public/webhooks/asaas'
     | '/lovable/email/transactional/preview'
@@ -260,6 +271,7 @@ export interface FileRouteTypes {
     | '/_authenticated/usuarios'
     | '/api/public/hooks/daily-backup'
     | '/api/public/hooks/sync-mikrotik'
+    | '/api/public/onprem/export'
     | '/api/public/radius/$action'
     | '/api/public/webhooks/asaas'
     | '/lovable/email/transactional/preview'
@@ -272,6 +284,7 @@ export interface RootRouteChildren {
   BloqueadoRoute: typeof BloqueadoRoute
   ApiPublicHooksDailyBackupRoute: typeof ApiPublicHooksDailyBackupRoute
   ApiPublicHooksSyncMikrotikRoute: typeof ApiPublicHooksSyncMikrotikRoute
+  ApiPublicOnpremExportRoute: typeof ApiPublicOnpremExportRoute
   ApiPublicRadiusActionRoute: typeof ApiPublicRadiusActionRoute
   ApiPublicWebhooksAsaasRoute: typeof ApiPublicWebhooksAsaasRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
@@ -398,6 +411,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksSyncMikrotikRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/onprem/export': {
+      id: '/api/public/onprem/export'
+      path: '/api/public/onprem/export'
+      fullPath: '/api/public/onprem/export'
+      preLoaderRoute: typeof ApiPublicOnpremExportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/radius/$action': {
       id: '/api/public/radius/$action'
       path: '/api/public/radius/$action'
@@ -460,6 +480,7 @@ const rootRouteChildren: RootRouteChildren = {
   BloqueadoRoute: BloqueadoRoute,
   ApiPublicHooksDailyBackupRoute: ApiPublicHooksDailyBackupRoute,
   ApiPublicHooksSyncMikrotikRoute: ApiPublicHooksSyncMikrotikRoute,
+  ApiPublicOnpremExportRoute: ApiPublicOnpremExportRoute,
   ApiPublicRadiusActionRoute: ApiPublicRadiusActionRoute,
   ApiPublicWebhooksAsaasRoute: ApiPublicWebhooksAsaasRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,

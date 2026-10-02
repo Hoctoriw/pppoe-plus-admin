@@ -1,10 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Download, Mail, Save, Upload } from "lucide-react";
+import { ArrowLeft, Download, KeyRound, Mail, Save, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { downloadBackup, getBackupSettings, restoreBackup, saveBackupEmail, sendBackupNow } from "@/lib/backup.functions";
+import { downloadBackup, generateOnpremSyncToken, getBackupSettings, getOnpremSyncInfo, restoreBackup, saveBackupEmail, sendBackupNow } from "@/lib/backup.functions";
 
 export const Route = createFileRoute("/_authenticated/backup")({
   head: () => ({
@@ -81,7 +81,33 @@ function BackupPage() {
         }} />
         <Button variant="outline" disabled={busy || !isOwner} onClick={() => fileRef.current?.click()}><Upload />Escolher arquivo e restaurar</Button>
       </section>
+      {isOwner && <OnpremSync />}
       {msg && <p className={msg.ok ? "text-sm text-primary" : "text-sm text-destructive"}>{msg.text}</p>}
     </main>
+  );
+}
+
+function OnpremSync() {
+  const info = useServerFn(getOnpremSyncInfo);
+  const gen = useServerFn(generateOnpremSyncToken);
+  const [state, setState] = useState<{ exists: boolean; last_used_at: string | null } | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => { info().then(setState).catch(() => {}); }, []);
+  const panel = typeof window !== "undefined" ? window.location.origin : "";
+  return (
+    <section className="space-y-3 rounded-lg border bg-card p-5">
+      <h2 className="text-sm font-semibold">Sincronizar com servidor local</h2>
+      <p className="text-xs text-muted-foreground">O servidor instalado na sua rede copia daqui, a cada 15 minutos, clientes, planos, roteadores, rede FTTH e cobranças. Gere a chave e rode o comando no servidor local. Gerar de novo invalida a chave anterior.</p>
+      <p className="text-xs text-muted-foreground">Situação: {state?.exists ? `chave ativa · última cópia ${state.last_used_at ? new Date(state.last_used_at).toLocaleString("pt-BR") : "ainda não feita"}` : "nenhuma chave gerada"}</p>
+      <Button variant="outline" onClick={async () => { setErr(null); try { const r = await gen(); setToken(r.token); setState({ exists: true, last_used_at: null }); } catch (e) { setErr((e as Error).message); } }}><KeyRound />{state?.exists ? "Gerar nova chave" : "Gerar chave"}</Button>
+      {token && (
+        <div className="space-y-1">
+          <p className="text-xs font-semibold">Rode no servidor local (a chave aparece só agora):</p>
+          <pre className="overflow-x-auto rounded bg-muted p-3 text-xs">{`sudo nexora-sync-setup ${panel} ${token}`}</pre>
+        </div>
+      )}
+      {err && <p className="text-sm text-destructive">{err}</p>}
+    </section>
   );
 }
