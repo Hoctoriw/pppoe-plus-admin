@@ -81,6 +81,7 @@ function BackupPage() {
         }} />
         <Button variant="outline" disabled={busy || !isOwner} onClick={() => fileRef.current?.click()}><Upload />Escolher arquivo e restaurar</Button>
       </section>
+      {isOwner && <OnpremSync />}
       {msg && <p className={msg.ok ? "text-sm text-primary" : "text-sm text-destructive"}>{msg.text}</p>}
     </main>
   );
