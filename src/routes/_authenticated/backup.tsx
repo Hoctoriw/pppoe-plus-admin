@@ -85,13 +85,38 @@ function BackupPage() {
         }} />
         <Button variant="outline" disabled={busy || !isOwner} onClick={() => fileRef.current?.click()}><Upload />Escolher arquivo e restaurar</Button>
       </section>
-      {isOwner && <OnpremSync />}
+      {isOwner && (IS_LOCAL ? <CloudPairingCard /> : <><OnpremPairingApproval /><OnpremSync /></>)}
       {msg && <p className={msg.ok ? "text-sm text-primary" : "text-sm text-destructive"}>{msg.text}</p>}
     </main>
   );
 }
 
-function OnpremSync() {
+// Painel ONLINE: autorizar o servidor local pelo código de 6 números (sem colar chaves no terminal).
+function OnpremPairingApproval() {
+  const approve = useServerFn(approveOnpremPairing);
+  const [code, setCode] = useState("");
+  const [done, setDone] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  return (
+    <section className="space-y-3 rounded-lg border bg-card p-5">
+      <h2 className="text-sm font-semibold">Autorizar servidor local</h2>
+      <p className="text-xs text-muted-foreground">No servidor instalado na sua rede, abra a página Backup, clique em “Conectar com a nuvem” e digite aqui o código de 6 números que aparecer. Ele vale por 15 minutos e o servidor conecta sozinho logo depois.</p>
+      {done ? (
+        <p className="text-sm text-primary">Servidor autorizado! Em até 1 minuto ele se conecta e começa a copiar os dados a cada 15 minutos.</p>
+      ) : (
+        <div className="flex gap-2">
+          <Input inputMode="numeric" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} placeholder="000000" className="w-32 tracking-[0.3em]" />
+          <Button disabled={busy || code.length !== 6} onClick={async () => { setBusy(true); setErr(null); try { await approve({ data: { code } }); setDone(true); } catch (e) { setErr((e as Error).message); } setBusy(false); }}>Autorizar</Button>
+        </div>
+      )}
+      {err && <p className="text-sm text-destructive">{err}</p>}
+    </section>
+  );
+}
+
+// Painel LOCAL: pedir o código e mostrar a situação da conexão com a nuvem.
+function CloudPairingCard() {
   const info = useServerFn(getOnpremSyncInfo);
   const gen = useServerFn(generateOnpremSyncToken);
   const [state, setState] = useState<{ exists: boolean; last_used_at: string | null } | null>(null);
