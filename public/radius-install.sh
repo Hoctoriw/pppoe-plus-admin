@@ -108,11 +108,89 @@ EOF
 systemctl daemon-reload
 systemctl enable --now nexora-agent.timer
 
+echo "==> Instalando painel web local (porta 80)"
+apt-get install -y nginx fcgiwrap openssl
+WEBPW="${NEXORA_WEB_PW:-}"
+[ -z "$WEBPW" ] && [ -f /opt/nexora/webpw ] && WEBPW=$(cat /opt/nexora/webpw)
+[ -z "$WEBPW" ] && WEBPW=$(openssl rand -hex 6)
+echo "$WEBPW" > /opt/nexora/webpw; chmod 600 /opt/nexora/webpw
+printf 'admin:%s\n' "$(openssl passwd -apr1 "$WEBPW")" > /etc/nginx/nexora.htpasswd
+chown root:www-data /etc/nginx/nexora.htpasswd; chmod 640 /etc/nginx/nexora.htpasswd
+mkdir -p /opt/nexora/www
+cat > /opt/nexora/www/index.cgi <<'EOF'
+#!/bin/bash
+. /opt/nexora/env 2>/dev/null
+q="${QUERY_STRING:-}"
+if [ "${REQUEST_METHOD:-GET}" = POST ]; then
+  case "$q" in
+    a=restart-radius) sudo -n /bin/systemctl restart freeradius ;;
+    a=sync) sudo -n /bin/systemctl start nexora-agent.service ;;
+  esac
+  printf 'Status: 303 See Other\r\nLocation: /\r\n\r\n'; exit 0
+fi
+if [ "$q" = "a=log" ]; then
+  printf 'Content-Type: text/plain; charset=utf-8\r\n\r\n'
+  sudo -n /usr/bin/journalctl -u freeradius -n 200 --no-pager 2>&1; exit 0
+fi
+esc(){ sed 's/&/\&amp;/g;s/</\&lt;/g;s/>/\&gt;/g'; }
+st(){ systemctl is-active "$1" >/dev/null 2>&1 && echo '<b class=ok>ATIVO</b>' || echo '<b class=bad>PARADO</b>'; }
+code=$(curl -s -o /dev/null -m 5 -w '%{http_code} %{time_total}s' -H "Authorization: Bearer $TOKEN" "$PANEL_URL/api/public/radius/version" 2>/dev/null)
+case "$code" in 200*) cloud="<b class=ok>CONECTADO</b> (${code#* })";; *) cloud="<b class=bad>SEM CONEXÃO</b> (HTTP ${code%% *})";; esac
+mem=$(free -m | awk '/Mem:/{printf "%d / %d MB", $3, $2}')
+disk=$(df -h / | awk 'NR==2{print $3" / "$2" ("$5")"}')
+load=$(cut -d' ' -f1-3 /proc/loadavg)
+clients=$(grep -E '^\s*(client|ipaddr)' /etc/freeradius/3.0/clients.d/nexora.conf 2>/dev/null | paste - - | awk '{print "<tr><td>"$2"</td><td>"$5"</td></tr>"}')
+printf 'Content-Type: text/html; charset=utf-8\r\n\r\n'
+cat <<HTML
+<!doctype html><html lang=pt-BR><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1">
+<meta http-equiv=refresh content=30><title>Nexora RADIUS — $(hostname)</title>
+<style>body{font-family:system-ui,sans-serif;background:#0f1418;color:#e6edf0;margin:0;padding:24px}h1{margin:0 0 4px}small{color:#8aa}
+.g{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin:16px 0}.c{background:#172028;border:1px solid #26333d;padding:14px}
+.ok{color:#4ade80}.bad{color:#f87171}table{width:100%;border-collapse:collapse}td{border-top:1px solid #26333d;padding:6px}button,a.b{background:#e8a23a;color:#111;border:0;padding:8px 12px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block;margin-right:6px}</style>
+<h1>Nexora RADIUS</h1><small>$(hostname) · IP local $(hostname -I | awk '{print $1}') · versão $(cat /opt/nexora/version 2>/dev/null || echo ?)</small>
+<div class=g>
+<div class=c>FreeRADIUS (1812/1813 UDP)<br>$(st freeradius)</div>
+<div class=c>Sincronização com o painel<br>$(st nexora-agent.timer)</div>
+<div class=c>Painel na nuvem<br>$cloud</div>
+<div class=c>Sistema<br>CPU $load · RAM $mem<br>Disco $disk<br>$(uptime -p)</div>
+</div>
+<div class=c><b>Roteadores autorizados</b><table><tr><td><small>Nome</small></td><td><small>IP</small></td></tr>${clients:-<tr><td colspan=2>Nenhum roteador com RADIUS ativo.</td></tr>}</table></div>
+<p><form method=post action="/?a=restart-radius" style=display:inline><button>Reiniciar RADIUS</button></form>
+<form method=post action="/?a=sync" style=display:inline><button>Sincronizar agora</button></form>
+<a class=b href="/?a=log" target=_blank>Ver log do RADIUS</a></p>
+HTML
+EOF
+chmod 755 /opt/nexora/www/index.cgi
+cat > /etc/sudoers.d/nexora-web <<'EOF'
+www-data ALL=(root) NOPASSWD: /bin/systemctl restart freeradius, /bin/systemctl start nexora-agent.service, /usr/bin/journalctl -u freeradius -n 200 --no-pager
+EOF
+chmod 440 /etc/sudoers.d/nexora-web
+chmod 640 /opt/nexora/env; chown root:www-data /opt/nexora/env
+cat > /etc/nginx/sites-available/nexora <<'EOF'
+server {
+  listen 80 default_server;
+  auth_basic "Nexora RADIUS";
+  auth_basic_user_file /etc/nginx/nexora.htpasswd;
+  location / {
+    include fastcgi_params;
+    fastcgi_param SCRIPT_FILENAME /opt/nexora/www/index.cgi;
+    fastcgi_pass unix:/run/fcgiwrap.socket;
+  }
+}
+EOF
+rm -f /etc/nginx/sites-enabled/default
+ln -sf ../sites-available/nexora /etc/nginx/sites-enabled/nexora
+systemctl enable --now fcgiwrap.socket
+nginx -t && systemctl enable nginx && systemctl restart nginx
+if command -v ufw >/dev/null; then ufw allow 80/tcp; fi
+
 echo "==> Validando configuração"
 freeradius -C
 systemctl enable freeradius
 systemctl restart freeradius
 bash /opt/nexora/agent.sh || true
+IP=$(hostname -I | awk '{print $1}')
 echo
-echo "Servidor RADIUS pronto e conectado ao painel. IP deste servidor: $(hostname -I | awk '{print $1}')"
+echo "Servidor RADIUS pronto e conectado ao painel. IP deste servidor: $IP"
+echo "Painel web local: http://$IP  (usuário: admin  senha: $WEBPW)"
 echo "Os roteadores com RADIUS ativo no painel são autorizados automaticamente."
