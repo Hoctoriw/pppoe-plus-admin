@@ -1,2 +1,0 @@
-alter table public.cloud_pairing_state drop constraint if exists cloud_pairing_state_status_check;
-alter table public.cloud_pairing_state add constraint cloud_pairing_state_status_check check (status in ('pending','ready','connected'));

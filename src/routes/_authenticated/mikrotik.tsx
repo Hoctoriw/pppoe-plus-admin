@@ -7,60 +7,44 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { applyRadius, connectionStatus, deleteRouter, listRouters, saveRadiusConfig, saveRouter, syncPlans, testRadius, testRouter } from "@/lib/mikrotik.functions";
-import { approveRadiusPairing, listRadiusAppliances, removeRadiusAppliance } from "@/lib/radius-appliance.functions";
+import { applyRadius, connectionStatus, deleteRouter, getRadiusInstall, listRouters, saveRadiusConfig, saveRouter, syncPlans, testRadius, testRouter } from "@/lib/mikrotik.functions";
+import { listRadiusAppliances } from "@/lib/radius-appliance.functions";
 
 function RadiusInstaller() {
-  const listApp = useServerFn(listRadiusAppliances), approve = useServerFn(approveRadiusPairing), remove = useServerFn(removeRadiusAppliance);
-  const [code, setCode] = useState("");
+  const get = useServerFn(getRadiusInstall);
+  const listApp = useServerFn(listRadiusAppliances);
+  const [token, setToken] = useState("");
   const [err, setErr] = useState("");
-  const [ok, setOk] = useState("");
-  const [busy, setBusy] = useState(false);
   const [apps, setApps] = useState<Awaited<ReturnType<typeof listRadiusAppliances>>>([]);
   const origin = typeof window === "undefined" ? "" : window.location.origin;
-  const refresh = () => listApp().then(setApps).catch(() => {});
-  useEffect(() => { void refresh(); const t = setInterval(refresh, 30000); return () => clearInterval(t); }, []);
-  async function pair(e: FormEvent) {
-    e.preventDefault(); setErr(""); setOk(""); setBusy(true);
-    try { const r = await approve({ data: { code: code.replace(/\D/g, "") } }); setOk(`Servidor ${r.hostname} (${r.local_ip ?? "?"}) vinculado. Ele se instala sozinho em alguns minutos.`); setCode(""); await refresh(); }
-    catch (e) { setErr(e instanceof Error ? e.message : "Erro"); } finally { setBusy(false); }
+  useEffect(() => { const f = () => listApp().then(setApps).catch(() => {}); void f(); const t = setInterval(f, 30000); return () => clearInterval(t); }, []);
+  async function reveal() {
+    try { setToken((await get()).token); } catch (e) { setErr(e instanceof Error ? e.message : "Erro"); }
   }
   const online = (d: string) => Date.now() - new Date(d).getTime() < 3 * 60_000;
   return <div className="border bg-card p-5 text-sm">
     <h2 className="font-bold">Servidor RADIUS próprio (ISO autoinstalável)</h2>
-    <p className="mt-1 text-muted-foreground">A ISO é genérica e não leva nenhuma senha do painel. No primeiro boot, a máquina mostra na tela um <b>código de 6 números</b> (vale 15 minutos). Digite-o abaixo para vincular: o servidor recebe uma chave só dele, instala o FreeRADIUS, autoriza os roteadores com RADIUS ativo e recebe atualizações futuras sozinho.</p>
-
-    <form onSubmit={pair} className="mt-4 flex flex-wrap items-end gap-2">
-      <div className="space-y-2"><Label>Vincular servidor</Label><Input value={code} onChange={e => setCode(e.target.value)} placeholder="123 456" inputMode="numeric" maxLength={7} className="w-40 font-mono text-lg tracking-widest" /></div>
-      <Button type="submit" size="sm" disabled={busy || code.replace(/\D/g, "").length !== 6}>Vincular</Button>
-    </form>
-    {ok && <p className="mt-2 text-xs text-primary">{ok}</p>}
-    {err && <p className="mt-2 text-xs text-destructive">{err}</p>}
+    <p className="mt-1 text-muted-foreground">Gere uma ISO que instala sozinha um servidor RADIUS completo. Ele fica ligado direto a este painel: autoriza automaticamente os roteadores com RADIUS ativo, envia o status a cada minuto e recebe atualizações futuras sem você mexer.</p>
 
     <div className="mt-4">
-      <p className="font-semibold">Servidores vinculados</p>
+      <p className="font-semibold">Servidores conectados</p>
       {apps.length ? <ul className="mt-2 space-y-2">{apps.map(a => <li key={a.hostname} className="flex flex-wrap items-center gap-2 rounded-md border p-3">
         {online(a.last_seen_at) && a.radius_ok ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <XCircle className="h-4 w-4 text-destructive" />}
         <span className="font-semibold">{a.hostname}</span><span className="font-mono text-xs">{a.local_ip}</span>
-        <Badge variant="outline">v{a.version || "instalando"}</Badge>
-        <span className="flex-1 text-xs text-muted-foreground">{online(a.last_seen_at) ? (a.radius_ok ? "online" : "RADIUS parado / instalando") : "offline"} · último contato {new Date(a.last_seen_at).toLocaleString("pt-BR")} {a.uptime ? `· ${a.uptime}` : ""}</span>
-        <Button size="icon" variant="ghost" aria-label="Desvincular" onClick={() => confirm(`Desvincular ${a.hostname}? Ele perde o acesso ao painel.`) && void remove({ data: { hostname: a.hostname } }).then(refresh)}><Trash2 /></Button>
-      </li>)}</ul> : <p className="mt-1 text-xs text-muted-foreground">Nenhum servidor vinculado ainda.</p>}
+        <Badge variant="outline">v{a.version || "?"}</Badge>
+        <span className="text-xs text-muted-foreground">{online(a.last_seen_at) ? (a.radius_ok ? "online" : "RADIUS parado") : "offline"} · último contato {new Date(a.last_seen_at).toLocaleString("pt-BR")} · {a.uptime}</span>
+      </li>)}</ul> : <p className="mt-1 text-xs text-muted-foreground">Nenhum servidor conectado ainda.</p>}
     </div>
 
-    <div className="mt-4 space-y-3">
+    {!token ? <Button className="mt-4" size="sm" onClick={reveal}>Gerar comandos da ISO e instalação</Button> : <div className="mt-4 space-y-3">
       <div><p className="font-semibold">Opção 1 — Gerar a ISO (num computador com Linux)</p>
-        <pre className="mt-1 overflow-x-auto whitespace-pre-wrap break-all rounded-md bg-muted p-3 font-mono text-xs">{`sudo apt install -y xorriso curl\ncurl -fsSL ${origin}/radius-iso-build.sh -o build.sh && bash build.sh ${origin} SENHA_ROOT`}</pre>
-        <p className="text-xs text-muted-foreground">Grave a <b>nexora-radius.iso</b> num pendrive (Rufus/Balena Etcher) ou use numa máquina virtual (Proxmox, VMware, VirtualBox). A mesma ISO serve para quantas máquinas quiser. <b>A instalação apaga o disco.</b></p></div>
+        <pre className="mt-1 overflow-x-auto whitespace-pre-wrap break-all rounded-md bg-muted p-3 font-mono text-xs">{`sudo apt install -y xorriso curl\ncurl -fsSL ${origin}/radius-iso-build.sh -o build.sh && bash build.sh ${origin} ${token} SENHA_ROOT`}</pre>
+        <p className="text-xs text-muted-foreground">Grave a <b>nexora-radius.iso</b> num pendrive (Rufus/Balena Etcher) ou use numa máquina virtual (Proxmox, VMware, VirtualBox). <b>A instalação apaga o disco.</b></p></div>
       <div><p className="font-semibold">Opção 2 — Debian 12 já instalado</p>
-        <pre className="mt-1 overflow-x-auto whitespace-pre-wrap break-all rounded-md bg-muted p-3 font-mono text-xs">{`sudo mkdir -p /opt/nexora && echo 'PANEL_URL=${origin}' | sudo tee /opt/nexora/env >/dev/null\ncurl -fsSL ${origin}/radius-pair.sh | sudo bash`}</pre>
-        <p className="text-xs text-muted-foreground">O código aparece na tela; digite-o acima.</p></div>
-      <div className="rounded-md border border-primary/40 bg-primary/5 p-3"><p className="font-semibold">Opção 3 — Sistema completo no seu servidor (estilo MK-AUTH)</p>
-        <p className="mt-1 text-xs text-muted-foreground">Instala o painel inteiro, o banco de dados e o RADIUS na sua máquina. Depois é só abrir <b>http://IP-DO-SERVIDOR/</b> no navegador, mesmo sem internet. Precisa do endereço do repositório do painel no GitHub.</p>
-        <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-all rounded-md bg-muted p-3 font-mono text-xs">{`# Gerar a ISO completa\ncurl -fsSL ${origin}/radius-iso-build.sh -o build.sh && bash build.sh ${origin} SENHA_ROOT https://github.com/SUA-CONTA/SEU-REPO.git\n\n# Ou num Debian 12 já instalado\ncurl -fsSL ${origin}/nexora-onprem-install.sh | sudo bash -s https://github.com/SUA-CONTA/SEU-REPO.git`}</pre>
-        <p className="mt-1 text-xs text-muted-foreground">Crie sua conta na tela de login e rode <code className="font-mono">nexora-make-admin seu@email</code> no servidor para virar a conta principal. Para atualizar: <code className="font-mono">nexora-update</code>.</p></div>
-    </div>
-    <p className="mt-2 text-xs text-muted-foreground">Use o endereço do painel publicado para produção. Depois de instalado, aponte cada roteador para o IP do servidor no cartão acima.</p>
+        <pre className="mt-1 overflow-x-auto whitespace-pre-wrap break-all rounded-md bg-muted p-3 font-mono text-xs">{`curl -fsSL ${origin}/radius-install.sh -o install.sh && sudo bash install.sh ${origin} ${token}`}</pre></div>
+    </div>}
+    {err && <p className="mt-2 text-xs text-destructive">{err}</p>}
+    <p className="mt-2 text-xs text-muted-foreground">Os comandos contêm a chave de acesso — não compartilhe. Use o endereço do painel publicado para produção. Depois de instalado, aponte cada roteador para o IP do servidor no cartão acima.</p>
   </div>;
 }
 

@@ -99,29 +99,6 @@ export const restoreBackup = createServerFn({ method: "POST" })
     return { ok: true, restored };
   });
 
-// Chave usada pelo servidor local (on-premise) para copiar os dados desta conta da nuvem.
-export const getOnpremSyncInfo = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { data } = await context.supabase.from("onprem_sync_tokens" as any).select("created_at,last_used_at").eq("owner_id", context.userId).maybeSingle();
-    const d = data as { created_at: string; last_used_at: string | null } | null;
-    return { exists: !!d, created_at: d?.created_at ?? null, last_used_at: d?.last_used_at ?? null };
-  });
-
-export const generateOnpremSyncToken = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const owner = await ownerOf(context.supabase, context.userId);
-    if (owner !== context.userId) throw new Error("Apenas o dono da conta pode gerar a chave de sincronização.");
-    const { randomBytes, createHash } = await import("crypto");
-    const token = `nxs_${randomBytes(32).toString("hex")}`;
-    const hash = createHash("sha256").update(token).digest("hex");
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await (supabaseAdmin as any).from("onprem_sync_tokens").upsert({ owner_id: owner, token_hash: hash, created_at: new Date().toISOString(), last_used_at: null }, { onConflict: "owner_id" });
-    if (error) throw new Error(error.message);
-    return { token };
-  });
-
 export const sendBackupNow = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {

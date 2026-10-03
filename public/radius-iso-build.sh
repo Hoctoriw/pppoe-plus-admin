@@ -1,13 +1,11 @@
 #!/usr/bin/env bash
-# Nexora ISP — gera uma ISO Debian 12 genérica do servidor RADIUS (sem chaves secretas).
-# No primeiro boot a máquina mostra um código temporário; você o digita no painel para vincular.
-# Uso (em qualquer Linux): bash radius-iso-build.sh URL_DO_PAINEL SENHA_ROOT [URL_DO_REPOSITORIO_GIT]
-# Com o 3º argumento, a ISO instala o SISTEMA COMPLETO on-premise (painel web + banco + RADIUS) acessível pelo IP.
+# Nexora ISP — gera uma ISO Debian 12 que instala sozinha o servidor RADIUS
+# Uso (em qualquer Linux): bash radius-iso-build.sh URL_DO_PAINEL TOKEN SENHA_ROOT
 # Resultado: nexora-radius.iso  (ATENÇÃO: a instalação APAGA o primeiro disco)
 set -euo pipefail
-PANEL_URL="${1:-}"; ROOTPW="${2:-}"; REPO_URL="${3:-}"
-if [ -z "$PANEL_URL" ] || [ -z "$ROOTPW" ]; then
-  echo "Uso: bash radius-iso-build.sh URL_DO_PAINEL SENHA_ROOT"; exit 1; fi
+PANEL_URL="${1:-}"; TOKEN="${2:-}"; ROOTPW="${3:-}"
+if [ -z "$PANEL_URL" ] || [ -z "$TOKEN" ] || [ -z "$ROOTPW" ]; then
+  echo "Uso: bash radius-iso-build.sh URL_DO_PAINEL TOKEN SENHA_ROOT"; exit 1; fi
 PANEL_URL="${PANEL_URL%/}"
 command -v xorriso >/dev/null || { echo "Instale o xorriso (apt install xorriso)"; exit 1; }
 command -v curl >/dev/null || { echo "Instale o curl"; exit 1; }
@@ -21,25 +19,17 @@ W=$(mktemp -d); trap 'rm -rf "$W"' EXIT
 [ -f "$NAME" ] || { echo "==> Baixando $NAME"; curl -L -o "$NAME" "$BASE/$NAME"; }
 
 mkdir -p "$W/nexora"
-if [ -n "$REPO_URL" ]; then
-  curl -fsSL "$PANEL_URL/nexora-onprem-install.sh" -o "$W/nexora/onprem.sh"
-  printf '#!/bin/bash\nset -e\nbash /opt/nexora/onprem.sh %q main\n' "$REPO_URL" > "$W/nexora/pair.sh"
-else
-  curl -fsSL "$PANEL_URL/radius-pair.sh" -o "$W/nexora/pair.sh"
-fi
-printf 'PANEL_URL=%q\n' "$PANEL_URL" > "$W/nexora/env"
+curl -fsSL "$PANEL_URL/radius-install.sh" -o "$W/nexora/install.sh"
+printf 'PANEL_URL=%q\nTOKEN=%q\n' "$PANEL_URL" "$TOKEN" > "$W/nexora/env"
 cat > "$W/nexora/nexora-firstboot.service" <<'EOF'
 [Unit]
-Description=Nexora RADIUS pareamento e instalação no primeiro boot
+Description=Nexora RADIUS primeira inicialização
 After=network-online.target
 Wants=network-online.target
-ConditionPathExists=!/opt/nexora/agent.sh
-ConditionPathExists=!/opt/nexora/app/.output
+ConditionPathExists=/opt/nexora/env
 [Service]
 Type=oneshot
-TimeoutStartSec=0
-ExecStart=/bin/bash /opt/nexora/pair.sh
-ExecStartPost=/bin/systemctl disable nexora-firstboot.service
+ExecStart=/bin/bash -c '. /opt/nexora/env && bash /opt/nexora/install.sh "$PANEL_URL" "$TOKEN" && systemctl disable nexora-firstboot.service'
 Restart=on-failure
 RestartSec=30
 [Install]
@@ -69,33 +59,22 @@ d-i partman/confirm boolean true
 d-i partman/confirm_nooverwrite boolean true
 d-i apt-setup/cdrom/set-first boolean false
 tasksel tasksel/first multiselect standard, ssh-server
-d-i pkgsel/include string curl ca-certificates psmisc
-d-i pkgsel/upgrade select none
-d-i pkgsel/update-policy select none
+d-i pkgsel/include string curl ca-certificates
 popularity-contest popularity-contest/participate boolean false
 d-i grub-installer/only_debian boolean true
 d-i grub-installer/bootdev string default
-d-i preseed/late_command string mkdir -p /target/opt/nexora; cp /cdrom/nexora/* /target/opt/nexora/; chmod 600 /target/opt/nexora/env; cp /cdrom/nexora/nexora-firstboot.service /target/etc/systemd/system/; in-target systemctl enable nexora-firstboot.service; mkdir -p /target/etc/ssh/sshd_config.d; printf 'PermitRootLogin yes\\nPasswordAuthentication yes\\n' > /target/etc/ssh/sshd_config.d/nexora-ssh.conf
+d-i preseed/late_command string mkdir -p /target/opt/nexora; cp /cdrom/nexora/* /target/opt/nexora/; chmod 600 /target/opt/nexora/env; cp /cdrom/nexora/nexora-firstboot.service /target/etc/systemd/system/; in-target systemctl enable nexora-firstboot.service
 d-i finish-install/reboot_in_progress note
 EOF
 
 echo "==> Montando ISO"
 xorriso -osirrox on -indev "$NAME" -extract /isolinux/txt.cfg "$W/txt.cfg" -extract /boot/grub/grub.cfg "$W/grub.cfg" >/dev/null 2>&1
 chmod u+w "$W"/*.cfg
-# Instalação só em modo texto (sem o instalador gráfico) e sem menu.
-P='auto=true priority=critical preseed/file=/cdrom/preseed.cfg vga=normal fb=false DEBIAN_FRONTEND=newt'
+P='auto=true priority=critical preseed/file=/cdrom/preseed.cfg'
 sed -i "s#append #append $P #" "$W/txt.cfg"
 sed -i "0,/linux\s\+\/install.amd\/vmlinuz/s##linux /install.amd/vmlinuz $P#" "$W/grub.cfg"
-printf 'default install\nlabel install\n  kernel /install.amd/vmlinuz\n  append %s initrd=/install.amd/initrd.gz --- quiet\n' "$P" > "$W/txt.cfg"
-printf 'default install\nprompt 0\ntimeout 1\ninclude txt.cfg\n' > "$W/isolinux.cfg"
-cat > "$W/grub.cfg" <<GRUB
-set timeout=0
-set default=0
-menuentry "Nexora ISP - instalacao automatica (texto)" {
-  linux /install.amd/vmlinuz $P --- quiet
-  initrd /install.amd/initrd.gz
-}
-GRUB
+sed -i 's/^default .*/default install/; s/^timeout .*/timeout 30/' "$W/txt.cfg" || true
+sed -i '1i set timeout=3\nset default=0' "$W/grub.cfg"
 
 xorriso -indev "$NAME" -outdev nexora-radius.iso \
   -map "$W/preseed.cfg" /preseed.cfg -map "$W/nexora" /nexora \

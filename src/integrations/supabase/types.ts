@@ -95,36 +95,6 @@ export type Database = {
         }
         Relationships: []
       }
-      cloud_pairing_state: {
-        Row: {
-          code: string
-          created_at: string
-          id: string
-          online_url: string
-          owner_id: string
-          poll_secret: string
-          status: string
-        }
-        Insert: {
-          code: string
-          created_at?: string
-          id?: string
-          online_url: string
-          owner_id?: string
-          poll_secret: string
-          status?: string
-        }
-        Update: {
-          code?: string
-          created_at?: string
-          id?: string
-          online_url?: string
-          owner_id?: string
-          poll_secret?: string
-          status?: string
-        }
-        Relationships: []
-      }
       customer_equipment: {
         Row: {
           brand: string | null
@@ -624,63 +594,6 @@ export type Database = {
         }
         Relationships: []
       }
-      onprem_pairings: {
-        Row: {
-          code: string
-          created_at: string
-          expires_at: string
-          hostname: string | null
-          issued_token: string | null
-          local_ip: string | null
-          owner_id: string | null
-          poll_hash: string
-          status: string
-        }
-        Insert: {
-          code: string
-          created_at?: string
-          expires_at: string
-          hostname?: string | null
-          issued_token?: string | null
-          local_ip?: string | null
-          owner_id?: string | null
-          poll_hash: string
-          status?: string
-        }
-        Update: {
-          code?: string
-          created_at?: string
-          expires_at?: string
-          hostname?: string | null
-          issued_token?: string | null
-          local_ip?: string | null
-          owner_id?: string | null
-          poll_hash?: string
-          status?: string
-        }
-        Relationships: []
-      }
-      onprem_sync_tokens: {
-        Row: {
-          created_at: string
-          last_used_at: string | null
-          owner_id: string
-          token_hash: string
-        }
-        Insert: {
-          created_at?: string
-          last_used_at?: string | null
-          owner_id: string
-          token_hash: string
-        }
-        Update: {
-          created_at?: string
-          last_used_at?: string | null
-          owner_id?: string
-          token_hash?: string
-        }
-        Relationships: []
-      }
       plans: {
         Row: {
           created_at: string
@@ -759,7 +672,6 @@ export type Database = {
           last_seen_at: string
           local_ip: string | null
           radius_ok: boolean
-          token_hash: string | null
           uptime: string | null
           version: string | null
         }
@@ -768,7 +680,6 @@ export type Database = {
           last_seen_at?: string
           local_ip?: string | null
           radius_ok?: boolean
-          token_hash?: string | null
           uptime?: string | null
           version?: string | null
         }
@@ -777,42 +688,8 @@ export type Database = {
           last_seen_at?: string
           local_ip?: string | null
           radius_ok?: boolean
-          token_hash?: string | null
           uptime?: string | null
           version?: string | null
-        }
-        Relationships: []
-      }
-      radius_pairings: {
-        Row: {
-          code: string
-          created_at: string
-          expires_at: string
-          hostname: string
-          issued_token: string | null
-          local_ip: string | null
-          poll_hash: string
-          status: string
-        }
-        Insert: {
-          code: string
-          created_at?: string
-          expires_at: string
-          hostname: string
-          issued_token?: string | null
-          local_ip?: string | null
-          poll_hash: string
-          status?: string
-        }
-        Update: {
-          code?: string
-          created_at?: string
-          expires_at?: string
-          hostname?: string
-          issued_token?: string | null
-          local_ip?: string | null
-          poll_hash?: string
-          status?: string
         }
         Relationships: []
       }

@@ -1,18 +1,14 @@
-# Connect Master
-
-Sistema de gestão para provedor de internet (alternativa moderna ao MK-AUTH) com suporte a clientes PPPoE e IPoE. Inicie pela base do painel administrativo, com autenticação, cadastro de clientes PPPoE/IPoE, gestão de planos e estrutura de dados inicial.
+# Welcome to your Lovable project
 
 This project was built with [Lovable](https://lovable.dev).
 
-**Live app**: https://pppoe-plus-admin.lovable.app
-
 ## Build with Lovable
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/aa3ec09a-2c1d-4f98-b86b-c50f30443679).
+Open your project in the [Lovable editor](https://lovable.dev) and keep building.
 
 - **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
+- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
 
 ## Development
 
@@ -24,3 +20,10 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+## Built with
+
+- TanStack Start
+- TypeScript
+- React
+- Tailwind CSS
