@@ -21,6 +21,11 @@ W=$(mktemp -d); trap 'rm -rf "$W"' EXIT
 mkdir -p "$W/nexora"
 curl -fsSL "$PANEL_URL/radius-install.sh" -o "$W/nexora/install.sh"
 printf 'PANEL_URL=%q\nTOKEN=%q\n' "$PANEL_URL" "$TOKEN" > "$W/nexora/env"
+printf '%s\n' "$ROOTPW" > "$W/nexora/webpw"
+cat > "$W/nexora/issue" <<'EOF'
+Nexora RADIUS - painel web local: http://\4  (usuario: admin, senha: a mesma do root)
+
+EOF
 cat > "$W/nexora/nexora-firstboot.service" <<'EOF'
 [Unit]
 Description=Nexora RADIUS primeira inicialização
@@ -29,7 +34,7 @@ Wants=network-online.target
 ConditionPathExists=/opt/nexora/env
 [Service]
 Type=oneshot
-ExecStart=/bin/bash -c '. /opt/nexora/env && bash /opt/nexora/install.sh "$PANEL_URL" "$TOKEN" && systemctl disable nexora-firstboot.service'
+ExecStart=/bin/bash -c '. /opt/nexora/env && bash /opt/nexora/install.sh "$PANEL_URL" "$TOKEN" && cp /opt/nexora/issue /etc/issue && systemctl disable nexora-firstboot.service'
 Restart=on-failure
 RestartSec=30
 [Install]
