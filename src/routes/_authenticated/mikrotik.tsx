@@ -198,7 +198,14 @@ function RadiusCard({ r, busy, apps, onSave, onApply, onTest }: { r: RouterRow; 
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={enabled} onChange={e => setEnabled(e.target.checked)} className="h-4 w-4" />Usar RADIUS</label>
     </div>
     <div className="mt-4 grid gap-4 md:grid-cols-4">
-      <F label="Servidor RADIUS (IP/domínio)"><Input name="rhost" defaultValue={r.radius_host ?? ""} placeholder="10.0.0.5" disabled={!enabled} /></F>
+      <F label="Servidor RADIUS (IP local)">
+        <Input name="rhost" value={host} onChange={e => setHost(e.target.value)} placeholder="192.168.88.2" disabled={!enabled} />
+        {apps.length > 0 && <select className="mt-1 h-8 w-full rounded-md border bg-background px-2 text-xs" value="" disabled={!enabled} onChange={e => { if (e.target.value) setHost(e.target.value); }}>
+          <option value="">Usar IP local de um servidor conectado…</option>
+          {apps.map(a => <option key={a.hostname} value={a.local_ip ?? ""}>{a.hostname} — {a.local_ip}</option>)}
+        </select>}
+        <p className="text-xs text-muted-foreground">Use o <b>IP local</b> do servidor RADIUS (o mesmo mostrado em “Servidores conectados” abaixo), como no MK-AUTH — o roteador fala com ele dentro da sua rede, sem IP público.</p>
+      </F>
       <F label="Segredo compartilhado"><Input name="rsecret" type="password" placeholder={r.radius_enabled ? "•••••• (mantido se vazio)" : "segredo"} disabled={!enabled} /></F>
       <F label="Porta autenticação"><Input name="rauth" type="number" defaultValue={r.radius_auth_port ?? 1812} min="1" max="65535" disabled={!enabled} /></F>
       <F label="Porta contabilidade"><Input name="racct" type="number" defaultValue={r.radius_acct_port ?? 1813} min="1" max="65535" disabled={!enabled} /></F>
