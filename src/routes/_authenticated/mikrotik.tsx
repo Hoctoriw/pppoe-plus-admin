@@ -74,6 +74,9 @@ function MikrotikPage() {
   const [busy, setBusy] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [tab, setTab] = useState<"vpn" | "public_ip" | "radius">("public_ip");
+  const listApp = useServerFn(listRadiusAppliances);
+  const [apps, setApps] = useState<Awaited<ReturnType<typeof listRadiusAppliances>>>([]);
+  useEffect(() => { if (tab === "radius") listApp().then(setApps).catch(() => setApps([])); }, [tab]);
   const shown = tab === "radius" ? routers : routers.filter(r => (r.connection_mode ?? "vpn") === tab);
 
   async function load() { try { setRouters(await list()); } catch (e) { setMsg((e as Error).message); } }
