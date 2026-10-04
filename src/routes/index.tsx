@@ -24,7 +24,7 @@ function Index() {
   const navigate = useNavigate();
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      navigate({ to: data.user ? "/rede" : "/auth", replace: true });
+      navigate({ to: data.user ? "/dashboard" : "/auth", replace: true });
     });
   }, [navigate]);
   return (

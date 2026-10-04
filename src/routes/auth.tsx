@@ -35,12 +35,12 @@ function AuthPage() {
     if (mode === "login") {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) setMessage("E-mail ou senha inválidos.");
-      else navigate({ to: "/rede", replace: true });
+      else navigate({ to: "/dashboard", replace: true });
     } else {
       const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: fullName }, emailRedirectTo: window.location.origin } });
       if (error) setMessage(error.message);
       else if (!data.session) setMessage("Confira seu e-mail para confirmar a conta.");
-      else navigate({ to: "/rede", replace: true });
+      else navigate({ to: "/dashboard", replace: true });
     }
     setLoading(false);
   }
@@ -49,7 +49,7 @@ function AuthPage() {
     setLoading(true); setMessage("");
     const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
     if (result.error) { setMessage("Não foi possível entrar com o Google."); setLoading(false); return; }
-    if (!result.redirected) navigate({ to: "/rede", replace: true });
+    if (!result.redirected) navigate({ to: "/dashboard", replace: true });
   }
 
   return <main className="grid min-h-screen lg:grid-cols-[1.05fr_.95fr]">
@@ -63,7 +63,7 @@ function AuthPage() {
         <div className="mb-10 flex items-center gap-3 text-lg font-extrabold lg:hidden"><Radio className="text-primary" />NEXORA ISP</div>
         <p className="text-sm font-semibold text-primary">PAINEL ADMINISTRATIVO</p>
         <h2 className="mt-2 text-3xl font-extrabold">{mode === "login" ? "Bem-vindo de volta" : "Criar acesso"}</h2>
-        <p className="mt-2 text-sm text-muted-foreground">{mode === "login" ? "Entre para continuar gerenciando sua operação." : "Cadastre-se e ganhe 15 dias de teste grátis."}</p>
+        <p className="mt-2 text-sm text-muted-foreground">{mode === "login" ? "Entre para continuar gerenciando sua operação." : "Cadastre seu usuário para começar."}</p>
         <form onSubmit={submit} className="mt-8 space-y-5">
           {mode === "signup" && <div className="space-y-2"><Label htmlFor="fullName">Nome completo</Label><Input id="fullName" name="fullName" required placeholder="Seu nome" /></div>}
           <div className="space-y-2"><Label htmlFor="email">E-mail</Label><Input id="email" name="email" type="email" required placeholder="voce@provedor.com.br" /></div>
