@@ -100,5 +100,5 @@ export function ConnectionsMap({ points, selectedId, onSelect, onMoveSelected }:
   }, [points, selectedId, mapReady]);
 
   if (error) return <div className="flex h-full min-h-96 items-center justify-center bg-muted p-8 text-center text-sm text-muted-foreground"><div><MapPin className="mx-auto mb-3 h-8 w-8" /><p>{error}</p></div></div>;
-  return <div ref={hostRef} className="h-full min-h-96 w-full" aria-label="Mapa de residências dos clientes" />;
+  return <div ref={hostRef} className="isolate h-full min-h-96 w-full" aria-label="Mapa de residências dos clientes" />;
 }
