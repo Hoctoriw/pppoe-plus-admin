@@ -297,8 +297,8 @@ export const reviewLicensePayment = createServerFn({ method: "POST" })
 
 // ===== Banco de recebimento das licenças (Asaas) =====
 async function loadLicenseSettings(db: any) {
-  const { data } = await db.from("license_settings").select("api_key, environment, active").eq("id", 1).maybeSingle();
-  return data as { api_key: string | null; environment: "production" | "sandbox"; active: boolean } | null;
+  const { data } = await db.from("license_settings").select("api_key, environment, active, provider").eq("id", 1).maybeSingle();
+  return data as { api_key: string | null; environment: "production" | "sandbox"; active: boolean; provider: "asaas" | "mercadopago" } | null;
 }
 
 // Libera a licença de um pagamento pendente (idempotente). Usado pelo aviso do banco e pela consulta.
@@ -317,16 +317,16 @@ export const getLicenseBank = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertAdmin(context);
     const s = await loadLicenseSettings(await admin());
-    return { configured: !!s?.api_key, environment: s?.environment ?? "production", active: !!s?.active };
+    return { configured: !!s?.api_key, environment: s?.environment ?? "production", active: !!s?.active, provider: s?.provider ?? "asaas" };
   });
 
 export const saveLicenseBank = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ api_key: z.string().max(300).optional(), environment: z.enum(["production", "sandbox"]), active: z.boolean() }).parse(d))
+  .inputValidator((d) => z.object({ api_key: z.string().max(300).optional(), environment: z.enum(["production", "sandbox"]), active: z.boolean(), provider: z.enum(["asaas", "mercadopago"]).default("asaas") }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const db = await admin();
-    const row: any = { id: 1, environment: data.environment, active: data.active };
+    const row: any = { id: 1, environment: data.environment, active: data.active, provider: data.provider };
     if (data.api_key) row.api_key = data.api_key;
     const { error } = await db.from("license_settings").upsert(row, { onConflict: "id" });
     if (error) throw new Error(error.message);

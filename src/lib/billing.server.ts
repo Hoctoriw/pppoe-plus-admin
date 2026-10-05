@@ -126,12 +126,33 @@ export async function fetchBoleto(account: BankAccount, providerChargeId: string
 }
 
 // ===== Pix das licenças (conta Asaas da plataforma) =====
-export type LicenseSettings = { api_key: string | null; environment: "production" | "sandbox"; active: boolean };
+export type LicenseSettings = { api_key: string | null; environment: "production" | "sandbox"; active: boolean; provider?: "asaas" | "mercadopago" };
+
+// ===== Mercado Pago (Pix transparente) =====
+async function mp<T = any>(token: string, method: string, path: string, body?: unknown): Promise<T> {
+  const res = await fetch(`https://api.mercadopago.com${path}`, {
+    method,
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", "X-Idempotency-Key": crypto.randomUUID() },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const json: any = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(`Mercado Pago: ${json?.message || res.status}`);
+  return json as T;
+}
 const asLicAccount = (s: LicenseSettings): BankAccount => ({ id: "license", name: "licencas", provider: "asaas", api_key: s.api_key, environment: s.environment, active: s.active });
 
 export async function createLicensePix(s: LicenseSettings, buyer: { id: string; name: string; email: string | null; cpfCnpj: string }, amount: number, description: string, ref: string) {
-  const acc = asLicAccount(s);
   const doc = onlyDigits(buyer.cpfCnpj);
+  if (s.provider === "mercadopago") {
+    const pay = await mp(s.api_key!, "POST", "/v1/payments", {
+      transaction_amount: Math.round(amount * 100) / 100, description, payment_method_id: "pix", external_reference: ref,
+      payer: { email: buyer.email || "cliente@nexora.app", first_name: buyer.name || "Cliente", identification: { type: doc.length > 11 ? "CNPJ" : "CPF", number: doc } },
+    });
+    const td = pay?.point_of_interaction?.transaction_data;
+    if (!td?.qr_code) throw new Error("Mercado Pago não retornou o QR Code Pix. Verifique se sua conta tem chave Pix cadastrada.");
+    return { id: String(pay.id), payload: td.qr_code as string, image: `data:image/png;base64,${td.qr_code_base64}` };
+  }
+  const acc = asLicAccount(s);
   const found = await asaas(acc, "GET", `/customers?cpfCnpj=${doc}`);
   const customerId = found?.data?.length ? found.data[0].id : (await asaas(acc, "POST", "/customers", { name: buyer.name || "Cliente Nexora", cpfCnpj: doc, email: buyer.email || undefined, externalReference: buyer.id })).id;
   const due = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
@@ -141,6 +162,10 @@ export async function createLicensePix(s: LicenseSettings, buyer: { id: string; 
 }
 
 export async function licensePixStatus(s: LicenseSettings, chargeId: string): Promise<string> {
+  if (s.provider === "mercadopago") {
+    const p = await mp(s.api_key!, "GET", `/v1/payments/${encodeURIComponent(chargeId)}`);
+    return p.status === "approved" ? "RECEIVED" : String(p.status).toUpperCase();
+  }
   const p = await asaas(asLicAccount(s), "GET", `/payments/${chargeId}`);
   return p.status as string;
 }
