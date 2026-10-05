@@ -30,6 +30,27 @@ async function ownerOf(supabase: any, userId: string) {
   return (data?.owner_id as string | undefined) ?? userId;
 }
 
+type NominatimHit = { display_name: string; lat: number; lon: number; viewport?: { northeast: { lat: number; lng: number }; southwest: { lat: number; lng: number } } };
+
+async function nominatim(q: string, limit: number): Promise<NominatimHit[]> {
+  const url = new URL("https://nominatim.openstreetmap.org/search");
+  url.searchParams.set("q", q);
+  url.searchParams.set("format", "jsonv2");
+  url.searchParams.set("limit", String(limit));
+  url.searchParams.set("countrycodes", "br");
+  url.searchParams.set("accept-language", "pt-BR");
+  const res = await fetch(url, { headers: { "User-Agent": "NexoraISP/1.0 (painel de provedor)" } });
+  if (!res.ok) throw new Error(`Falha na busca de endereço [${res.status}].`);
+  const rows = (await res.json()) as Array<{ display_name: string; lat: string; lon: string; boundingbox?: string[] }>;
+  return rows.map((r) => {
+    const b = r.boundingbox?.map(Number);
+    return {
+      display_name: r.display_name, lat: Number(r.lat), lon: Number(r.lon),
+      ...(b && b.length === 4 ? { viewport: { southwest: { lat: b[0]!, lng: b[2]! }, northeast: { lat: b[1]!, lng: b[3]! } } } : {}),
+    };
+  });
+}
+
 export const listConnectionCustomers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -66,43 +87,17 @@ export const geocodeCustomerAddress = createServerFn({ method: "POST" })
       throw new Error("Complete rua, cidade e estado no cadastro do cliente antes de localizar.");
     }
 
-    const lovableKey = process.env["LOVABLE_API_KEY"];
-    const mapsKey = process.env["GOOGLE_MAPS_API_KEY"];
-    if (!lovableKey || !mapsKey) throw new Error("Google Maps não está configurado.");
-    const url = new URL("https://connector-gateway.lovable.dev/google_maps/maps/api/geocode/json");
-    url.searchParams.set("address", address);
-    url.searchParams.set("language", "pt-BR");
-    url.searchParams.set("region", "br");
-    const response = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${lovableKey}`,
-        "X-Connection-Api-Key": mapsKey,
-      },
-    });
-    if (response.status === 403) {
-      const body = await response.json().catch(() => ({})) as { error?: { details?: Array<{ reason?: string }> } };
-      const reason = body.error?.details?.find((detail) => detail.reason)?.reason;
-      if (reason === "API_KEY_HTTP_REFERRER_BLOCKED") throw new Error("A chave de servidor do Google Maps não permite consultas pelo painel.");
-      if (reason === "API_KEY_SERVICE_BLOCKED") throw new Error("Ative a API de Geocodificação na conexão do Google Maps.");
-      throw new Error("O Google Maps recusou a consulta do endereço.");
-    }
-    if (!response.ok) throw new Error(`Falha ao localizar endereço [${response.status}]: ${await response.text()}`);
-    const result = await response.json() as {
-      status?: string;
-      error_message?: string;
-      results?: Array<{ formatted_address: string; geometry: { location: { lat: number; lng: number } } }>;
-    };
-    const match = result.results?.[0];
-    if (!match) throw new Error(result.error_message || "Endereço não encontrado. Confira os dados do cadastro.");
-    const latitude = match.geometry.location.lat;
-    const longitude = match.geometry.location.lng;
+    const [match] = await nominatim(address, 1);
+    if (!match) throw new Error("Endereço não encontrado. Confira os dados do cadastro.");
+    const latitude = match.lat;
+    const longitude = match.lon;
     const { error: updateError } = await context.supabase
       .from("customers")
       .update({ latitude, longitude })
       .eq("id", data.customerId)
       .eq("owner_id", owner);
     if (updateError) throw new Error(updateError.message);
-    return { latitude, longitude, formattedAddress: match.formatted_address };
+    return { latitude, longitude, formattedAddress: match.display_name };
   });
 
 export const saveCustomerCoordinates = createServerFn({ method: "POST" })
@@ -134,43 +129,6 @@ export const geocodePlaceQuery = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((value) => z.object({ query: z.string().trim().min(3).max(200) }).parse(value))
   .handler(async ({ data }) => {
-    const lovableKey = process.env["LOVABLE_API_KEY"];
-    const mapsKey = process.env["GOOGLE_MAPS_API_KEY"];
-    if (!lovableKey || !mapsKey) throw new Error("Google Maps não está configurado.");
-    const url = new URL("https://connector-gateway.lovable.dev/google_maps/maps/api/geocode/json");
-    url.searchParams.set("address", data.query);
-    url.searchParams.set("language", "pt-BR");
-    url.searchParams.set("region", "br");
-    const response = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${lovableKey}`,
-        "X-Connection-Api-Key": mapsKey,
-      },
-    });
-    if (response.status === 403) {
-      const body = await response.json().catch(() => ({})) as { error?: { details?: Array<{ reason?: string }> } };
-      const reason = body.error?.details?.find((detail) => detail.reason)?.reason;
-      if (reason === "API_KEY_HTTP_REFERRER_BLOCKED") throw new Error("A chave de servidor do Google Maps não permite consultas pelo painel.");
-      if (reason === "API_KEY_SERVICE_BLOCKED") throw new Error("Ative a API de Geocodificação na conexão do Google Maps.");
-      throw new Error("O Google Maps recusou a consulta.");
-    }
-    if (!response.ok) throw new Error(`Falha na busca [${response.status}]: ${await response.text()}`);
-    const result = await response.json() as {
-      status?: string;
-      error_message?: string;
-      results?: Array<{
-        formatted_address: string;
-        geometry: {
-          location: { lat: number; lng: number };
-          viewport?: { northeast: { lat: number; lng: number }; southwest: { lat: number; lng: number } };
-        };
-      }>;
-    };
-    if (result.status === "ZERO_RESULTS" || !result.results?.length) return [] as PlaceResult[];
-    return result.results.slice(0, 5).map((r): PlaceResult => ({
-      description: r.formatted_address,
-      latitude: r.geometry.location.lat,
-      longitude: r.geometry.location.lng,
-      ...(r.geometry.viewport ? { viewport: r.geometry.viewport } : {}),
-    }));
+    const found = await nominatim(data.query, 5);
+    return found.map((r): PlaceResult => ({ description: r.display_name, latitude: r.lat, longitude: r.lon, ...(r.viewport ? { viewport: r.viewport } : {}) }));
   });
