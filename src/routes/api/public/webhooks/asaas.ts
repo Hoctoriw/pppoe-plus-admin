@@ -31,7 +31,7 @@ export const Route = createFileRoute("/api/public/webhooks/asaas")({
           // Pode ser um pagamento de licença do painel.
           const { data: lp } = await db.from("license_payments").select("*").eq("provider_charge_id", paymentId).eq("status", "pending").maybeSingle();
           if (!lp) return new Response("ok", { status: 200 });
-          const { data: s } = await db.from("license_settings").select("api_key, environment, active").eq("id", 1).maybeSingle();
+          const { data: s } = await db.from("license_settings").select("api_key, environment, active, provider").eq("id", 1).maybeSingle();
           if (!s?.api_key) return new Response("ok", { status: 200 });
           const { licensePixStatus } = await import("@/lib/billing.server");
           const { approveLicensePaymentRow } = await import("@/lib/users.functions");

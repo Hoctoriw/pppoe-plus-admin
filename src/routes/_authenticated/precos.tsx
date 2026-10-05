@@ -32,7 +32,7 @@ function PricesPage() {
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const bankGet = useServerFn(getLicenseBank), bankSave = useServerFn(saveLicenseBank);
-  const [bank, setBank] = useState<{ configured: boolean; environment: "production" | "sandbox"; active: boolean } | null>(null);
+  const [bank, setBank] = useState<{ configured: boolean; environment: "production" | "sandbox"; active: boolean; provider: "asaas" | "mercadopago" } | null>(null);
 
   async function load() {
     try { setPlans(await list()); setPayments(await pays()); setBank(await bankGet()); } catch (e) { setMsg((e as Error).message); }
@@ -56,9 +56,10 @@ function PricesPage() {
     {msg && <p className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">{msg}</p>}
 
     <section className="mt-6 border bg-card">
-      <div className="border-b p-4"><p className="font-bold">Banco de recebimento (Asaas)</p><p className="text-xs text-muted-foreground">Com o banco ativo, cada pagamento gera um Pix na sua conta Asaas e o painel do usuário é liberado sozinho quando o Pix é pago. No Asaas, configure o webhook para <span className="font-mono">{typeof window !== "undefined" ? window.location.origin : ""}/api/public/webhooks/asaas</span>.</p></div>
-      {bank && <form key={String(bank.configured) + bank.environment + bank.active} className="grid gap-2 p-4 md:grid-cols-[2fr_1fr_auto_auto]" onSubmit={e => { e.preventDefault(); const f = new FormData(e.currentTarget); const k = String(f.get("api_key") || ""); void run(() => bankSave({ data: { ...(k ? { api_key: k } : {}), environment: f.get("environment") as "production" | "sandbox", active: f.get("active") === "on" } })); }}>
-        <Input name="api_key" type="password" placeholder={bank.configured ? "Chave salva — deixe vazio para manter" : "Chave de API do Asaas"} />
+      <div className="border-b p-4"><p className="font-bold">Banco de recebimento (Asaas ou Mercado Pago)</p><p className="text-xs text-muted-foreground">Com o banco ativo, cada pagamento gera um Pix na sua conta e o painel do usuário é liberado sozinho quando o Pix é pago. Endereço de aviso (webhook) — Asaas: <span className="font-mono">{typeof window !== "undefined" ? window.location.origin : ""}/api/public/webhooks/asaas</span> · Mercado Pago (evento Pagamentos): <span className="font-mono">{typeof window !== "undefined" ? window.location.origin : ""}/api/public/webhooks/mercadopago</span>. No Mercado Pago use o <b>Access Token</b> de produção (Suas integrações → Credenciais).</p></div>
+      {bank && <form key={String(bank.configured) + bank.environment + bank.active + bank.provider} className="grid gap-2 p-4 md:grid-cols-[1fr_2fr_1fr_auto_auto]" onSubmit={e => { e.preventDefault(); const f = new FormData(e.currentTarget); const k = String(f.get("api_key") || ""); void run(() => bankSave({ data: { ...(k ? { api_key: k } : {}), environment: f.get("environment") as "production" | "sandbox", active: f.get("active") === "on", provider: f.get("provider") as "asaas" | "mercadopago" } })); }}>
+        <select name="provider" defaultValue={bank.provider} className="rounded-md border bg-background px-2 text-sm"><option value="asaas">Asaas</option><option value="mercadopago">Mercado Pago</option></select>
+        <Input name="api_key" type="password" placeholder={bank.configured ? "Chave salva — deixe vazio para manter" : "Chave de API / Access Token"} />
         <select name="environment" defaultValue={bank.environment} className="rounded-md border bg-background px-2 text-sm"><option value="production">Produção</option><option value="sandbox">Teste (sandbox)</option></select>
         <label className="flex items-center gap-1 text-sm"><input type="checkbox" name="active" defaultChecked={bank.active} />Ativo</label>
         <Button size="sm" disabled={busy}>Salvar banco</Button>
