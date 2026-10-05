@@ -133,7 +133,7 @@ async function mp<T = any>(token: string, method: string, path: string, body?: u
   const res = await fetch(`https://api.mercadopago.com${path}`, {
     method,
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", "X-Idempotency-Key": crypto.randomUUID() },
-    body: body ? JSON.stringify(body) : undefined,
+    body: body ? JSON.stringify(body) : null,
   });
   const json: any = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(`Mercado Pago: ${json?.message || res.status}`);
