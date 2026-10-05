@@ -580,6 +580,7 @@ export type Database = {
           created_at: string
           environment: string
           id: number
+          provider: string
           updated_at: string
         }
         Insert: {
@@ -588,6 +589,7 @@ export type Database = {
           created_at?: string
           environment?: string
           id?: number
+          provider?: string
           updated_at?: string
         }
         Update: {
@@ -596,6 +598,7 @@ export type Database = {
           created_at?: string
           environment?: string
           id?: number
+          provider?: string
           updated_at?: string
         }
         Relationships: []

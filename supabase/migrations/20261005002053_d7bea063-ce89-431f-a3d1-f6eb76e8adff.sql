@@ -1,0 +1,1 @@
+ALTER TABLE public.license_settings ADD COLUMN IF NOT EXISTS provider text NOT NULL DEFAULT 'asaas' CHECK (provider IN ('asaas','mercadopago'));
