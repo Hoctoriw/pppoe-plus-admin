@@ -130,11 +130,12 @@ function NetworkPage() {
     const parent = type !== "olt" && selected ? selected.id : null;
     const row = { ...DEFAULTS[type], owner_id: owner, node_type: type, name: `${type.toUpperCase()}-${String(count).padStart(2, "0")}`, latitude: lat, longitude: lng, parent_id: parent, parent_leg: preferredParentLeg(selected ?? undefined), cable_fibers: type === "olt" ? null : 12, cable_fiber_number: type === "olt" ? 1 : nextFiberForParent(parent), cable_anchors: [] };
     const { data, error } = await db.from("ftth_nodes").insert(row).select().single();
-    setPlacing(null);
+    const chain = type === "cto" && selected?.node_type === "cto";
+    setPlacing(chain ? "cto" : null);
     if (error) return setMessage(error.message);
     await load();
     setSelectedId(data.id);
-    setMessage(`${NODE_LABEL[type]} criada${parent ? ` e ligada a ${selected?.name}` : ""}. Ajuste os detalhes ao lado.`);
+    setMessage(`${NODE_LABEL[type]} criada${parent ? ` e ligada a ${selected?.name}` : ""}. ${chain ? " Clique de novo para a próxima CTO em cascata." : " Ajuste os detalhes ao lado."}`);
   }
 
   async function save() {
@@ -202,7 +203,7 @@ function NetworkPage() {
   const nav = <><div className="flex h-16 items-center gap-3 px-5 text-lg font-extrabold"><span className="flex h-9 w-9 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground"><Radio /></span>NEXORA <span className="text-sidebar-primary">ISP</span></div><nav className="mt-5 space-y-1 px-3"><Link to="/dashboard"><NavItem icon={<LayoutDashboard />} label="Visão geral" /></Link><Link to="/clientes"><NavItem icon={<Users />} label="Clientes" /></Link><Link to="/planos"><NavItem icon={<Package />} label="Planos" /></Link><Link to="/mikrotik"><NavItem icon={<RouterIcon />} label="MikroTik" /></Link><AdminOnly><Link to="/usuarios"><NavItem icon={<ShieldCheck />} label="Usuários" /></Link></AdminOnly><Link to="/equipe"><NavItem icon={<UserPlus />} label="Equipe" /></Link><Link to="/conexoes"><NavItem icon={<Wifi />} label="Conexões" /></Link><NavItem icon={<Network />} label="Rede" active /><Link to="/financeiro"><NavItem icon={<CircleDollarSign />} label="Financeiro" /></Link></nav><div className="mt-auto border-t border-sidebar-border p-3"><Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={signOut}><LogOut />Sair</Button></div></>;
 
   const sig = selected ? signals.get(selected.id) : undefined;
-  const parentOptions = draft ? nodes.filter((n) => n.id !== draft.id && n.node_type !== "cto") : [];
+  const parentOptions = draft ? nodes.filter((n) => n.id !== draft.id) : [];
 
   return <div className="min-h-screen bg-background text-foreground lg:grid lg:grid-cols-[240px_1fr]">
     <aside className="hidden min-h-screen flex-col bg-sidebar text-sidebar-foreground lg:flex">{nav}</aside>
@@ -223,7 +224,7 @@ function NetworkPage() {
 
         <section className="mt-6 grid overflow-hidden border bg-card lg:grid-cols-[1fr_400px]">
           <div className="relative min-h-[520px] lg:min-h-[720px]">
-            <NetworkMap nodes={nodes} customers={mapCustomers} selectedId={selectedId} placing={!!placing} onSelect={(id) => { setSelectedId(id); setPlacing(null); }} onMapClick={(a, b) => void handleMapClick(a, b)} onAnchorSelect={setSelectedAnchor} onAnchorMove={(index, point) => { if (!selected) return; const anchors = [...(selected.cable_anchors ?? [])]; anchors[index] = point; void updateAnchors(selected.id, anchors, "Ponto de ancoragem ajustado."); }} onCustomerMove={(id, lat, lng) => void moveCustomer(id, lat, lng)} />
+            <NetworkMap nodes={nodes} onFindNode={(id) => { setSelectedId(id); setPlacing(null); }} customers={mapCustomers} selectedId={selectedId} placing={!!placing} onSelect={(id) => { setSelectedId(id); setPlacing(null); }} onMapClick={(a, b) => void handleMapClick(a, b)} onAnchorSelect={setSelectedAnchor} onAnchorMove={(index, point) => { if (!selected) return; const anchors = [...(selected.cable_anchors ?? [])]; anchors[index] = point; void updateAnchors(selected.id, anchors, "Ponto de ancoragem ajustado."); }} onCustomerMove={(id, lat, lng) => void moveCustomer(id, lat, lng)} />
             <div className="absolute bottom-4 left-4 flex flex-wrap gap-3 border bg-card/95 px-3 py-2 text-xs shadow backdrop-blur-sm">
               <span className="flex items-center gap-1"><span className="h-3 w-3 bg-ftth-olt" />OLT</span><span className="flex items-center gap-1"><span className="h-3 w-3 bg-ftth-ceo" />CEO</span><span className="flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-ftth-cto" />CTO</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-map-active" />Cliente</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-map-suspended" />Sinal fraco</span>
             </div>
@@ -310,7 +311,7 @@ function NetworkPage() {
                 </div>)}</div>}
 
               </div>}
-              <div className="flex flex-wrap gap-2"><Button onClick={() => void save()}><Save />Salvar</Button><Button variant="outline" onClick={() => setPlacing("move")}><Move />Mover</Button>{draft.node_type !== "cto" && <><Button variant="outline" onClick={() => setPlacing("ceo")}><Plus />CEO aqui</Button><Button variant="outline" onClick={() => setPlacing("cto")}><Plus />CTO aqui</Button></>}<Button variant="ghost" className="text-destructive" onClick={() => void remove()}><Trash2 />Excluir</Button></div>
+              <div className="flex flex-wrap gap-2"><Button onClick={() => void save()}><Save />Salvar</Button><Button variant="outline" onClick={() => setPlacing("move")}><Move />Mover</Button>{draft.node_type !== "cto" && <Button variant="outline" onClick={() => setPlacing("ceo")}><Plus />CEO aqui</Button>}<Button variant="outline" onClick={() => setPlacing("cto")}><Plus />{draft.node_type === "cto" ? "Próxima CTO (cascata)" : "CTO aqui"}</Button><Button variant="ghost" className="text-destructive" onClick={() => void remove()}><Trash2 />Excluir</Button></div>
 
               {draft.node_type === "cto" && selected && <div className="border-t pt-4">
                 <p className="mb-2 flex items-center gap-2 font-semibold"><Cable className="h-4 w-4" />Portas ({customers.filter(c => c.cto_id === selected.id).length}/{selected.ports} ocupadas)</p>
