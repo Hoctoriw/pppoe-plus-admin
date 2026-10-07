@@ -4,3 +4,5 @@
 - [x] Validar desenho, ajuste, exclusão e recálculo no mapa
 - [x] Selecionar e identificar a fibra usada em cada ligação
 - [x] Usar automaticamente a saída de maior porcentagem na continuidade desbalanceada
+- [ ] Adicionar diagrama de cores e resumo das ligações CEO–CTO
+- [ ] Incluir dicas de ancoragem e validar a tela Rede
