@@ -4,6 +4,8 @@ import { AlertTriangle, Anchor, Box, Cable, ChevronRight, CircleDollarSign, Layo
 import { AdminOnly } from "@/components/AdminOnly";
 import { useNetworkModule } from "@/components/NetworkModuleOnly";
 import { NetworkMap, type MapCustomer } from "@/components/NetworkMap";
+import { FiberConnections, FiberReference, FiberSwatch } from "@/components/FiberDiagram";
+import { fiberLabel } from "@/lib/fiber-colors";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -249,6 +251,7 @@ function NetworkPage() {
               </div>
               {draft.node_type !== "olt" && sig?.input === null && <p className="flex gap-2 text-xs text-destructive"><AlertTriangle className="h-4 w-4 shrink-0" />Ligue esta caixa a uma OLT ou CEO para calcular o sinal.</p>}
               <Field label="Nome"><Input value={draft.name} onChange={(e) => set("name", e.target.value)} /></Field>
+              <FiberConnections node={draft} nodes={nodes} onSelect={(id) => { setSelectedId(id); setPlacing(null); }} />
               {draft.node_type !== "olt" && <Field label="Vem de (origem do cabo)"><Select value={draft.parent_id ?? "none"} onValueChange={(v) => { const parentId = v === "none" ? null : v; const parent = parentId ? byId.get(parentId) : undefined; setDraft((current) => current ? { ...current, parent_id: parentId, parent_leg: preferredParentLeg(parent), cable_fiber_number: nextFiberForParent(parentId, current.cable_fibers ?? 12), parent_port: null } : current); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Sem origem</SelectItem>{parentOptions.map((p) => <SelectItem key={p.id} value={p.id}>{p.name} ({p.node_type.toUpperCase()})</SelectItem>)}</SelectContent></Select></Field>}
               {draft.node_type !== "olt" && draft.parent_id && byId.get(draft.parent_id)?.splitter_type === "unbalanced" && <div className="border bg-muted/40 p-3 text-sm"><p className="font-medium">Continuidade pela saída de maior porcentagem</p><p className="mt-1 text-xs text-muted-foreground">A próxima caixa usa automaticamente a passagem de {100 - (byId.get(draft.parent_id)?.splitter_tap ?? 10)}%.</p></div>}
               <div className="grid grid-cols-2 gap-3">
@@ -262,7 +265,7 @@ function NetworkPage() {
                 <Field label="Fusões"><Input type="number" min={0} value={draft.fusion_count} onChange={(e) => set("fusion_count", num(e.target.value))} /></Field>
                 <Field label="Conectores"><Input type="number" min={0} value={draft.connector_count} onChange={(e) => set("connector_count", num(e.target.value))} /></Field>
                 {draft.node_type === "cto" && <Field label="Portas de atendimento"><Input type="number" min={0} max={64} value={draft.ports} onChange={(e) => set("ports", Math.min(64, num(e.target.value)))} /></Field>}
-                {draft.node_type !== "olt" && <><Field label="Quantidade de fibras no cabo"><Input type="number" min={1} value={draft.cable_fibers ?? ""} onChange={(e) => { const total = e.target.value === "" ? null : Number(e.target.value); setDraft((current) => current ? { ...current, cable_fibers: total, cable_fiber_number: Math.min(current.cable_fiber_number ?? 1, total ?? 1) } : current); }} /></Field>{(() => { const par = draft.parent_id ? byId.get(draft.parent_id) : undefined; if (!par || par.splitter_type === "unbalanced" || par.splitter_ratio <= 1) return null; const used = new Set(nodes.filter((x) => x.parent_id === par.id && x.id !== draft.id).map((x) => x.parent_port)); return <Field label={`Porta do splitter 1:${par.splitter_ratio} em ${par.name}`}><Select value={draft.parent_port ? String(draft.parent_port) : "none"} onValueChange={(v) => set("parent_port", v === "none" ? null : Number(v))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Não definida</SelectItem>{Array.from({ length: par.splitter_ratio }, (_, i) => i + 1).map((port) => <SelectItem key={port} value={String(port)} disabled={used.has(port)}>Porta {port}{used.has(port) ? " (em uso)" : ""}</SelectItem>)}</SelectContent></Select></Field>; })()}<Field label="Fibra usada nesta caixa"><Select value={String(draft.cable_fiber_number ?? 1)} onValueChange={(v) => set("cable_fiber_number", Number(v))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{Array.from({ length: Math.max(1, draft.cable_fibers ?? 1) }, (_, index) => index + 1).map((fiber) => <SelectItem key={fiber} value={String(fiber)}>Fibra {fiber}</SelectItem>)}</SelectContent></Select></Field><Field label="Metragem do cabo (m)"><Input type="number" min={0} placeholder={`Auto: ${Math.round(sig?.cableM ?? 0)}`} value={draft.cable_length_m ?? ""} onChange={(e) => set("cable_length_m", e.target.value === "" ? null : Number(e.target.value))} /></Field></>}
+                {draft.node_type !== "olt" && <><Field label="Quantidade de fibras no cabo"><Input type="number" min={1} value={draft.cable_fibers ?? ""} onChange={(e) => { const total = e.target.value === "" ? null : Number(e.target.value); setDraft((current) => current ? { ...current, cable_fibers: total, cable_fiber_number: Math.min(current.cable_fiber_number ?? 1, total ?? 1) } : current); }} /></Field>{(() => { const par = draft.parent_id ? byId.get(draft.parent_id) : undefined; if (!par || par.splitter_type === "unbalanced" || par.splitter_ratio <= 1) return null; const used = new Set(nodes.filter((x) => x.parent_id === par.id && x.id !== draft.id).map((x) => x.parent_port)); return <Field label={`Porta do splitter 1:${par.splitter_ratio} em ${par.name}`}><Select value={draft.parent_port ? String(draft.parent_port) : "none"} onValueChange={(v) => set("parent_port", v === "none" ? null : Number(v))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Não definida</SelectItem>{Array.from({ length: par.splitter_ratio }, (_, i) => i + 1).map((port) => <SelectItem key={port} value={String(port)} disabled={used.has(port)}>Porta {port}{used.has(port) ? " (em uso)" : ""}</SelectItem>)}</SelectContent></Select></Field>; })()}<Field label="Fibra usada nesta caixa"><Select value={String(draft.cable_fiber_number ?? 1)} onValueChange={(v) => set("cable_fiber_number", Number(v))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{Array.from({ length: Math.max(1, draft.cable_fibers ?? 1) }, (_, index) => index + 1).map((fiber) => <SelectItem key={fiber} value={String(fiber)}><span className="flex items-center gap-2"><FiberSwatch number={fiber} />{fiberLabel(fiber)}</span></SelectItem>)}</SelectContent></Select></Field><Field label="Metragem do cabo (m)"><Input type="number" min={0} placeholder={`Auto: ${Math.round(sig?.cableM ?? 0)}`} value={draft.cable_length_m ?? ""} onChange={(e) => set("cable_length_m", e.target.value === "" ? null : Number(e.target.value))} /></Field></>}
               </div>
               <Field label="Observações"><Input value={draft.notes ?? ""} onChange={(e) => set("notes", e.target.value || null)} /></Field>
 
@@ -290,7 +293,7 @@ function NetworkPage() {
                       <li><span className="font-medium text-foreground">OLT / DIO:</span> 10 a 20 m dentro do rack, para refazer fusões sem desligar a PON.</li>
                       <li><span className="font-medium text-foreground">Rota tronco:</span> 20 a 30 m a cada 500–800 m, em cruzeta ou ferragem, para emendar rápido depois de rompimento.</li>
                       <li><span className="font-medium text-foreground">Travessias:</span> reserva antes de cruzar avenida, rio ou ferrovia, onde o reparo é mais difícil.</li>
-                      <li><span className="font-medium text-foreground">Evite:</span> reserva solta pendurada, em poste de esquina com muito trânsito de escada, ou em raio menor que 15 cm (dobra demais e perde sinal).</li>
+                      <li><span className="font-medium text-foreground">Evite:</span> reserva solta pendurada e curvas abaixo do raio mínimo indicado pelo fabricante do cabo.</li>
                     </ul>
                   </div>
                 </div>;
@@ -323,6 +326,7 @@ function NetworkPage() {
             </div>}
           </div>
         </section>
+        <FiberReference />
       </div>
     </main>
   </div>;

@@ -70,6 +70,18 @@
 }
 
 :root {
+  --fiber-green: oklch(0.62 0.19 145);
+  --fiber-yellow: oklch(0.9 0.18 100);
+  --fiber-white: oklch(0.99 0 0);
+  --fiber-blue: oklch(0.55 0.22 260);
+  --fiber-red: oklch(0.58 0.23 27);
+  --fiber-violet: oklch(0.52 0.22 310);
+  --fiber-brown: oklch(0.43 0.09 55);
+  --fiber-pink: oklch(0.77 0.15 350);
+  --fiber-black: oklch(0.16 0 0);
+  --fiber-gray: oklch(0.62 0 0);
+  --fiber-orange: oklch(0.73 0.19 55);
+  --fiber-aqua: oklch(0.79 0.13 190);
   --radius: 0.5rem;
   --background: oklch(0.975 0.006 230);
   --foreground: oklch(0.19 0.025 240);
@@ -174,6 +186,20 @@
   justify-content: center;
   border-radius: var(--radius);
 }
+
+.fiber-swatch { display: inline-block; width: 1rem; height: 1rem; flex-shrink: 0; border: 1px solid var(--muted-foreground); border-radius: 50%; background-color: var(--fiber-color); }
+.fiber-green { --fiber-color: var(--fiber-green); }
+.fiber-yellow { --fiber-color: var(--fiber-yellow); }
+.fiber-white { --fiber-color: var(--fiber-white); }
+.fiber-blue { --fiber-color: var(--fiber-blue); }
+.fiber-red { --fiber-color: var(--fiber-red); }
+.fiber-violet { --fiber-color: var(--fiber-violet); }
+.fiber-brown { --fiber-color: var(--fiber-brown); }
+.fiber-pink { --fiber-color: var(--fiber-pink); }
+.fiber-black { --fiber-color: var(--fiber-black); }
+.fiber-gray { --fiber-color: var(--fiber-gray); }
+.fiber-orange { --fiber-color: var(--fiber-orange); }
+.fiber-aqua { --fiber-color: var(--fiber-aqua); }
 
 @utility metric-primary { background: color-mix(in oklch, var(--primary) 14%, transparent); color: var(--primary); }
 @utility metric-green { background: oklch(0.94 0.06 150); color: oklch(0.45 0.14 150); }
