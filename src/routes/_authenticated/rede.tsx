@@ -4,6 +4,8 @@ import { AlertTriangle, Anchor, Box, Cable, ChevronRight, CircleDollarSign, Layo
 import { AdminOnly } from "@/components/AdminOnly";
 import { useNetworkModule } from "@/components/NetworkModuleOnly";
 import { NetworkMap, type MapCustomer } from "@/components/NetworkMap";
+import { FiberConnections, FiberReference, FiberSwatch } from "@/components/FiberDiagram";
+import { fiberLabel } from "@/lib/fiber-colors";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -249,6 +251,7 @@ function NetworkPage() {
               </div>
               {draft.node_type !== "olt" && sig?.input === null && <p className="flex gap-2 text-xs text-destructive"><AlertTriangle className="h-4 w-4 shrink-0" />Ligue esta caixa a uma OLT ou CEO para calcular o sinal.</p>}
               <Field label="Nome"><Input value={draft.name} onChange={(e) => set("name", e.target.value)} /></Field>
+              <FiberConnections node={draft} nodes={nodes} onSelect={(id) => { setSelectedId(id); setPlacing(null); }} />
               {draft.node_type !== "olt" && <Field label="Vem de (origem do cabo)"><Select value={draft.parent_id ?? "none"} onValueChange={(v) => { const parentId = v === "none" ? null : v; const parent = parentId ? byId.get(parentId) : undefined; setDraft((current) => current ? { ...current, parent_id: parentId, parent_leg: preferredParentLeg(parent), cable_fiber_number: nextFiberForParent(parentId, current.cable_fibers ?? 12), parent_port: null } : current); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Sem origem</SelectItem>{parentOptions.map((p) => <SelectItem key={p.id} value={p.id}>{p.name} ({p.node_type.toUpperCase()})</SelectItem>)}</SelectContent></Select></Field>}
               {draft.node_type !== "olt" && draft.parent_id && byId.get(draft.parent_id)?.splitter_type === "unbalanced" && <div className="border bg-muted/40 p-3 text-sm"><p className="font-medium">Continuidade pela saída de maior porcentagem</p><p className="mt-1 text-xs text-muted-foreground">A próxima caixa usa automaticamente a passagem de {100 - (byId.get(draft.parent_id)?.splitter_tap ?? 10)}%.</p></div>}
               <div className="grid grid-cols-2 gap-3">
@@ -290,7 +293,7 @@ function NetworkPage() {
                       <li><span className="font-medium text-foreground">OLT / DIO:</span> 10 a 20 m dentro do rack, para refazer fusões sem desligar a PON.</li>
                       <li><span className="font-medium text-foreground">Rota tronco:</span> 20 a 30 m a cada 500–800 m, em cruzeta ou ferragem, para emendar rápido depois de rompimento.</li>
                       <li><span className="font-medium text-foreground">Travessias:</span> reserva antes de cruzar avenida, rio ou ferrovia, onde o reparo é mais difícil.</li>
-                      <li><span className="font-medium text-foreground">Evite:</span> reserva solta pendurada, em poste de esquina com muito trânsito de escada, ou em raio menor que 15 cm (dobra demais e perde sinal).</li>
+                      <li><span className="font-medium text-foreground">Evite:</span> reserva solta pendurada e curvas abaixo do raio mínimo indicado pelo fabricante do cabo.</li>
                     </ul>
                   </div>
                 </div>;
@@ -323,6 +326,7 @@ function NetworkPage() {
             </div>}
           </div>
         </section>
+        <FiberReference />
       </div>
     </main>
   </div>;
