@@ -157,7 +157,7 @@ function NetworkPage() {
     setSelectedId(null); await load();
     toast(`${snapshot.name} excluída.`, { duration: 10000, action: { label: "Desfazer", onClick: async () => {
       const { error: e } = await db.from("ftth_nodes").insert(snapshot);
-      if (e) return toast.error(`Não foi possível desfazer: ${e.message}`);
+      if (e) { toast.error(`Não foi possível desfazer: ${e.message}`); return; }
       for (const c of children) await db.from("ftth_nodes").update({ parent_id: snapshot.id }).eq("id", c.id);
       for (const c of linked) await db.from("customers").update({ cto_id: snapshot.id, cto_port: c.cto_port }).eq("id", c.id);
       await load(); setSelectedId(snapshot.id); toast.success(`${snapshot.name} restaurada.`);
