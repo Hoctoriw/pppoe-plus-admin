@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { computeSignals, CONNECTOR_DB, customerSignal, distanceM, distributionLoss, fmtDbm, FIBER_DB_PER_KM, FUSION_DB, MIN_SIGNAL_DBM, NODE_LABEL, nodeLoss, preferredParentLeg, recommendedSlack, slackTotal, spanLength, SPLITTER_LOSS, UNBALANCED_LOSS, UNBALANCED_TAPS, type CableAnchor, type FtthNode, type NodeType } from "@/lib/ftth";
 
@@ -148,9 +149,19 @@ function NetworkPage() {
   }
   async function remove() {
     if (!selected || !confirm(`Excluir ${selected.name}? Caixas ligadas a ela ficarão sem origem.`)) return;
-    const { error } = await db.from("ftth_nodes").delete().eq("id", selected.id);
+    const snapshot = { ...selected };
+    const children = nodes.filter((n) => n.parent_id === snapshot.id).map((n) => ({ id: n.id, parent_id: n.parent_id }));
+    const linked = customers.filter((c) => c.cto_id === snapshot.id).map((c) => ({ id: c.id, cto_port: c.cto_port }));
+    const { error } = await db.from("ftth_nodes").delete().eq("id", snapshot.id);
     if (error) return setMessage(error.message);
     setSelectedId(null); await load();
+    toast(`${snapshot.name} excluída.`, { duration: 10000, action: { label: "Desfazer", onClick: async () => {
+      const { error: e } = await db.from("ftth_nodes").insert(snapshot);
+      if (e) return toast.error(`Não foi possível desfazer: ${e.message}`);
+      for (const c of children) await db.from("ftth_nodes").update({ parent_id: snapshot.id }).eq("id", c.id);
+      for (const c of linked) await db.from("customers").update({ cto_id: snapshot.id, cto_port: c.cto_port }).eq("id", c.id);
+      await load(); setSelectedId(snapshot.id); toast.success(`${snapshot.name} restaurada.`);
+    } } });
   }
   async function assignPort(port: number, customerId: string) {
     if (!selected) return;
@@ -190,9 +201,11 @@ function NetworkPage() {
 
   async function removeSelectedAnchor() {
     if (!selected || selectedAnchor === null) return;
-    const anchors = (selected.cable_anchors ?? []).filter((_, index) => index !== selectedAnchor);
-    await updateAnchors(selected.id, anchors, "Ponto de ancoragem removido.");
+    const nodeId = selected.id; const previous = [...(selected.cable_anchors ?? [])];
+    const anchors = previous.filter((_, index) => index !== selectedAnchor);
+    await updateAnchors(nodeId, anchors, "Ponto de ancoragem removido.");
     setSelectedAnchor(null);
+    toast("Ponto de ancoragem removido.", { duration: 10000, action: { label: "Desfazer", onClick: () => { void updateAnchors(nodeId, previous, "Ponto de ancoragem restaurado."); } } });
   }
 
   const set = <K extends keyof FtthNode>(k: K, v: FtthNode[K]) => setDraft((d) => d ? { ...d, [k]: v } : d);
