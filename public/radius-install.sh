@@ -184,6 +184,21 @@ systemctl enable --now fcgiwrap.socket
 nginx -t && systemctl enable nginx && systemctl restart nginx
 if command -v ufw >/dev/null; then ufw allow 80/tcp; fi
 
+
+CFTOKEN="${NEXORA_CF_TOKEN:-}"
+[ -z "$CFTOKEN" ] && [ -f /opt/nexora/cftoken ] && CFTOKEN=$(cat /opt/nexora/cftoken)
+if [ -n "$CFTOKEN" ]; then
+  echo "==> Instalando conector Cloudflare Tunnel (acesso remoto sem IP público)"
+  mkdir -p --mode=0755 /usr/share/keyrings
+  curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg -o /usr/share/keyrings/cloudflare-main.gpg
+  echo "deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared any main" > /etc/apt/sources.list.d/cloudflared.list
+  apt-get update -y && apt-get install -y cloudflared
+  echo "$CFTOKEN" > /opt/nexora/cftoken; chmod 600 /opt/nexora/cftoken
+  cloudflared service uninstall >/dev/null 2>&1 || true
+  cloudflared service install "$CFTOKEN"
+  systemctl enable --now cloudflared || true
+fi
+
 echo "==> Validando configuração"
 freeradius -C
 systemctl enable freeradius
@@ -193,4 +208,5 @@ IP=$(hostname -I | awk '{print $1}')
 echo
 echo "Servidor RADIUS pronto e conectado ao painel. IP deste servidor: $IP"
 echo "Painel web local: http://$IP  (usuário: admin  senha: $WEBPW)"
+[ -n "$CFTOKEN" ] && echo "Cloudflare Tunnel: $(systemctl is-active cloudflared)"
 echo "Os roteadores com RADIUS ativo no painel são autorizados automaticamente."

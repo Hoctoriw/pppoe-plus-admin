@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Nexora ISP — gera uma ISO Debian 12 que instala sozinha o servidor RADIUS
-# Uso (em qualquer Linux): bash radius-iso-build.sh URL_DO_PAINEL TOKEN SENHA_ROOT
+# Uso (em qualquer Linux): bash radius-iso-build.sh URL_DO_PAINEL TOKEN SENHA_ROOT [TOKEN_CLOUDFLARE_TUNNEL]
 # Resultado: nexora-radius.iso  (ATENÇÃO: a instalação APAGA o primeiro disco)
 set -euo pipefail
-PANEL_URL="${1:-}"; TOKEN="${2:-}"; ROOTPW="${3:-}"
+PANEL_URL="${1:-}"; TOKEN="${2:-}"; ROOTPW="${3:-}"; CFTOKEN="${4:-}"
 if [ -z "$PANEL_URL" ] || [ -z "$TOKEN" ] || [ -z "$ROOTPW" ]; then
-  echo "Uso: bash radius-iso-build.sh URL_DO_PAINEL TOKEN SENHA_ROOT"; exit 1; fi
+  echo "Uso: bash radius-iso-build.sh URL_DO_PAINEL TOKEN SENHA_ROOT [TOKEN_CLOUDFLARE_TUNNEL]"; exit 1; fi
 PANEL_URL="${PANEL_URL%/}"
 command -v xorriso >/dev/null || { echo "Instale o xorriso (apt install xorriso)"; exit 1; }
 command -v curl >/dev/null || { echo "Instale o curl"; exit 1; }
@@ -22,6 +22,7 @@ mkdir -p "$W/nexora"
 curl -fsSL "$PANEL_URL/radius-install.sh" -o "$W/nexora/install.sh"
 printf 'PANEL_URL=%q\nTOKEN=%q\n' "$PANEL_URL" "$TOKEN" > "$W/nexora/env"
 printf '%s\n' "$ROOTPW" > "$W/nexora/webpw"
+[ -n "$CFTOKEN" ] && printf '%s\n' "$CFTOKEN" > "$W/nexora/cftoken"
 cat > "$W/nexora/issue" <<'EOF'
 Nexora RADIUS - painel web local: http://\4  (usuario: admin, senha: a mesma do root)
 
@@ -68,7 +69,7 @@ d-i pkgsel/include string curl ca-certificates
 popularity-contest popularity-contest/participate boolean false
 d-i grub-installer/only_debian boolean true
 d-i grub-installer/bootdev string default
-d-i preseed/late_command string mkdir -p /target/opt/nexora; cp /cdrom/nexora/* /target/opt/nexora/; chmod 600 /target/opt/nexora/env; cp /cdrom/nexora/nexora-firstboot.service /target/etc/systemd/system/; in-target systemctl enable nexora-firstboot.service
+d-i preseed/late_command string mkdir -p /target/opt/nexora; cp /cdrom/nexora/* /target/opt/nexora/; chmod 600 /target/opt/nexora/env /target/opt/nexora/cftoken 2>/dev/null || true; cp /cdrom/nexora/nexora-firstboot.service /target/etc/systemd/system/; in-target systemctl enable nexora-firstboot.service
 d-i finish-install/reboot_in_progress note
 EOF
 
