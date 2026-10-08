@@ -38,7 +38,7 @@ function RadiusInstaller() {
 
     {!token ? <Button className="mt-4" size="sm" onClick={reveal}>Gerar comandos da ISO e instalação</Button> : <div className="mt-4 space-y-3">
       <div><p className="font-semibold">Opção 1 — Gerar a ISO (num computador com Linux)</p>
-        <pre className="mt-1 overflow-x-auto whitespace-pre-wrap break-all rounded-md bg-muted p-3 font-mono text-xs">{`sudo apt install -y xorriso curl\ncurl -fsSL ${origin}/radius-iso-build.sh -o build.sh && bash build.sh ${origin} ${token} SENHA_ROOT`}</pre>
+        <pre className="mt-1 overflow-x-auto whitespace-pre-wrap break-all rounded-md bg-muted p-3 font-mono text-xs">{`sudo apt install -y xorriso curl\ncurl -fsSL ${origin}/radius-iso-build.sh -o build.sh && bash build.sh ${origin} ${token} SENHA_ROOT TOKEN_CLOUDFLARE_TUNNEL`}</pre><p className="mt-1 text-xs text-muted-foreground">O último item é opcional: cole o token do túnel criado no Cloudflare (Zero Trust → Networks → Tunnels) para acessar o servidor sem IP público.</p>
         <p className="text-xs text-muted-foreground">Grave a <b>nexora-radius.iso</b> num pendrive (Rufus/Balena Etcher) ou use numa máquina virtual (Proxmox, VMware, VirtualBox). <b>A instalação apaga o disco.</b></p></div>
       <div><p className="font-semibold">Opção 2 — Debian 12 já instalado</p>
         <pre className="mt-1 overflow-x-auto whitespace-pre-wrap break-all rounded-md bg-muted p-3 font-mono text-xs">{`curl -fsSL ${origin}/radius-install.sh -o install.sh && sudo bash install.sh ${origin} ${token}`}</pre></div>
