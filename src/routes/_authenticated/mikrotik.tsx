@@ -73,6 +73,7 @@ function MikrotikPage() {
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [addrKind, setAddrKind] = useState<"domain" | "ip">("domain");
   const [tab, setTab] = useState<"vpn" | "public_ip" | "radius">("public_ip");
   const listApp = useServerFn(listRadiusAppliances);
   const [apps, setApps] = useState<Awaited<ReturnType<typeof listRadiusAppliances>>>([]);
