@@ -24,7 +24,7 @@ export async function ros<T = any>(r: RouterCreds, method: string, path: string,
   if (!res.ok) {
     let msg = text;
     try { const j = JSON.parse(text); msg = j.detail || j.message || text; } catch { /* ignore */ }
-    if (res.status === 403 && /1003/.test(text)) throw new Error("O painel não acessa roteadores por IP numérico. Use um nome (ex.: DDNS do MikroTik em /ip cloud → xxxx.sn.mynetname.net) no lugar do IP.");
+    if (res.status === 403 && /1003/.test(text)) throw new Error("Este IP público foi recusado (erro 1003). Edite o roteador e escolha \"Domínio / DDNS\" (ex.: /ip cloud → xxxx.sn.mynetname.net).");
     throw new Error(`MikroTik ${res.status}: ${msg}`);
   }
   return (text ? JSON.parse(text) : null) as T;
