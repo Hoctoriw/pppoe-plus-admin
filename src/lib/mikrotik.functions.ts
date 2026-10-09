@@ -85,12 +85,12 @@ export const applyRadius = createServerFn({ method: "POST" })
     const r = await getRouter(data.id, context.userId);
     if (!(r as any).radius_enabled) throw new Error("Ative e salve a configuração RADIUS antes de aplicar.");
     if (!(r as any).radius_host || !(r as any).radius_secret) throw new Error("Configure o endereço e o segredo do servidor RADIUS.");
-    await upsert(r, "/radius", { name: "nexora-radius" }, {
+    await upsert(r, "/radius", { comment: "nexora-radius" }, {
       address: (r as any).radius_host,
       secret: (r as any).radius_secret,
       "authentication-port": String((r as any).radius_auth_port ?? 1812),
       "accounting-port": String((r as any).radius_acct_port ?? 1813),
-      service: "ppp,dhcp", timeout: "3000ms", comment: "Nexora: autenticação centralizada",
+      service: "ppp,dhcp", timeout: "3000ms",
     });
     await ros(r, "PATCH", "/ppp/aaa", { "use-radius": "yes", accounting: "yes", "interim-update": "5m" });
     return { ok: true };
@@ -125,8 +125,8 @@ export const testRadius = createServerFn({ method: "POST" })
     // 2. RADIUS entry applied on the router
     let entry: any = null;
     try {
-      const rad = await ros<any[]>(r, "GET", "/radius?name=nexora-radius");
-      entry = rad?.[0] ?? null;
+      const rad = await ros<any[]>(r, "GET", "/radius");
+      entry = rad?.find((x: any) => x.comment === "nexora-radius") ?? null;
     } catch { /* reported below */ }
     checks.push({
       label: "Servidor RADIUS configurado no roteador",
