@@ -85,14 +85,23 @@ export const applyRadius = createServerFn({ method: "POST" })
     const r = await getRouter(data.id, context.userId);
     if (!(r as any).radius_enabled) throw new Error("Ative e salve a configuração RADIUS antes de aplicar.");
     if (!(r as any).radius_host || !(r as any).radius_secret) throw new Error("Configure o endereço e o segredo do servidor RADIUS.");
-    await upsert(r, "/radius", { comment: "nexora-radius" }, {
+    const values = {
       address: (r as any).radius_host,
       secret: (r as any).radius_secret,
       "authentication-port": String((r as any).radius_auth_port ?? 1812),
       "accounting-port": String((r as any).radius_acct_port ?? 1813),
       service: "ppp,dhcp", timeout: "3000ms",
-    });
-    await ros(r, "PATCH", "/ppp/aaa", { "use-radius": "yes", accounting: "yes", "interim-update": "5m" });
+    };
+    // RouterOS REST: list all and match comment in code (query filters vary by version)
+    const all = (await ros<any[]>(r, "GET", "/radius")) ?? [];
+    const existing = all.find((x: any) => x.comment === "nexora-radius");
+    if (existing?.[".id"]) {
+      await ros(r, "PATCH", `/radius/${encodeURIComponent(existing[".id"])}`, values);
+    } else {
+      await ros(r, "PUT", "/radius", { ...values, comment: "nexora-radius" });
+    }
+    // /ppp/aaa is a singleton menu: use the "set" command, not PATCH on the collection
+    await ros(r, "POST", "/ppp/aaa/set", { "use-radius": "yes", accounting: "yes", "interim-update": "5m" });
     return { ok: true };
   });
 
