@@ -6,10 +6,20 @@ PANEL_URL="${1:-}"; TOKEN="${2:-}"
 if [ -z "$PANEL_URL" ] || [ -z "$TOKEN" ]; then echo "Uso: sudo bash install.sh URL_DO_PAINEL TOKEN"; exit 1; fi
 [ "$(id -u)" = 0 ] || { echo "Execute como root (sudo)."; exit 1; }
 PANEL_URL="${PANEL_URL%/}"
-
-echo "==> Instalando FreeRADIUS"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
+apt-get install -y curl ca-certificates sudo
+mkdir -p /etc/sudoers.d
+# Segue redirecionamentos (ex.: endereco antigo -> dominio proprio) para nao travar a instalacao
+FINAL=$(curl -sL -o /dev/null -m 20 -w '%{url_effective}' "$PANEL_URL/" || true)
+[ -n "$FINAL" ] && PANEL_URL="${FINAL%/}"
+echo "==> Painel: $PANEL_URL"
+# Libera o acesso SSH como root (senha)
+mkdir -p /etc/ssh/sshd_config.d
+echo "PermitRootLogin yes" > /etc/ssh/sshd_config.d/permit-root.conf
+systemctl restart ssh 2>/dev/null || systemctl restart sshd 2>/dev/null || true
+
+echo "==> Instalando FreeRADIUS"
 apt-get install -y freeradius freeradius-rest freeradius-utils curl ca-certificates
 
 echo "==> Testando acesso ao painel"
