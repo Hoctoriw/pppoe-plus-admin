@@ -162,13 +162,13 @@ export const testRadius = createServerFn({ method: "POST" })
     try { aaa = await ros<any>(r, "GET", "/ppp/aaa"); } catch { /* reported below */ }
     checks.push({
       label: "Autenticação PPP delegada ao RADIUS",
-      ok: aaa?.["use-radius"] === "yes",
-      detail: aaa?.["use-radius"] === "yes" ? "use-radius ativado" : "use-radius desativado — clique em Aplicar no roteador",
+      ok: isOn(aaa?.["use-radius"]),
+      detail: isOn(aaa?.["use-radius"]) ? "use-radius ativado" : "use-radius desativado — clique em Aplicar no roteador",
     });
     checks.push({
       label: "Accounting PPP ativado",
-      ok: aaa?.accounting === "yes",
-      detail: aaa?.accounting === "yes" ? `accounting ativado · interim-update ${aaa?.["interim-update"] ?? "—"}` : "accounting desativado — clique em Aplicar no roteador",
+      ok: isOn(aaa?.accounting),
+      detail: isOn(aaa?.accounting) ? `accounting ativado · interim-update ${aaa?.["interim-update"] ?? "—"}` : "accounting desativado — clique em Aplicar no roteador",
     });
 
     return { ok: checks.every((c) => c.ok), checks };
@@ -247,3 +247,4 @@ export const getRadiusInstall = createServerFn({ method: "GET" })
     if (!isAdmin) throw new Error("Apenas o administrador da plataforma pode gerar o instalador RADIUS.");
     return { token: process.env["RADIUS_API_TOKEN"] ?? "" };
   });
+function isOn(v: unknown) { return v === true || v === "true" || v === "yes"; }
