@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
-import { Eye, EyeOff, Radio, ShieldCheck } from "lucide-react";
+import { Download, Eye, EyeOff, Radio, ShieldCheck } from "lucide-react";
+import iso from "@/assets/nexora-radius.iso.asset.json";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +23,7 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"login" | "signup">("login");
+  const [tab, setTab] = useState<"login" | "download">("login");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -61,6 +63,18 @@ function AuthPage() {
     <section className="flex items-center justify-center bg-background px-6 py-12">
       <div className="w-full max-w-md">
         <div className="mb-10 flex items-center gap-3 text-lg font-extrabold lg:hidden"><Radio className="text-primary" />NEXORA ISP</div>
+        <div className="mb-8 inline-flex rounded-md border bg-card p-1">{([["login", "Entrar"], ["download", "Download"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => setTab(k)} className={`rounded px-4 py-1.5 text-sm font-semibold ${tab === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{l}</button>)}</div>
+        {tab === "download" ? <div>
+          <p className="text-sm font-semibold text-primary">SERVIDOR RADIUS</p>
+          <h2 className="mt-2 text-3xl font-extrabold">Baixar a ISO Nexora</h2>
+          <p className="mt-2 text-sm text-muted-foreground">Debian 12 + FreeRADIUS + painel web local, instalação automática em modo texto.</p>
+          <Button asChild className="mt-6 h-11 w-full"><a href={iso.url} download={iso.original_filename}><Download />Baixar {iso.original_filename} ({Math.round(iso.size / 1048576)} MB)</a></Button>
+          <ol className="mt-6 list-decimal space-y-2 pl-5 text-sm text-muted-foreground">
+            <li>Grave num pendrive com Rufus ou Balena Etcher, ou use numa máquina virtual.</li>
+            <li>Dê boot: a instalação é automática. <b className="text-foreground">Ela apaga o primeiro disco.</b></li>
+            <li>Depois, acesse o painel local em <code>http://IP-da-máquina</code>.</li>
+          </ol>
+        </div> : <>
         <p className="text-sm font-semibold text-primary">PAINEL ADMINISTRATIVO</p>
         <h2 className="mt-2 text-3xl font-extrabold">{mode === "login" ? "Bem-vindo de volta" : "Criar acesso"}</h2>
         <p className="mt-2 text-sm text-muted-foreground">{mode === "login" ? "Entre para continuar gerenciando sua operação." : "Cadastre seu usuário para começar."}</p>
@@ -74,6 +88,7 @@ function AuthPage() {
         <div className="my-6 flex items-center gap-3 text-xs text-muted-foreground"><span className="h-px flex-1 bg-border" />OU<span className="h-px flex-1 bg-border" /></div>
         <Button variant="outline" className="h-11 w-full" onClick={googleSignIn} disabled={loading}>Continuar com Google</Button>
         <p className="mt-7 text-center text-sm text-muted-foreground">{mode === "login" ? "Ainda não tem acesso?" : "Já possui uma conta?"} <Button variant="link" className="h-auto px-1" onClick={() => { setMode(mode === "login" ? "signup" : "login"); setMessage(""); }}>{mode === "login" ? "Criar conta" : "Entrar"}</Button></p>
+        </>}
       </div>
     </section>
   </main>;
