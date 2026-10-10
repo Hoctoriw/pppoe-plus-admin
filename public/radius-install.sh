@@ -30,7 +30,11 @@ if [ "$code" != "204" ]; then echo "Falha ao falar com o painel (HTTP $code). Co
 RD=/etc/freeradius/3.0
 cat > $RD/mods-available/rest <<EOF
 rest {
-  tls { check_cert = yes; check_cert_cn = yes }
+  tls {
+    ca_file = "/etc/ssl/certs/ca-certificates.crt"
+    check_cert = yes
+    check_cert_cn = yes
+  }
   connect_uri = "$PANEL_URL/api/public/radius"
   authorize {
     uri = "\${..connect_uri}/authorize?token=$TOKEN"
@@ -44,7 +48,16 @@ rest {
     body = 'json'
     tls = \${..tls}
   }
-  pool { start = 2; min = 2; max = 32; spare = 4; uses = 0; retry_delay = 30; lifetime = 0; idle_timeout = 60 }
+  pool {
+    start = 2
+    min = 2
+    max = 32
+    spare = 4
+    uses = 0
+    retry_delay = 30
+    lifetime = 0
+    idle_timeout = 60
+  }
 }
 EOF
 chmod 640 $RD/mods-available/rest; chown root:freerad $RD/mods-available/rest
@@ -52,26 +65,53 @@ ln -sf ../mods-available/rest $RD/mods-enabled/rest
 
 cat > $RD/sites-available/nexora <<'EOF'
 server nexora {
-  listen { type = auth; ipaddr = *; port = 1812 }
-  listen { type = acct; ipaddr = *; port = 1813 }
+  listen {
+    type = auth
+    ipaddr = *
+    port = 1812
+  }
+  listen {
+    type = acct
+    ipaddr = *
+    port = 1813
+  }
   authorize {
     preprocess
     rest
-    if (notfound || reject) { reject }
+    if (notfound || reject) {
+      reject
+    }
     mschap
     chap
     pap
   }
   authenticate {
-    Auth-Type PAP { pap }
-    Auth-Type CHAP { chap }
-    Auth-Type MS-CHAP { mschap }
+    Auth-Type PAP {
+      pap
+    }
+    Auth-Type CHAP {
+      chap
+    }
+    Auth-Type MS-CHAP {
+      mschap
+    }
   }
-  preacct { preprocess; acct_unique }
-  accounting { rest }
-  post-auth { Post-Auth-Type REJECT { attr_filter.access_reject } }
+  preacct {
+    preprocess
+    acct_unique
+  }
+  accounting {
+    rest
+  }
+  post-auth {
+    Post-Auth-Type REJECT {
+      attr_filter.access_reject
+    }
+  }
 }
 EOF
+# PPPoE nao usa EAP; sem os sites padrao o modulo impede o FreeRADIUS de subir
+rm -f $RD/mods-enabled/eap
 rm -f $RD/sites-enabled/default $RD/sites-enabled/inner-tunnel
 ln -sf ../sites-available/nexora $RD/sites-enabled/nexora
 
