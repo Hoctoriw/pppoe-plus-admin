@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
 import { Download, Eye, EyeOff, Radio, ShieldCheck } from "lucide-react";
 import iso from "@/assets/nexora-radius.iso.asset.json";
@@ -23,7 +23,7 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"login" | "signup">("login");
-  const [tab, setTab] = useState<"login" | "download">("login");
+  const [tab, setTab] = useState<"login" | "download" | "guia">("login");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -63,8 +63,8 @@ function AuthPage() {
     <section className="flex items-center justify-center bg-background px-6 py-12">
       <div className="w-full max-w-md">
         <div className="mb-10 flex items-center gap-3 text-lg font-extrabold lg:hidden"><Radio className="text-primary" />NEXORA ISP</div>
-        <div className="mb-8 inline-flex rounded-md border bg-card p-1">{([["login", "Entrar"], ["download", "Download"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => setTab(k)} className={`rounded px-4 py-1.5 text-sm font-semibold ${tab === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{l}</button>)}</div>
-        {tab === "download" ? <div>
+        <div className="mb-8 inline-flex rounded-md border bg-card p-1">{([["login", "Entrar"], ["download", "Download"], ["guia", "Instruções"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => setTab(k)} className={`rounded px-4 py-1.5 text-sm font-semibold ${tab === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{l}</button>)}</div>
+        {tab === "guia" ? <Guia /> : tab === "download" ? <div>
           <p className="text-sm font-semibold text-primary">SERVIDOR RADIUS</p>
           <h2 className="mt-2 text-3xl font-extrabold">Baixar a ISO Nexora</h2>
           <p className="mt-2 text-sm text-muted-foreground">Debian 12 + FreeRADIUS + painel web local, instalação automática em modo texto.</p>
@@ -89,7 +89,36 @@ function AuthPage() {
         <Button variant="outline" className="h-11 w-full" onClick={googleSignIn} disabled={loading}>Continuar com Google</Button>
         <p className="mt-7 text-center text-sm text-muted-foreground">{mode === "login" ? "Ainda não tem acesso?" : "Já possui uma conta?"} <Button variant="link" className="h-auto px-1" onClick={() => { setMode(mode === "login" ? "signup" : "login"); setMessage(""); }}>{mode === "login" ? "Criar conta" : "Entrar"}</Button></p>
         </>}
+        <p className="mt-8 text-center text-sm text-muted-foreground">É assinante? <Link to="/central" className="font-semibold text-primary">Acesse a Central do Assinante</Link></p>
       </div>
     </section>
   </main>;
+}
+const pre = "mt-1 overflow-x-auto whitespace-pre-wrap break-all rounded-md bg-muted p-3 font-mono text-xs text-foreground";
+function Guia() {
+  return <div className="space-y-5 text-sm text-muted-foreground">
+    <div><p className="text-sm font-semibold text-primary">GUIA RÁPIDO</p><h2 className="mt-2 text-3xl font-extrabold text-foreground">Instalação e configuração</h2></div>
+    <div><p className="font-semibold text-foreground">1. Instalar a ISO</p>
+      <ol className="mt-1 list-decimal space-y-1 pl-5"><li>Baixe a ISO na aba Download e grave num pendrive (Rufus/Balena Etcher) ou use numa máquina virtual.</li><li>Dê boot: a instalação é automática em modo texto. <b className="text-foreground">Apaga o primeiro disco.</b></li><li>Login no terminal: usuário <code>root</code>, senha <code>yy6ErrpgZlhBb9A</code> (troque com <code>passwd</code>).</li><li>Painel local: <code>http://IP-da-máquina</code> (usuário <code>admin</code>).</li></ol></div>
+    <div><p className="font-semibold text-foreground">2. Trocar o IP do servidor RADIUS (IP fixo)</p>
+      <pre className={pre}>{`ip -br a        # veja o nome da placa (ex.: ens18)
+nano /etc/network/interfaces
+# troque "iface ens18 inet dhcp" por:
+iface ens18 inet static
+  address 192.168.88.2/24
+  gateway 192.168.88.1
+  dns-nameservers 1.1.1.1 8.8.8.8
+systemctl restart networking`}</pre>
+      <p className="mt-1">Depois, no painel em MikroTik → RADIUS, coloque o novo IP e clique em <b>Aplicar no roteador</b>.</p></div>
+    <div><p className="font-semibold text-foreground">3. Ligar o MikroTik ao RADIUS (PPPoE, IPoE e Hotspot)</p>
+      <pre className={pre}>{`/radius add service=ppp,dhcp,hotspot address=IP_DO_RADIUS secret="SEGREDO" authentication-port=1812 accounting-port=1813 timeout=3s comment="nexora-radius"
+/ppp aaa set use-radius=yes accounting=yes interim-update=5m
+/ip hotspot profile set [find] use-radius=yes radius-interim-update=5m
+/radius incoming set accept=yes`}</pre></div>
+    <div><p className="font-semibold text-foreground">4. Verificar</p>
+      <pre className={pre}>{`systemctl status freeradius nginx nexora-agent
+tail -f /var/log/freeradius/radius.log`}</pre>
+      <p className="mt-1">Se o FreeRADIUS não subir, rode <code>freeradius -XC</code> e veja a última linha de erro.</p></div>
+    <div><p className="font-semibold text-foreground">5. Central do Assinante</p><p>Divulgue o endereço <code>/central</code> para seus clientes: eles entram com CPF/CNPJ e a senha da conexão para ver plano, consumo e boletos.</p></div>
+  </div>;
 }

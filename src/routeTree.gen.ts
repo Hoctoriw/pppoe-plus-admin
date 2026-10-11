@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as BloqueadoRouteImport } from './routes/bloqueado'
+import { Route as CentralRouteImport } from './routes/central'
 import { Route as AuthenticatedBackupRouteImport } from './routes/_authenticated/backup'
 import { Route as AuthenticatedClientesRouteImport } from './routes/_authenticated/clientes'
 import { Route as AuthenticatedConexoesRouteImport } from './routes/_authenticated/conexoes'
@@ -48,6 +49,11 @@ const AuthRoute = AuthRouteImport.update({
 const BloqueadoRoute = BloqueadoRouteImport.update({
   id: '/bloqueado',
   path: '/bloqueado',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CentralRoute = CentralRouteImport.update({
+  id: '/central',
+  path: '/central',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedBackupRoute = AuthenticatedBackupRouteImport.update({
@@ -144,6 +150,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/bloqueado': typeof BloqueadoRoute
+  '/central': typeof CentralRoute
   '/backup': typeof AuthenticatedBackupRoute
   '/clientes': typeof AuthenticatedClientesRoute
   '/conexoes': typeof AuthenticatedConexoesRoute
@@ -166,6 +173,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/bloqueado': typeof BloqueadoRoute
+  '/central': typeof CentralRoute
   '/backup': typeof AuthenticatedBackupRoute
   '/clientes': typeof AuthenticatedClientesRoute
   '/conexoes': typeof AuthenticatedConexoesRoute
@@ -190,6 +198,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/bloqueado': typeof BloqueadoRoute
+  '/central': typeof CentralRoute
   '/_authenticated/backup': typeof AuthenticatedBackupRoute
   '/_authenticated/clientes': typeof AuthenticatedClientesRoute
   '/_authenticated/conexoes': typeof AuthenticatedConexoesRoute
@@ -214,6 +223,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/bloqueado'
+    | '/central'
     | '/backup'
     | '/clientes'
     | '/conexoes'
@@ -236,6 +246,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/bloqueado'
+    | '/central'
     | '/backup'
     | '/clientes'
     | '/conexoes'
@@ -259,6 +270,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/bloqueado'
+    | '/central'
     | '/_authenticated/backup'
     | '/_authenticated/clientes'
     | '/_authenticated/conexoes'
@@ -283,6 +295,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   BloqueadoRoute: typeof BloqueadoRoute
+  CentralRoute: typeof CentralRoute
   ApiPublicHooksDailyBackupRoute: typeof ApiPublicHooksDailyBackupRoute
   ApiPublicHooksSyncMikrotikRoute: typeof ApiPublicHooksSyncMikrotikRoute
   ApiPublicRadiusActionRoute: typeof ApiPublicRadiusActionRoute
@@ -319,6 +332,13 @@ declare module '@tanstack/react-router' {
       path: '/bloqueado'
       fullPath: '/bloqueado'
       preLoaderRoute: typeof BloqueadoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/central': {
+      id: '/central'
+      path: '/central'
+      fullPath: '/central'
+      preLoaderRoute: typeof CentralRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/backup': {
@@ -479,6 +499,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   BloqueadoRoute: BloqueadoRoute,
+  CentralRoute: CentralRoute,
   ApiPublicHooksDailyBackupRoute: ApiPublicHooksDailyBackupRoute,
   ApiPublicHooksSyncMikrotikRoute: ApiPublicHooksSyncMikrotikRoute,
   ApiPublicRadiusActionRoute: ApiPublicRadiusActionRoute,
