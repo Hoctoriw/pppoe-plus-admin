@@ -90,7 +90,7 @@ export const applyRadius = createServerFn({ method: "POST" })
       secret: (r as any).radius_secret,
       "authentication-port": String((r as any).radius_auth_port ?? 1812),
       "accounting-port": String((r as any).radius_acct_port ?? 1813),
-      service: "ppp,dhcp", timeout: "3000ms",
+      service: "ppp,dhcp,hotspot", timeout: "3000ms",
     };
     // RouterOS REST: list all and match comment in code (query filters vary by version)
     const all = (await ros<any[]>(r, "GET", "/radius")) ?? [];
