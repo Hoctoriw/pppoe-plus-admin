@@ -183,6 +183,10 @@ export type Database = {
       }
       customers: {
         Row: {
+          acct_input_bytes: number
+          acct_output_bytes: number
+          acct_session_time: number
+          acct_updated_at: string | null
           address_number: string | null
           city: string | null
           created_at: string
@@ -201,6 +205,7 @@ export type Database = {
           longitude: number | null
           mac_address: unknown
           notes: string | null
+          online: boolean
           owner_id: string
           phone: string
           plan_id: string | null
@@ -217,6 +222,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          acct_input_bytes?: number
+          acct_output_bytes?: number
+          acct_session_time?: number
+          acct_updated_at?: string | null
           address_number?: string | null
           city?: string | null
           created_at?: string
@@ -235,6 +244,7 @@ export type Database = {
           longitude?: number | null
           mac_address?: unknown
           notes?: string | null
+          online?: boolean
           owner_id?: string
           phone: string
           plan_id?: string | null
@@ -251,6 +261,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          acct_input_bytes?: number
+          acct_output_bytes?: number
+          acct_session_time?: number
+          acct_updated_at?: string | null
           address_number?: string | null
           city?: string | null
           created_at?: string
@@ -269,6 +283,7 @@ export type Database = {
           longitude?: number | null
           mac_address?: unknown
           notes?: string | null
+          online?: boolean
           owner_id?: string
           phone?: string
           plan_id?: string | null
