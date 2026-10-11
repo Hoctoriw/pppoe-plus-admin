@@ -55,7 +55,18 @@ export const Route = createFileRoute("/api/public/radius/$action")({
           await (supabaseAdmin as any).from("radius_appliances").upsert({ hostname, local_ip: s(body?.local_ip, 64), version: s(body?.version, 20), radius_ok: body?.radius_ok === true, uptime: s(body?.uptime, 80), last_seen_at: new Date().toISOString() });
           return Response.json({ version: AGENT_VERSION });
         }
-        if (params.action === "accounting") return new Response(null, { status: 204 });
+        if (params.action === "accounting") {
+          const user = attr(body, "User-Name").trim().slice(0, 128);
+          if (user) {
+            const n = (k: string) => Number(attr(body, k)) || 0;
+            const type = attr(body, "Acct-Status-Type").toLowerCase();
+            const inB = n("Acct-Input-Gigawords") * 4294967296 + n("Acct-Input-Octets");
+            const outB = n("Acct-Output-Gigawords") * 4294967296 + n("Acct-Output-Octets");
+            const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+            await (supabaseAdmin as any).from("customers").update({ acct_input_bytes: inB, acct_output_bytes: outB, acct_session_time: n("Acct-Session-Time"), acct_updated_at: new Date().toISOString(), online: type !== "stop" }).eq("pppoe_username", user);
+          }
+          return new Response(null, { status: 204 });
+        }
         if (params.action !== "authorize") return new Response("Not found", { status: 404 });
 
         const user = attr(body, "User-Name").trim().slice(0, 128);

@@ -928,7 +928,7 @@ export type Database = {
       }
     }
     Enums: {
-      access_technology: "pppoe" | "ipoe"
+      access_technology: "pppoe" | "ipoe" | "hotspot"
       app_role: "admin" | "operator" | "viewer"
       customer_status: "active" | "suspended" | "pending" | "cancelled"
       plan_status: "active" | "inactive"
@@ -1059,7 +1059,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      access_technology: ["pppoe", "ipoe"],
+      access_technology: ["pppoe", "ipoe", "hotspot"],
       app_role: ["admin", "operator", "viewer"],
       customer_status: ["active", "suspended", "pending", "cancelled"],
       plan_status: ["active", "inactive"],
