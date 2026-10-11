@@ -64,7 +64,7 @@ function Clientes() {
   async function saveCustomer(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const f = new FormData(event.currentTarget);
-    const technology = String(f.get("technology")) as "pppoe" | "ipoe";
+    const technology = String(f.get("technology")) as "pppoe" | "ipoe" | "hotspot";
     if (technology === "ipoe") {
       const mac = String(f.get("mac") ?? "").trim();
       if (!/^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$/.test(mac)) { setMessage("Endereço MAC inválido. Use o formato AA:BB:CC:DD:EE:FF."); return; }
@@ -75,8 +75,8 @@ function Clientes() {
       full_name: String(f.get("name")), document: String(f.get("document")), phone: String(f.get("phone")),
       email: String(f.get("email") ?? "") || null, technology,
       plan_id: String(f.get("plan") ?? "") || null, router_id: String(f.get("router") ?? "") || null,
-      pppoe_username: technology === "pppoe" ? String(f.get("connection")) : null,
-      pppoe_password: technology === "pppoe" ? String(f.get("secret")) || null : null,
+      pppoe_username: technology !== "ipoe" ? String(f.get("connection")) : null,
+      pppoe_password: technology !== "ipoe" ? String(f.get("secret")) || null : null,
       ipoe_ip: technology === "ipoe" ? String(f.get("connection")) : null,
       mac_address: technology === "ipoe" ? String(f.get("mac")).trim().toUpperCase().replace(/-/g, ":") : null,
       notes: String(f.get("notes") ?? "") || null,
