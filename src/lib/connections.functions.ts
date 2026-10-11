@@ -5,7 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 export type ConnectionCustomer = {
   id: string;
   full_name: string;
-  technology: "pppoe" | "ipoe";
+  technology: "pppoe" | "ipoe" | "hotspot";
   status: "active" | "suspended" | "pending" | "cancelled";
   pppoe_username: string | null;
   ipoe_ip: string | null;
