@@ -154,7 +154,7 @@ export async function createLicensePix(s: LicenseSettings, buyer: { id: string; 
   }
   const acc = asLicAccount(s);
   const found = await asaas(acc, "GET", `/customers?cpfCnpj=${doc}`);
-  const customerId = found?.data?.length ? found.data[0].id : (await asaas(acc, "POST", "/customers", { name: buyer.name || "Cliente Nexora", cpfCnpj: doc, email: buyer.email || undefined, externalReference: buyer.id })).id;
+  const customerId = found?.data?.length ? found.data[0].id : (await asaas(acc, "POST", "/customers", { name: buyer.name || "Cliente Syncron", cpfCnpj: doc, email: buyer.email || undefined, externalReference: buyer.id })).id;
   const due = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
   const pay = await asaas(acc, "POST", "/payments", { customer: customerId, billingType: "PIX", value: amount, dueDate: due, description, externalReference: ref });
   const qr = await asaas(acc, "GET", `/payments/${pay.id}/pixQrCode`);

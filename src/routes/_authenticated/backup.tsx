@@ -9,9 +9,9 @@ import { downloadBackup, getBackupSettings, restoreBackup, saveBackupEmail, send
 export const Route = createFileRoute("/_authenticated/backup")({
   head: () => ({
     meta: [
-      { title: "Backup — Nexora ISP" },
+      { title: "Backup — Syncron ISP" },
       { name: "description", content: "Envie o backup das configurações do painel para o seu e-mail." },
-      { property: "og:title", content: "Backup — Nexora ISP" },
+      { property: "og:title", content: "Backup — Syncron ISP" },
       { property: "og:description", content: "Backup das configurações do provedor por e-mail." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

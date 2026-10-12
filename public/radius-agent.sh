@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Nexora RADIUS Agent — mantém o servidor local ligado ao painel principal.
+# Syncron RADIUS Agent — mantém o servidor local ligado ao painel principal.
 # Sincroniza roteadores, envia status e se atualiza sozinho. Roda via systemd timer.
 set -uo pipefail
 . /opt/nexora/env

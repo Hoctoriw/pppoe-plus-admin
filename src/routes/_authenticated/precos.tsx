@@ -10,9 +10,9 @@ import { listLicensePlans, saveLicensePlan, deleteLicensePlan, listLicensePaymen
 
 export const Route = createFileRoute("/_authenticated/precos")({
   head: () => ({ meta: [
-    { title: "Preços de licença | Nexora ISP" },
+    { title: "Preços de licença | Syncron ISP" },
     { name: "description", content: "Planos de licença, valores e pagamentos Pix do painel." },
-    { property: "og:title", content: "Preços de licença | Nexora ISP" },
+    { property: "og:title", content: "Preços de licença | Syncron ISP" },
     { property: "og:description", content: "Planos de licença, valores e pagamentos Pix do painel." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },

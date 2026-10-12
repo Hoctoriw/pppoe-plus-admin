@@ -15,9 +15,9 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_authenticated/equipe")({
   head: () => ({
     meta: [
-      { title: "Equipe — Nexora ISP" },
-      { name: "description", content: "Cadastre funcionários com acesso aos dados da sua conta no painel Nexora ISP." },
-      { property: "og:title", content: "Equipe — Nexora ISP" },
+      { title: "Equipe — Syncron ISP" },
+      { name: "description", content: "Cadastre funcionários com acesso aos dados da sua conta no painel Syncron ISP." },
+      { property: "og:title", content: "Equipe — Syncron ISP" },
       { property: "og:description", content: "Gerencie os funcionários da sua conta." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -83,7 +83,7 @@ function EquipePage() {
     }
   }
 
-  const nav = <><div className="flex h-16 items-center gap-3 px-5 text-lg font-extrabold"><span className="flex h-9 w-9 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground"><Radio /></span>NEXORA <span className="text-sidebar-primary">ISP</span></div><nav className="mt-5 space-y-1 px-3"><Link to="/dashboard"><NavItem icon={<LayoutDashboard />} label="Visão geral" /></Link><Link to="/clientes"><NavItem icon={<Users />} label="Clientes" /></Link><Link to="/planos"><NavItem icon={<Package />} label="Planos" /></Link><Link to="/mikrotik"><NavItem icon={<RouterIcon />} label="MikroTik" /></Link><AdminOnly><Link to="/usuarios"><NavItem icon={<ShieldCheck />} label="Usuários" /></Link></AdminOnly><NavItem icon={<UserPlus />} label="Equipe" active /><Link to="/conexoes"><NavItem icon={<Wifi />} label="Conexões" /></Link><NetworkModuleOnly><Link to="/rede"><NavItem icon={<Network />} label="Rede" /></Link></NetworkModuleOnly><Link to="/financeiro"><NavItem icon={<CircleDollarSign />} label="Financeiro" /></Link></nav><div className="mt-auto border-t border-sidebar-border p-3"><Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={signOut}><LogOut />Sair</Button></div></>;
+  const nav = <><div className="flex h-16 items-center gap-3 px-5 text-lg font-extrabold"><span className="flex h-9 w-9 items-center justify-center rounded-md bg-sidebar text-sidebar-primary-foreground"><img src="/syncron-logo.png" alt="Syncron" className="h-full w-full object-contain" /></span>SYNCRON <span className="text-sidebar-primary">ISP</span></div><nav className="mt-5 space-y-1 px-3"><Link to="/dashboard"><NavItem icon={<LayoutDashboard />} label="Visão geral" /></Link><Link to="/clientes"><NavItem icon={<Users />} label="Clientes" /></Link><Link to="/planos"><NavItem icon={<Package />} label="Planos" /></Link><Link to="/mikrotik"><NavItem icon={<RouterIcon />} label="MikroTik" /></Link><AdminOnly><Link to="/usuarios"><NavItem icon={<ShieldCheck />} label="Usuários" /></Link></AdminOnly><NavItem icon={<UserPlus />} label="Equipe" active /><Link to="/conexoes"><NavItem icon={<Wifi />} label="Conexões" /></Link><NetworkModuleOnly><Link to="/rede"><NavItem icon={<Network />} label="Rede" /></Link></NetworkModuleOnly><Link to="/financeiro"><NavItem icon={<CircleDollarSign />} label="Financeiro" /></Link></nav><div className="mt-auto border-t border-sidebar-border p-3"><Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={signOut}><LogOut />Sair</Button></div></>;
 
   return (
     <div className="flex min-h-screen bg-background">

@@ -37,9 +37,9 @@ export const Route = createFileRoute("/api/public/hooks/sync-mikrotik")({
         const { data: plans } = await db.from("plans").select("*").eq("status", "active");
         for (const r of routerMap.values()) {
           try {
-            await upsert(r, "/ppp/profile", { name: BLOCK_PROFILE }, { "rate-limit": "1M/1M", "address-list": "nexora_bloqueados", comment: "Nexora: clientes suspensos" });
+            await upsert(r, "/ppp/profile", { name: BLOCK_PROFILE }, { "rate-limit": "1M/1M", "address-list": "nexora_bloqueados", comment: "Syncron: clientes suspensos" });
             for (const p of plans ?? []) {
-              await upsert(r, "/ppp/profile", { name: profileName(p.name) }, { "rate-limit": `${p.upload_mbps}M/${p.download_mbps}M`, comment: `Nexora: ${p.name}` });
+              await upsert(r, "/ppp/profile", { name: profileName(p.name) }, { "rate-limit": `${p.upload_mbps}M/${p.download_mbps}M`, comment: `Syncron: ${p.name}` });
             }
           } catch (e) {
             errors.push({ customer: `(roteador ${r.name})`, error: e instanceof Error ? e.message : String(e) });

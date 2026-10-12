@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Nexora ISP — gera uma ISO Debian 12 que instala sozinha o servidor RADIUS
+# Syncron ISP — gera uma ISO Debian 12 que instala sozinha o servidor RADIUS
 # Uso (em qualquer Linux): bash radius-iso-build.sh URL_DO_PAINEL TOKEN SENHA_ROOT [TOKEN_CLOUDFLARE_TUNNEL]
 # Resultado: nexora-radius.iso  (ATENÇÃO: a instalação APAGA o primeiro disco)
 set -euo pipefail
@@ -26,12 +26,12 @@ printf 'PANEL_URL=%q\nTOKEN=%q\n' "$PANEL_URL" "$TOKEN" > "$W/nexora/env"
 printf '%s\n' "$ROOTPW" > "$W/nexora/webpw"
 [ -n "$CFTOKEN" ] && printf '%s\n' "$CFTOKEN" > "$W/nexora/cftoken"
 cat > "$W/nexora/issue" <<'EOF'
-Nexora RADIUS - painel web local: http://\4  (usuario: admin, senha: a mesma do root)
+Syncron RADIUS - painel web local: http://\4  (usuario: admin, senha: a mesma do root)
 
 EOF
 cat > "$W/nexora/nexora-firstboot.service" <<'EOF'
 [Unit]
-Description=Nexora RADIUS primeira inicialização
+Description=Syncron RADIUS primeira inicialização
 After=network-online.target
 Wants=network-online.target
 ConditionPathExists=/opt/nexora/env
@@ -88,7 +88,7 @@ cat > "$W/grub.cfg" <<EOF
 set timeout=3
 set default=0
 insmod all_video
-menuentry 'Instalar Nexora RADIUS (modo texto)' {
+menuentry 'Instalar Syncron RADIUS (modo texto)' {
   linux /install.amd/vmlinuz $P --- quiet
   initrd /install.amd/initrd.gz
 }

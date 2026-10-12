@@ -198,9 +198,9 @@ export const syncPlans = createServerFn({ method: "POST" })
     const r = await getRouter(data.id, context.userId);
     const db = await admin();
     const { data: plans } = await db.from("plans").select("*").eq("status", "active").eq("owner_id", context.userId);
-    await upsert(r, "/ppp/profile", { name: BLOCK_PROFILE }, { "rate-limit": "1M/1M", "address-list": BLOCK_LIST, comment: "Nexora: clientes suspensos" });
+    await upsert(r, "/ppp/profile", { name: BLOCK_PROFILE }, { "rate-limit": "1M/1M", "address-list": BLOCK_LIST, comment: "Syncron: clientes suspensos" });
     for (const p of plans ?? []) {
-      await upsert(r, "/ppp/profile", { name: profileName(p.name) }, { "rate-limit": `${p.upload_mbps}M/${p.download_mbps}M`, comment: `Nexora: ${p.name}` });
+      await upsert(r, "/ppp/profile", { name: profileName(p.name) }, { "rate-limit": `${p.upload_mbps}M/${p.download_mbps}M`, comment: `Syncron: ${p.name}` });
     }
     return { count: plans?.length ?? 0 };
   });

@@ -39,7 +39,7 @@ async function nominatim(q: string, limit: number): Promise<NominatimHit[]> {
   url.searchParams.set("limit", String(limit));
   url.searchParams.set("countrycodes", "br");
   url.searchParams.set("accept-language", "pt-BR");
-  const res = await fetch(url, { headers: { "User-Agent": "NexoraISP/1.0 (painel de provedor)" } });
+  const res = await fetch(url, { headers: { "User-Agent": "SyncronISP/1.0 (painel de provedor)" } });
   if (!res.ok) throw new Error(`Falha na busca de endereço [${res.status}].`);
   const rows = (await res.json()) as Array<{ display_name: string; lat: string; lon: string; boundingbox?: string[] }>;
   return rows.map((r) => {
