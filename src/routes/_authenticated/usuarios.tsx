@@ -9,9 +9,9 @@ import { listUsers, setUserActive, setUserRole, listLicenses, extendLicense, del
 
 export const Route = createFileRoute("/_authenticated/usuarios")({
   head: () => ({ meta: [
-    { title: "Usuários e permissões | Nexora ISP" },
+    { title: "Usuários e permissões | Syncron ISP" },
     { name: "description", content: "Gestão de funções e permissões dos usuários do painel." },
-    { property: "og:title", content: "Usuários e permissões | Nexora ISP" },
+    { property: "og:title", content: "Usuários e permissões | Syncron ISP" },
     { property: "og:description", content: "Gestão de funções e permissões dos usuários do painel." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },

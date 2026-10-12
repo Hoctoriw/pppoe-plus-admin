@@ -13,7 +13,7 @@ function BackupEmail({ date = '', counts = {}, url = '#', fileName = 'backup.jso
   return (
     <Html>
       <Head />
-      <Preview>Backup do painel Nexora ISP — {date}</Preview>
+      <Preview>Backup do painel Syncron ISP — {date}</Preview>
       <Body style={{ backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }}>
         <Container style={{ padding: '24px', maxWidth: '640px' }}>
           <Heading style={{ fontSize: '20px', color: '#111' }}>Backup das configurações</Heading>

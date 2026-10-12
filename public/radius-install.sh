@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Nexora ISP — instalador do servidor RADIUS (Debian 12 / Ubuntu 22.04+)
+# Syncron ISP — instalador do servidor RADIUS (Debian 12 / Ubuntu 22.04+)
 # Uso: sudo bash install.sh URL_DO_PAINEL TOKEN
 set -euo pipefail
 PANEL_URL="${1:-}"; TOKEN="${2:-}"
@@ -140,7 +140,7 @@ curl -fsSL "$PANEL_URL/radius-agent.sh" -o /opt/nexora/agent.sh; chmod 700 /opt/
 [ -n "${3:-}" ] && echo "$3" > /opt/nexora/version
 cat > /etc/systemd/system/nexora-agent.service <<'EOF'
 [Unit]
-Description=Nexora RADIUS Agent
+Description=Syncron RADIUS Agent
 After=network-online.target
 [Service]
 Type=oneshot
@@ -148,7 +148,7 @@ ExecStart=/bin/bash /opt/nexora/agent.sh
 EOF
 cat > /etc/systemd/system/nexora-agent.timer <<'EOF'
 [Unit]
-Description=Nexora RADIUS Agent a cada minuto
+Description=Syncron RADIUS Agent a cada minuto
 [Timer]
 OnBootSec=30
 OnUnitActiveSec=60
@@ -193,11 +193,11 @@ clients=$(grep -E '^\s*(client|ipaddr)' /etc/freeradius/3.0/clients.d/nexora.con
 printf 'Content-Type: text/html; charset=utf-8\r\n\r\n'
 cat <<HTML
 <!doctype html><html lang=pt-BR><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1">
-<meta http-equiv=refresh content=30><title>Nexora RADIUS — $(hostname)</title>
+<meta http-equiv=refresh content=30><title>Syncron RADIUS — $(hostname)</title>
 <style>body{font-family:system-ui,sans-serif;background:#0f1418;color:#e6edf0;margin:0;padding:24px}h1{margin:0 0 4px}small{color:#8aa}
 .g{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin:16px 0}.c{background:#172028;border:1px solid #26333d;padding:14px}
 .ok{color:#4ade80}.bad{color:#f87171}table{width:100%;border-collapse:collapse}td{border-top:1px solid #26333d;padding:6px}button,a.b{background:#e8a23a;color:#111;border:0;padding:8px 12px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block;margin-right:6px}</style>
-<h1>Nexora RADIUS</h1><small>$(hostname) · IP local $(hostname -I | awk '{print $1}') · versão $(cat /opt/nexora/version 2>/dev/null || echo ?)</small>
+<h1>Syncron RADIUS</h1><small>$(hostname) · IP local $(hostname -I | awk '{print $1}') · versão $(cat /opt/nexora/version 2>/dev/null || echo ?)</small>
 <div class=g>
 <div class=c>FreeRADIUS (1812/1813 UDP)<br>$(st freeradius)</div>
 <div class=c>Sincronização com o painel<br>$(st nexora-agent.timer)</div>
@@ -219,7 +219,7 @@ chmod 640 /opt/nexora/env; chown root:www-data /opt/nexora/env
 cat > /etc/nginx/sites-available/nexora <<'EOF'
 server {
   listen 80 default_server;
-  auth_basic "Nexora RADIUS";
+  auth_basic "Syncron RADIUS";
   auth_basic_user_file /etc/nginx/nexora.htpasswd;
   location / {
     include fastcgi_params;

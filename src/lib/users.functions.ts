@@ -355,7 +355,7 @@ export const createAutoLicensePayment = createServerFn({ method: "POST" })
     const { data: row, error } = await db.from("license_payments").insert({ user_id: context.userId, plan_id: plan.id, plan_name: plan.name, days: plan.days, amount: plan.price, txid, includes_network: !!plan.includes_network }).select("id").single();
     if (error) throw new Error(error.message);
     const { createLicensePix } = await import("./billing.server");
-    const pix = await createLicensePix(s, { id: context.userId, name: prof?.full_name ?? "", email: u?.user?.email ?? null, cpfCnpj: data.cpfCnpj }, Number(plan.price), `Licença Nexora - ${plan.name}`, `license:${row.id}`);
+    const pix = await createLicensePix(s, { id: context.userId, name: prof?.full_name ?? "", email: u?.user?.email ?? null, cpfCnpj: data.cpfCnpj }, Number(plan.price), `Licença Syncron - ${plan.name}`, `license:${row.id}`);
     await db.from("license_payments").update({ provider_charge_id: pix.id, pix_payload: pix.payload }).eq("id", row.id);
     return { id: row.id as string, payload: pix.payload, image: pix.image, amount: Number(plan.price) };
   });

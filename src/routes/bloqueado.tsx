@@ -19,7 +19,7 @@ export const Route = createFileRoute("/bloqueado")({
 
   head: () => ({
     meta: [
-      { title: `${TITLE} | Nexora ISP` },
+      { title: `${TITLE} | Syncron ISP` },
       { name: "description", content: DESC },
       { property: "og:title", content: TITLE },
       { property: "og:description", content: DESC },

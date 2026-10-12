@@ -10,9 +10,9 @@ import { portalData, portalLogin } from "@/lib/portal.functions";
 
 export const Route = createFileRoute("/central")({
   head: () => ({ meta: [
-    { title: "Central do Assinante | Nexora ISP" },
+    { title: "Central do Assinante | Syncron ISP" },
     { name: "description", content: "Consulte seu plano, consumo e boletos para pagamento." },
-    { property: "og:title", content: "Central do Assinante | Nexora ISP" },
+    { property: "og:title", content: "Central do Assinante | Syncron ISP" },
     { property: "og:description", content: "Consulte seu plano, consumo e boletos para pagamento." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },

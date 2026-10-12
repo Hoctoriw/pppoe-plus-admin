@@ -17,9 +17,9 @@ import { computeSignals, CONNECTOR_DB, customerSignal, distanceM, distributionLo
 
 export const Route = createFileRoute("/_authenticated/rede")({
   head: () => ({ meta: [
-    { title: "Rede FTTH | Nexora ISP" },
+    { title: "Rede FTTH | Syncron ISP" },
     { name: "description", content: "Desenhe a rede FTTH no mapa com OLT, caixas de emenda, CTOs, splitters, cabos e cálculo de sinal." },
-    { property: "og:title", content: "Rede FTTH | Nexora ISP" },
+    { property: "og:title", content: "Rede FTTH | Syncron ISP" },
     { property: "og:description", content: "Desenhe a rede FTTH no mapa com OLT, caixas de emenda, CTOs, splitters, cabos e cálculo de sinal." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },
@@ -213,7 +213,7 @@ function NetworkPage() {
   const weakCount = customers.filter((c) => { const s = custSignal(c); return s !== null && s < MIN_SIGNAL_DBM; }).length;
 
   async function signOut() { await supabase.auth.signOut(); navigate({ to: "/auth", replace: true }); }
-  const nav = <><div className="flex h-16 items-center gap-3 px-5 text-lg font-extrabold"><span className="flex h-9 w-9 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground"><Radio /></span>NEXORA <span className="text-sidebar-primary">ISP</span></div><nav className="mt-5 space-y-1 px-3"><Link to="/dashboard"><NavItem icon={<LayoutDashboard />} label="Visão geral" /></Link><Link to="/clientes"><NavItem icon={<Users />} label="Clientes" /></Link><Link to="/planos"><NavItem icon={<Package />} label="Planos" /></Link><Link to="/mikrotik"><NavItem icon={<RouterIcon />} label="MikroTik" /></Link><AdminOnly><Link to="/usuarios"><NavItem icon={<ShieldCheck />} label="Usuários" /></Link></AdminOnly><Link to="/equipe"><NavItem icon={<UserPlus />} label="Equipe" /></Link><Link to="/conexoes"><NavItem icon={<Wifi />} label="Conexões" /></Link><NavItem icon={<Network />} label="Rede" active /><Link to="/financeiro"><NavItem icon={<CircleDollarSign />} label="Financeiro" /></Link></nav><div className="mt-auto border-t border-sidebar-border p-3"><Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={signOut}><LogOut />Sair</Button></div></>;
+  const nav = <><div className="flex h-16 items-center gap-3 px-5 text-lg font-extrabold"><span className="flex h-9 w-9 items-center justify-center rounded-md bg-sidebar text-sidebar-primary-foreground"><img src="/syncron-logo.png" alt="Syncron" className="h-full w-full object-contain" /></span>SYNCRON <span className="text-sidebar-primary">ISP</span></div><nav className="mt-5 space-y-1 px-3"><Link to="/dashboard"><NavItem icon={<LayoutDashboard />} label="Visão geral" /></Link><Link to="/clientes"><NavItem icon={<Users />} label="Clientes" /></Link><Link to="/planos"><NavItem icon={<Package />} label="Planos" /></Link><Link to="/mikrotik"><NavItem icon={<RouterIcon />} label="MikroTik" /></Link><AdminOnly><Link to="/usuarios"><NavItem icon={<ShieldCheck />} label="Usuários" /></Link></AdminOnly><Link to="/equipe"><NavItem icon={<UserPlus />} label="Equipe" /></Link><Link to="/conexoes"><NavItem icon={<Wifi />} label="Conexões" /></Link><NavItem icon={<Network />} label="Rede" active /><Link to="/financeiro"><NavItem icon={<CircleDollarSign />} label="Financeiro" /></Link></nav><div className="mt-auto border-t border-sidebar-border p-3"><Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={signOut}><LogOut />Sair</Button></div></>;
 
   const sig = selected ? signals.get(selected.id) : undefined;
   const parentOptions = draft ? nodes.filter((n) => n.id !== draft.id) : [];

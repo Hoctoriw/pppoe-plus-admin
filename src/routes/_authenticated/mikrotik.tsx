@@ -50,9 +50,9 @@ function RadiusInstaller() {
 
 export const Route = createFileRoute("/_authenticated/mikrotik")({
   head: () => ({ meta: [
-    { title: "MikroTik | Nexora ISP" },
+    { title: "MikroTik | Syncron ISP" },
     { name: "description", content: "Roteadores MikroTik, sincronização de planos e conexões ativas." },
-    { property: "og:title", content: "MikroTik | Nexora ISP" },
+    { property: "og:title", content: "MikroTik | Syncron ISP" },
     { property: "og:description", content: "Roteadores MikroTik, sincronização de planos e conexões ativas." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },

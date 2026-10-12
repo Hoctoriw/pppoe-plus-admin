@@ -1,6 +1,6 @@
 // Gera o "Pix Copia e Cola" (BR Code EMV) estático com valor.
 export const PIX_KEY = "86090007536";
-const MERCHANT = "NEXORA ISP";
+const MERCHANT = "SYNCRON ISP";
 const CITY = "SAO PAULO";
 
 const f = (id: string, v: string) => id + String(v.length).padStart(2, "0") + v;

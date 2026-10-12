@@ -8,9 +8,9 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Nexora ISP | Acesso" },
+      { title: "Syncron ISP | Acesso" },
       { name: "description", content: "Acesse o painel de gestão do seu provedor de internet." },
-      { property: "og:title", content: "Nexora ISP | Acesso" },
+      { property: "og:title", content: "Syncron ISP | Acesso" },
       { property: "og:description", content: "Acesse o painel de gestão do seu provedor de internet." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

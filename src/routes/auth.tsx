@@ -10,10 +10,10 @@ import { lovable } from "@/integrations/lovable";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [
-    { title: "Entrar | Nexora ISP" },
-    { name: "description", content: "Acesso seguro ao painel administrativo Nexora ISP." },
-    { property: "og:title", content: "Entrar | Nexora ISP" },
-    { property: "og:description", content: "Acesso seguro ao painel administrativo Nexora ISP." },
+    { title: "Entrar | Syncron ISP" },
+    { name: "description", content: "Acesso seguro ao painel administrativo Syncron ISP." },
+    { property: "og:title", content: "Entrar | Syncron ISP" },
+    { property: "og:description", content: "Acesso seguro ao painel administrativo Syncron ISP." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary_large_image" },
   ]}),
@@ -56,17 +56,17 @@ function AuthPage() {
 
   return <main className="grid min-h-screen lg:grid-cols-[1.05fr_.95fr]">
     <section className="hidden bg-sidebar p-12 text-sidebar-foreground lg:flex lg:flex-col lg:justify-between">
-      <div className="flex items-center gap-3 text-xl font-extrabold"><span className="flex h-10 w-10 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground"><Radio /></span>NEXORA <span className="text-sidebar-primary">ISP</span></div>
+      <div className="flex items-center gap-3 text-xl font-extrabold"><span className="flex h-10 w-10 items-center justify-center rounded-md bg-sidebar text-sidebar-primary-foreground"><img src="/syncron-logo.png" alt="Syncron" className="h-full w-full object-contain" /></span>SYNCRON <span className="text-sidebar-primary">ISP</span></div>
       <div className="max-w-xl"><p className="mb-6 text-sm font-semibold uppercase text-sidebar-primary">Operação sob controle</p><h1 className="text-5xl font-extrabold leading-tight">Sua rede, seus clientes e seus planos em um só lugar.</h1><p className="mt-6 max-w-lg text-lg text-sidebar-foreground/70">Uma base moderna para operar acessos PPPoE e IPoE com clareza e segurança.</p></div>
       <div className="flex items-center gap-2 text-sm text-sidebar-foreground/60"><ShieldCheck className="h-4 w-4 text-sidebar-primary" />Acesso protegido e dados isolados por função</div>
     </section>
     <section className="flex items-center justify-center bg-background px-6 py-12">
       <div className="w-full max-w-md">
-        <div className="mb-10 flex items-center gap-3 text-lg font-extrabold lg:hidden"><Radio className="text-primary" />NEXORA ISP</div>
+        <div className="mb-10 flex items-center gap-3 text-lg font-extrabold lg:hidden"><img src="/syncron-logo.png" alt="Syncron" className="h-8 w-8" />SYNCRON ISP</div>
         <div className="mb-8 inline-flex rounded-md border bg-card p-1">{([["login", "Entrar"], ["download", "Download"], ["guia", "Instruções"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => setTab(k)} className={`rounded px-4 py-1.5 text-sm font-semibold ${tab === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{l}</button>)}</div>
         {tab === "guia" ? <Guia /> : tab === "download" ? <div>
           <p className="text-sm font-semibold text-primary">SERVIDOR RADIUS</p>
-          <h2 className="mt-2 text-3xl font-extrabold">Baixar a ISO Nexora</h2>
+          <h2 className="mt-2 text-3xl font-extrabold">Baixar a ISO Syncron</h2>
           <p className="mt-2 text-sm text-muted-foreground">Debian 12 + FreeRADIUS + painel web local, instalação automática em modo texto.</p>
           <Button asChild className="mt-6 h-11 w-full"><a href={iso.url} download={iso.original_filename}><Download />Baixar {iso.original_filename} ({Math.round(iso.size / 1048576)} MB)</a></Button>
           <ol className="mt-6 list-decimal space-y-2 pl-5 text-sm text-muted-foreground">
