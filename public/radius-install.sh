@@ -166,11 +166,55 @@ WEBPW="${NEXORA_WEB_PW:-}"
 echo "$WEBPW" > /opt/nexora/webpw; chmod 600 /opt/nexora/webpw
 printf 'admin:%s\n' "$(openssl passwd -apr1 "$WEBPW")" > /etc/nginx/nexora.htpasswd
 chown root:www-data /etc/nginx/nexora.htpasswd; chmod 640 /etc/nginx/nexora.htpasswd
+cat > /opt/nexora/setip.sh <<'SETIP'
+#!/bin/bash
+# uso: setip.sh dhcp | setip.sh static IP/PREFIXO GATEWAY "DNS"
+set -e
+IF=$(ip -o -4 route show to default | awk '{print $5; exit}'); [ -z "$IF" ] && IF=$(ls /sys/class/net | grep -v lo | head -1)
+valid(){ [[ "$1" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]]; }
+cp /etc/network/interfaces /etc/network/interfaces.bak
+if [ "$1" = dhcp ]; then
+  printf 'auto lo\niface lo inet loopback\n\nallow-hotplug %s\niface %s inet dhcp\n' "$IF" "$IF" > /etc/network/interfaces
+else
+  A="${2%/*}"; P="${2#*/}"; [ "$P" = "$2" ] && P=24
+  valid "$A" && valid "$3" && [[ "$P" =~ ^[0-9]{1,2}$ ]] || { echo "Dados invalidos"; exit 1; }
+  D=$(echo "$4" | tr -cd '0-9. '); [ -z "${D// /}" ] && D="1.1.1.1 8.8.8.8"
+  printf 'auto lo\niface lo inet loopback\n\nallow-hotplug %s\niface %s inet static\n  address %s/%s\n  gateway %s\n  dns-nameservers %s\n' "$IF" "$IF" "$A" "$P" "$3" "$D" > /etc/network/interfaces
+  : > /etc/resolv.conf; for d in $D; do echo "nameserver $d" >> /etc/resolv.conf; done
+fi
+nohup bash -c "sleep 2; ip addr flush dev $IF; systemctl restart networking" >/dev/null 2>&1 &
+echo "Configuracao gravada."
+SETIP
+chmod 755 /opt/nexora/setip.sh
 mkdir -p /opt/nexora/www
 cat > /opt/nexora/www/index.cgi <<'EOF'
 #!/bin/bash
 . /opt/nexora/env 2>/dev/null
 q="${QUERY_STRING:-}"
+if [ "${REQUEST_METHOD:-GET}" = POST ] && [ "$q" = "a=setip" ]; then
+  body=$(head -c "${CONTENT_LENGTH:-0}")
+  g(){ v=$(echo "$body" | tr '&' '\n' | sed -n "s/^$1=//p" | sed 's/+/ /g;s/%2F/\//gI;s/%20/ /g;s/%2E/./gI'); echo "$v" | tr -cd '0-9a-z./ '; }
+  if [ "$(g mode)" = dhcp ]; then out=$(sudo -n /opt/nexora/setip.sh dhcp 2>&1); new="(veja o novo IP no DHCP do roteador)"
+  else out=$(sudo -n /opt/nexora/setip.sh static "$(g ip)" "$(g gw)" "$(g dns)" 2>&1); new="http://$(g ip | cut -d/ -f1)"; fi
+  printf 'Content-Type: text/html; charset=utf-8\r\n\r\n<meta charset=utf-8><body style="font-family:sans-serif;background:#0f1418;color:#e6edf0;padding:24px"><h2>Rede</h2><p>%s</p><p>Em alguns segundos acesse: <b>%s</b></p>' "$out" "$new"; exit 0
+fi
+if [ "$q" = "a=net" ]; then
+  cur=$(ip -o -4 addr show scope global | awk '{print $4; exit}'); gw=$(ip route | awk '/default/{print $3; exit}'); dns=$(awk '/^nameserver/{printf "%s ",$2}' /etc/resolv.conf)
+  mode=$(grep -q 'inet dhcp' /etc/network/interfaces && echo DHCP || echo Estatico)
+  printf 'Content-Type: text/html; charset=utf-8\r\n\r\n'
+  cat <<HTML
+<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Rede - Syncron RADIUS</title>
+<style>body{font-family:system-ui,sans-serif;background:#0f1418;color:#e6edf0;padding:24px;max-width:560px}label{display:block;margin-top:12px}input,select{width:100%;padding:8px;background:#172028;color:#e6edf0;border:1px solid #26333d}button{margin-top:16px;background:#e8a23a;border:0;padding:10px 14px;font-weight:600}a{color:#e8a23a}</style>
+<p><a href="/">&larr; Status</a></p><h1>Trocar IP / Rede</h1><p>Atual: <b>$mode</b> &middot; IP $cur &middot; gateway $gw &middot; DNS $dns</p>
+<form method=post action="/?a=setip" onsubmit="return confirm('Aplicar? O painel vai mudar de endereco.')">
+<label>Modo<select name=mode onchange="document.getElementById('st').style.display=this.value=='dhcp'?'none':'block'"><option value=static>IP estatico</option><option value=dhcp>DHCP (automatico)</option></select></label>
+<div id=st><label>IP/prefixo<input name=ip value="$cur" placeholder="192.168.88.2/24"></label>
+<label>Gateway<input name=gw value="$gw" placeholder="192.168.88.1"></label>
+<label>DNS (separados por espaco)<input name=dns value="$dns" placeholder="1.1.1.1 8.8.8.8"></label></div>
+<button>Salvar e aplicar</button></form><p><small>Depois de mudar, atualize o IP do RADIUS no MikroTik. O painel na nuvem recebe o novo IP sozinho em ate 1 minuto.</small></p>
+HTML
+  exit 0
+fi
 if [ "${REQUEST_METHOD:-GET}" = POST ]; then
   case "$q" in
     a=restart-radius) sudo -n /bin/systemctl restart freeradius ;;
@@ -207,12 +251,12 @@ cat <<HTML
 <div class=c><b>Roteadores autorizados</b><table><tr><td><small>Nome</small></td><td><small>IP</small></td></tr>${clients:-<tr><td colspan=2>Nenhum roteador com RADIUS ativo.</td></tr>}</table></div>
 <p><form method=post action="/?a=restart-radius" style=display:inline><button>Reiniciar RADIUS</button></form>
 <form method=post action="/?a=sync" style=display:inline><button>Sincronizar agora</button></form>
-<a class=b href="/?a=log" target=_blank>Ver log do RADIUS</a></p>
+<a class=b href="/?a=log" target=_blank>Ver log do RADIUS</a> <a class=b href="/?a=net">Trocar IP / Rede</a></p>
 HTML
 EOF
 chmod 755 /opt/nexora/www/index.cgi
 cat > /etc/sudoers.d/nexora-web <<'EOF'
-www-data ALL=(root) NOPASSWD: /bin/systemctl restart freeradius, /bin/systemctl start nexora-agent.service, /usr/bin/journalctl -u freeradius -n 200 --no-pager
+www-data ALL=(root) NOPASSWD: /bin/systemctl restart freeradius, /bin/systemctl start nexora-agent.service, /usr/bin/journalctl -u freeradius -n 200 --no-pager, /opt/nexora/setip.sh
 EOF
 chmod 440 /etc/sudoers.d/nexora-web
 chmod 640 /opt/nexora/env; chown root:www-data /opt/nexora/env
