@@ -73,7 +73,7 @@ function MikrotikPage() {
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [addrKind, setAddrKind] = useState<"domain" | "ip">("domain");
+  const [addrKind, setAddrKind] = useState<"domain" | "ip" | "ipv6">("domain");
   const [tab, setTab] = useState<"vpn" | "public_ip" | "radius">("public_ip");
   const listApp = useServerFn(listRadiusAppliances);
   const [apps, setApps] = useState<Awaited<ReturnType<typeof listRadiusAppliances>>>([]);
@@ -86,7 +86,7 @@ function MikrotikPage() {
 
   async function onSave(e: FormEvent<HTMLFormElement>) {
     e.preventDefault(); const f = new FormData(e.currentTarget);
-    await run(async () => { await save({ data: { name: String(f.get("name")), base_url: tab === "public_ip" ? `${f.get("proto")}://${String(f.get("ip")).trim()}:${f.get("port")}` : String(f.get("url")), connection_mode: tab, username: String(f.get("user")), password: String(f.get("pass")), dhcp_server: String(f.get("dhcp")) } }); setShowForm(false); await load(); });
+    await run(async () => { await save({ data: { name: String(f.get("name")), base_url: tab === "public_ip" ? `${f.get("proto")}://${addrKind === "ipv6" ? `[${String(f.get("ip")).trim().replace(/^\[|\]$/g, "")}]` : String(f.get("ip")).trim()}:${f.get("port")}` : String(f.get("url")), connection_mode: tab, username: String(f.get("user")), password: String(f.get("pass")), dhcp_server: String(f.get("dhcp")) } }); setShowForm(false); await load(); });
   }
   async function loadStatus(id: string) { setSelected(id); setConn(null); await run(async () => setConn(await status({ data: { id } }))); }
 
@@ -102,8 +102,8 @@ function MikrotikPage() {
 
       {showForm && tab !== "radius" && <form onSubmit={onSave} className="mt-6 grid gap-4 border bg-card p-5 md:grid-cols-2">
         <F label="Nome"><Input name="name" required placeholder="Concentrador Centro" /></F>
-        {tab === "public_ip" ? <><F label="Endereço do roteador"><div className="flex gap-1">{([["domain", "Domínio / DDNS"], ["ip", "IP público"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => setAddrKind(k)} className={`rounded-md border px-3 py-1 text-xs font-semibold ${addrKind === k ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>{l}</button>)}</div>
-          {addrKind === "ip" ? <><Input key="ip" name="ip" required placeholder="200.200.200.10" pattern="^(\d{1,3}\.){3}\d{1,3}$" title="Digite um IPv4, ex.: 200.200.200.10" /><p className="text-xs text-muted-foreground">Se o teste mostrar <b>erro 1003</b>, troque para <b>Domínio / DDNS</b>.</p></>
+        {tab === "public_ip" ? <><F label="Endereço do roteador"><div className="flex gap-1">{([["domain", "Domínio / DDNS"], ["ip", "IPv4 público"], ["ipv6", "IPv6 público"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => setAddrKind(k)} className={`rounded-md border px-3 py-1 text-xs font-semibold ${addrKind === k ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>{l}</button>)}</div>
+          {addrKind === "ipv6" ? <><Input key="ip6" name="ip" required placeholder="2804:abcd:1234::1" pattern="^[0-9a-fA-F:]+$" title="Digite um IPv6, ex.: 2804:abcd::1" /><p className="text-xs text-muted-foreground">Libere a porta no firewall IPv6 do MikroTik (<code>/ipv6 firewall filter</code>).</p></> : addrKind === "ip" ? <><Input key="ip" name="ip" required placeholder="200.200.200.10" pattern="^(\d{1,3}\.){3}\d{1,3}$" title="Digite um IPv4, ex.: 200.200.200.10" /><p className="text-xs text-muted-foreground">Se o teste mostrar <b>erro 1003</b>, troque para <b>Domínio / DDNS</b>.</p></>
           : <><Input key="dom" name="ip" required placeholder="xxxx.sn.mynetname.net" /><p className="text-xs text-muted-foreground">Mais confiável. DDNS grátis: <code>/ip cloud set ddns-enabled=yes</code> e cole o <b>dns-name</b> de <code>/ip cloud print</code>.</p></>}</F><div className="grid grid-cols-2 gap-3"><F label="Protocolo"><select name="proto" defaultValue="https" className="h-9 w-full rounded-md border bg-background px-3 text-sm"><option value="https">HTTPS</option><option value="http">HTTP (inseguro)</option></select></F><F label="Porta"><Input name="port" type="number" required defaultValue="443" min="1" max="65535" /></F></div></> : <F label="Endereço na VPN (HTTPS)"><Input name="url" required type="url" placeholder="https://10.8.0.1" /></F>}
         <F label="Usuário da API"><Input name="user" required /></F>
         <F label="Senha"><Input name="pass" type="password" required /></F>

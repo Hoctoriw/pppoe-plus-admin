@@ -50,7 +50,7 @@ function Central() {
 
   if (!token || !data) return <main className="flex min-h-screen items-center justify-center bg-background px-6">
     <form onSubmit={submit} className="w-full max-w-sm space-y-5">
-      <div className="flex items-center gap-2 text-lg font-extrabold"><Radio className="text-primary" />Central do Assinante</div>
+      <div className="flex items-center gap-2 text-lg font-extrabold"><img src="/syncron-logo.png" alt="Syncron" className="h-8 w-8" />Central do Assinante</div>
       <p className="text-sm text-muted-foreground">Entre com seu CPF/CNPJ e a senha da sua conexão (a mesma do roteador/Wi‑Fi do provedor).</p>
       <div className="space-y-2"><Label htmlFor="doc">CPF/CNPJ</Label><Input id="doc" name="doc" required inputMode="numeric" /></div>
       <div className="space-y-2"><Label htmlFor="pw">Senha</Label><Input id="pw" name="pw" type="password" required /></div>
@@ -64,7 +64,7 @@ function Central() {
   const open = data.invoices.filter(i => i.status !== "paid" && i.status !== "cancelled");
   return <main className="mx-auto min-h-screen max-w-4xl bg-background px-5 py-8">
     <header className="flex items-center justify-between">
-      <div className="flex items-center gap-2 text-lg font-extrabold"><Radio className="text-primary" />Central do Assinante</div>
+      <div className="flex items-center gap-2 text-lg font-extrabold"><img src="/syncron-logo.png" alt="Syncron" className="h-8 w-8" />Central do Assinante</div>
       <Button variant="outline" size="sm" onClick={sair}><LogOut />Sair</Button>
     </header>
     <h1 className="mt-6 text-2xl font-extrabold">Olá, {String(c.full_name).split(" ")[0]}</h1>
