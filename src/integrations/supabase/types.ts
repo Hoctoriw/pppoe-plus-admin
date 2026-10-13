@@ -834,6 +834,48 @@ export type Database = {
         }
         Relationships: []
       }
+      router_commands: {
+        Row: {
+          body: Json | null
+          created_at: string
+          done_at: string | null
+          http_status: number | null
+          id: string
+          method: string
+          owner_id: string
+          path: string
+          result: string | null
+          router_id: string
+          status: string
+        }
+        Insert: {
+          body?: Json | null
+          created_at?: string
+          done_at?: string | null
+          http_status?: number | null
+          id?: string
+          method: string
+          owner_id: string
+          path: string
+          result?: string | null
+          router_id: string
+          status?: string
+        }
+        Update: {
+          body?: Json | null
+          created_at?: string
+          done_at?: string | null
+          http_status?: number | null
+          id?: string
+          method?: string
+          owner_id?: string
+          path?: string
+          result?: string | null
+          router_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
       routers: {
         Row: {
           active: boolean
@@ -855,6 +897,7 @@ export type Database = {
           radius_secret: string | null
           updated_at: string
           username: string
+          via_agent: boolean
         }
         Insert: {
           active?: boolean
@@ -876,6 +919,7 @@ export type Database = {
           radius_secret?: string | null
           updated_at?: string
           username: string
+          via_agent?: boolean
         }
         Update: {
           active?: boolean
@@ -897,6 +941,7 @@ export type Database = {
           radius_secret?: string | null
           updated_at?: string
           username?: string
+          via_agent?: boolean
         }
         Relationships: []
       }
