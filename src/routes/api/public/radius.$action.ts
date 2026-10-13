@@ -21,7 +21,7 @@ function attr(body: any, name: string): string {
 
 const MAC = /^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$/;
 
-export const AGENT_VERSION = "1.0.0";
+export const AGENT_VERSION = "1.1.0";
 
 export const Route = createFileRoute("/api/public/radius/$action")({
   server: {
