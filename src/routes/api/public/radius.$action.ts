@@ -29,6 +29,26 @@ export const Route = createFileRoute("/api/public/radius/$action")({
       GET: async ({ request, params }) => {
         if (!authorized(request)) return new Response("Unauthorized", { status: 403 });
         if (params.action === "version") return Response.json({ version: AGENT_VERSION });
+        if (params.action === "commands") {
+          // Ponte local: entrega comandos pendentes (com credenciais) ao agente e marca como em execução
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          const db = supabaseAdmin as any;
+          await db.from("router_commands").delete().lt("created_at", new Date(Date.now() - 120000).toISOString());
+          const { data: cmds } = await db.from("router_commands").select("id, router_id, owner_id, method, path, body").eq("status", "pending").order("created_at").limit(20);
+          const out: string[] = [];
+          for (const c of cmds ?? []) {
+            const { data: upd } = await db.from("router_commands").update({ status: "running" }).eq("id", c.id).eq("status", "pending").select("id");
+            if (!upd?.length) continue;
+            const { data: r } = await db.from("routers").select("base_url, username, password").eq("id", c.router_id).eq("owner_id", c.owner_id).maybeSingle();
+            if (!r) { await db.from("router_commands").update({ status: "done", http_status: 0, result: "Roteador não encontrado" }).eq("id", c.id); continue; }
+            const auth = btoa(`${r.username}:${r.password}`);
+            const url = String(r.base_url).replace(/\/+$/, "") + "/rest" + c.path;
+            const body = c.body == null ? "" : btoa(unescape(encodeURIComponent(JSON.stringify(c.body))));
+            // Formato de linha simples para o bash: id<TAB>method<TAB>url<TAB>auth<TAB>body(base64)
+            out.push([c.id, c.method, url, auth, body].join("\t"));
+          }
+          return new Response(out.join("\n") + (out.length ? "\n" : ""), { headers: { "Content-Type": "text/plain", "Cache-Control": "no-store" } });
+        }
         if (params.action !== "clients") return new Response("Not found", { status: 404 });
         // Lista de roteadores autorizados (clients.conf do FreeRADIUS)
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -47,6 +67,15 @@ export const Route = createFileRoute("/api/public/radius/$action")({
         if (!authorized(request)) return new Response("Unauthorized", { status: 403 });
         const body = await request.json().catch(() => ({}));
 
+        if (params.action === "result") {
+          const id = String(body?.id ?? "");
+          if (!/^[0-9a-f-]{36}$/i.test(id)) return new Response("Bad id", { status: 400 });
+          let result = "";
+          try { result = decodeURIComponent(escape(atob(String(body?.result ?? "")))); } catch { result = ""; }
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          await (supabaseAdmin as any).from("router_commands").update({ status: "done", http_status: Number(body?.http_status) || 0, result: result.slice(0, 2_000_000), done_at: new Date().toISOString() }).eq("id", id).eq("status", "running");
+          return new Response(null, { status: 204 });
+        }
         if (params.action === "heartbeat") {
           const s = (v: unknown, n: number) => String(v ?? "").slice(0, n);
           const hostname = s(body?.hostname, 80).replace(/[^A-Za-z0-9._-]/g, "");
