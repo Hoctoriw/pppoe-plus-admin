@@ -155,8 +155,22 @@ OnUnitActiveSec=60
 [Install]
 WantedBy=timers.target
 EOF
+curl -fsSL "$PANEL_URL/radius-bridge.sh" -o /opt/nexora/bridge.sh; chmod 700 /opt/nexora/bridge.sh
+cat > /etc/systemd/system/nexora-bridge.service <<'EOF2'
+[Unit]
+Description=Syncron Bridge (MikroTik por IP local)
+After=network-online.target
+Wants=network-online.target
+[Service]
+ExecStart=/bin/bash /opt/nexora/bridge.sh
+Restart=always
+RestartSec=5
+[Install]
+WantedBy=multi-user.target
+EOF2
 systemctl daemon-reload
 systemctl enable --now nexora-agent.timer
+systemctl enable nexora-bridge.service; systemctl restart nexora-bridge.service
 
 echo "==> Instalando painel web local (porta 80)"
 apt-get install -y nginx fcgiwrap openssl

@@ -73,7 +73,7 @@ function MikrotikPage() {
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [addrKind, setAddrKind] = useState<"domain" | "ip" | "ipv6">("domain");
+  const [addrKind, setAddrKind] = useState<"local" | "domain" | "ip" | "ipv6">("domain");
   const [tab, setTab] = useState<"vpn" | "public_ip" | "radius">("public_ip");
   const listApp = useServerFn(listRadiusAppliances);
   const [apps, setApps] = useState<Awaited<ReturnType<typeof listRadiusAppliances>>>([]);
@@ -86,7 +86,7 @@ function MikrotikPage() {
 
   async function onSave(e: FormEvent<HTMLFormElement>) {
     e.preventDefault(); const f = new FormData(e.currentTarget);
-    await run(async () => { await save({ data: { name: String(f.get("name")), base_url: tab === "public_ip" ? `${f.get("proto")}://${addrKind === "ipv6" ? `[${String(f.get("ip")).trim().replace(/^\[|\]$/g, "")}]` : String(f.get("ip")).trim()}:${f.get("port")}` : String(f.get("url")), connection_mode: tab, username: String(f.get("user")), password: String(f.get("pass")), dhcp_server: String(f.get("dhcp")) } }); setShowForm(false); await load(); });
+    await run(async () => { await save({ data: { name: String(f.get("name")), base_url: tab === "public_ip" ? `${f.get("proto")}://${addrKind === "local" ? <><Input key="loc" name="ip" required placeholder="192.168.88.1" pattern="^(\d{1,3}\.){3}\d{1,3}$" title="Digite o IP local, ex.: 192.168.88.1" /><p className="text-xs text-muted-foreground">Sem IP público: o servidor Syncron da sua rede faz a ponte. Ele precisa estar ligado e atualizado. Use HTTP porta 80 ou HTTPS porta 443 do MikroTik.</p></> : addrKind === "ipv6" ? `[${String(f.get("ip")).trim().replace(/^\[|\]$/g, "")}]` : String(f.get("ip")).trim()}:${f.get("port")}` : String(f.get("url")), connection_mode: tab, via_agent: tab === "public_ip" && addrKind === "local", username: String(f.get("user")), password: String(f.get("pass")), dhcp_server: String(f.get("dhcp")) } }); setShowForm(false); await load(); });
   }
   async function loadStatus(id: string) { setSelected(id); setConn(null); await run(async () => setConn(await status({ data: { id } }))); }
 
@@ -102,7 +102,7 @@ function MikrotikPage() {
 
       {showForm && tab !== "radius" && <form onSubmit={onSave} className="mt-6 grid gap-4 border bg-card p-5 md:grid-cols-2">
         <F label="Nome"><Input name="name" required placeholder="Concentrador Centro" /></F>
-        {tab === "public_ip" ? <><F label="Endereço do roteador"><div className="flex gap-1">{([["domain", "Domínio / DDNS"], ["ip", "IPv4 público"], ["ipv6", "IPv6 público"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => setAddrKind(k)} className={`rounded-md border px-3 py-1 text-xs font-semibold ${addrKind === k ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>{l}</button>)}</div>
+        {tab === "public_ip" ? <><F label="Endereço do roteador"><div className="flex gap-1">{([["local", "IP local (via servidor)"], ["domain", "Domínio / DDNS"], ["ip", "IPv4 público"], ["ipv6", "IPv6 público"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => setAddrKind(k)} className={`rounded-md border px-3 py-1 text-xs font-semibold ${addrKind === k ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>{l}</button>)}</div>
           {addrKind === "ipv6" ? <><Input key="ip6" name="ip" required placeholder="2804:abcd:1234::1" pattern="^[0-9a-fA-F:]+$" title="Digite um IPv6, ex.: 2804:abcd::1" /><p className="text-xs text-muted-foreground">Libere a porta no firewall IPv6 do MikroTik (<code>/ipv6 firewall filter</code>).</p></> : addrKind === "ip" ? <><Input key="ip" name="ip" required placeholder="200.200.200.10" pattern="^(\d{1,3}\.){3}\d{1,3}$" title="Digite um IPv4, ex.: 200.200.200.10" /><p className="text-xs text-muted-foreground">Se o teste mostrar <b>erro 1003</b>, troque para <b>Domínio / DDNS</b>.</p></>
           : <><Input key="dom" name="ip" required placeholder="xxxx.sn.mynetname.net" /><p className="text-xs text-muted-foreground">Mais confiável. DDNS grátis: <code>/ip cloud set ddns-enabled=yes</code> e cole o <b>dns-name</b> de <code>/ip cloud print</code>.</p></>}</F><div className="grid grid-cols-2 gap-3"><F label="Protocolo"><select name="proto" defaultValue="https" className="h-9 w-full rounded-md border bg-background px-3 text-sm"><option value="https">HTTPS</option><option value="http">HTTP (inseguro)</option></select></F><F label="Porta"><Input name="port" type="number" required defaultValue="443" min="1" max="65535" /></F></div></> : <F label="Endereço na VPN (HTTPS)"><Input name="url" required type="url" placeholder="https://10.8.0.1" /></F>}
         <F label="Usuário da API"><Input name="user" required /></F>
@@ -126,7 +126,7 @@ function MikrotikPage() {
         <Table><TableHeader><TableRow><TableHead>Roteador</TableHead><TableHead>Endereço</TableHead><TableHead>Último teste</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
           <TableBody>{shown.map(r => <TableRow key={r.id}>
             <TableCell className="font-semibold"><span className="flex items-center gap-2"><RouterIcon className="h-4 w-4 text-primary" />{r.name}</span></TableCell>
-            <TableCell className="font-mono text-xs">{r.base_url}</TableCell>
+            <TableCell className="font-mono text-xs">{r.base_url}{r.via_agent && <Badge variant="outline" className="ml-2">via servidor local</Badge>}</TableCell>
             <TableCell>{r.last_check_at ? <span className="flex items-center gap-2 text-sm">{r.last_check_ok ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <XCircle className="h-4 w-4 text-destructive" />}<span className="max-w-xs truncate text-muted-foreground" title={r.last_check_message ?? ""}>{r.last_check_message}</span></span> : <span className="text-sm text-muted-foreground">Nunca testado</span>}</TableCell>
             <TableCell className="space-x-2 text-right whitespace-nowrap">
               <Button size="sm" variant="outline" disabled={busy} onClick={() => run(async () => { await test({ data: { id: r.id } }); await load(); })}>Testar</Button>

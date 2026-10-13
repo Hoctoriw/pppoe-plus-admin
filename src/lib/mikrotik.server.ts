@@ -1,4 +1,4 @@
-export type RouterCreds = { base_url: string; username: string; password: string };
+export type RouterCreds = { base_url: string; username: string; password: string; id?: string; owner_id?: string; via_agent?: boolean };
 
 export const BLOCK_PROFILE = "nexora-bloqueio";
 export const BLOCK_LIST = "nexora_bloqueados";
@@ -7,7 +7,31 @@ export function profileName(planName: string) {
   return "nexora-" + planName.toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
+/** Envia a requisição pela ponte do servidor local (Syncron Agent) e espera a resposta. */
+async function rosViaAgent<T>(r: RouterCreds, method: string, path: string, body?: unknown): Promise<T> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const db = supabaseAdmin as any;
+  const { data: cmd, error } = await db.from("router_commands").insert({ owner_id: r.owner_id, router_id: r.id, method, path, body: body ?? null }).select("id").single();
+  if (error || !cmd) throw new Error("Não foi possível enviar o comando ao servidor local.");
+  const until = Date.now() + 25000;
+  while (Date.now() < until) {
+    await new Promise(res => setTimeout(res, 700));
+    const { data: row } = await db.from("router_commands").select("status, http_status, result").eq("id", cmd.id).single();
+    if (row?.status === "done") {
+      await db.from("router_commands").delete().eq("id", cmd.id);
+      const text = String(row.result ?? "");
+      const st = Number(row.http_status) || 0;
+      if (st === 0) throw new Error("Roteador inacessível pelo servidor local: " + (text || "sem resposta"));
+      if (st >= 400) { let msg = text; try { const j = JSON.parse(text); msg = j.detail || j.message || text; } catch { /* ignore */ } throw new Error(`MikroTik ${st}: ${msg}`); }
+      return (text ? JSON.parse(text) : null) as T;
+    }
+  }
+  await db.from("router_commands").delete().eq("id", cmd.id);
+  throw new Error("Servidor Syncron local não respondeu. Verifique se ele está ligado, com internet e atualizado.");
+}
+
 export async function ros<T = any>(r: RouterCreds, method: string, path: string, body?: unknown): Promise<T> {
+  if (r.via_agent) return rosViaAgent<T>(r, method, path, body);
   const url = r.base_url.replace(/\/+$/, "") + "/rest" + path;
   let res: Response;
   try {
