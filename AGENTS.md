@@ -16,3 +16,4 @@
 - License Pix supports Asaas or Mercado Pago (license_settings.provider); both webhooks re-check status on the provider API before approving — why: fake webhook posts must not unlock licenses.
 - FTTH data is client-edited under tenant RLS; each child stores cable data, selected fiber, and ordered anchors, with live signal and routed-distance calculation. New children of unbalanced splitters default to the higher-percentage pass output.
 - Fiber colors share a browser-safe reference module and semantic CSS tokens; CEO connection diagrams derive from existing parent/fiber/port records, not separate splice records — why: color labels and diagrams must stay consistent without duplicating network data.
+- Routers with via_agent=true are reached through the local Syncron Bridge (public/radius-bridge.sh) polling /api/public/radius/{commands,result}; ros() queues into router_commands (service-role only) and waits — why: the cloud cannot reach private router IPs.
