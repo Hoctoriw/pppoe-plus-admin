@@ -22,7 +22,7 @@ export const listRouters = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertStaff(context);
     const db = await admin();
-    const { data } = await db.from("routers").select("id, name, connection_mode, base_url, username, dhcp_server, active, last_check_at, last_check_ok, last_check_message, radius_enabled, radius_host, radius_auth_port, radius_acct_port").eq("owner_id", context.userId).order("name");
+    const { data } = await db.from("routers").select("id, name, connection_mode, base_url, username, dhcp_server, active, last_check_at, last_check_ok, last_check_message, radius_enabled, radius_host, radius_auth_port, radius_acct_port, via_agent").eq("owner_id", context.userId).order("name");
     return data ?? [];
   });
 
@@ -36,11 +36,12 @@ export const saveRouter = createServerFn({ method: "POST" })
     password: z.string().max(200).optional(),
     dhcp_server: z.string().max(80).optional(),
     connection_mode: z.enum(["vpn", "public_ip"]).default("vpn"),
+    via_agent: z.boolean().default(false),
   }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const db = await admin();
-    const row: any = { name: data.name, base_url: data.base_url, username: data.username, dhcp_server: data.dhcp_server || null, connection_mode: data.connection_mode };
+    const row: any = { name: data.name, base_url: data.base_url, username: data.username, dhcp_server: data.dhcp_server || null, connection_mode: data.connection_mode, via_agent: data.via_agent };
     if (data.password) row["password"] = data.password;
     if (data.id) { const { error } = await db.from("routers").update(row).eq("id", data.id).eq("owner_id", context.userId); if (error) throw new Error(error.message); }
     else { if (!data.password) throw new Error("Informe a senha."); const { error } = await db.from("routers").insert({ ...row, owner_id: context.userId } as any); if (error) throw new Error(error.message); }
