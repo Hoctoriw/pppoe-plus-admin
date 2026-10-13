@@ -22,8 +22,8 @@ export const listRouters = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertStaff(context);
     const db = await admin();
-    const { data } = await db.from("routers").select("id, name, connection_mode, base_url, username, dhcp_server, active, last_check_at, last_check_ok, last_check_message, radius_enabled, radius_host, radius_auth_port, radius_acct_port, via_agent").eq("owner_id", context.userId).order("name");
-    return data ?? [];
+    const { data } = await (db as any).from("routers").select("id, name, connection_mode, base_url, username, dhcp_server, active, last_check_at, last_check_ok, last_check_message, radius_enabled, radius_host, radius_auth_port, radius_acct_port, via_agent").eq("owner_id", context.userId).order("name");
+    return (data ?? []) as { id: string; name: string; connection_mode: string | null; base_url: string; username: string; dhcp_server: string | null; active: boolean; last_check_at: string | null; last_check_ok: boolean | null; last_check_message: string | null; radius_enabled: boolean | null; radius_host: string | null; radius_auth_port: number | null; radius_acct_port: number | null; via_agent: boolean }[];
   });
 
 export const saveRouter = createServerFn({ method: "POST" })
