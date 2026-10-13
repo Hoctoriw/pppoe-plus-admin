@@ -205,8 +205,8 @@ if [ "$q" = "a=net" ]; then
   cat <<HTML
 <!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Rede - Syncron RADIUS</title>
 <style>body{font-family:system-ui,sans-serif;background:#0f1418;color:#e6edf0;padding:24px;max-width:560px}label{display:block;margin-top:12px}input,select{width:100%;padding:8px;background:#172028;color:#e6edf0;border:1px solid #26333d}button{margin-top:16px;background:#e8a23a;border:0;padding:10px 14px;font-weight:600}a{color:#e8a23a}</style>
-<p><a href="/">&larr; Status</a></p><h1>Trocar IP / Rede</h1><p>Atual: <b>$mode</b> &middot; IP $cur &middot; gateway $gw &middot; DNS $dns</p>
-<form method=post action="/?a=setip" onsubmit="return confirm('Aplicar? O painel vai mudar de endereco.')">
+<p><a href="/appliance">&larr; Status</a></p><h1>Trocar IP / Rede</h1><p>Atual: <b>$mode</b> &middot; IP $cur &middot; gateway $gw &middot; DNS $dns</p>
+<form method=post action="/appliance?a=setip" onsubmit="return confirm('Aplicar? O painel vai mudar de endereco.')">
 <label>Modo<select name=mode onchange="document.getElementById('st').style.display=this.value=='dhcp'?'none':'block'"><option value=static>IP estatico</option><option value=dhcp>DHCP (automatico)</option></select></label>
 <div id=st><label>IP/prefixo<input name=ip value="$cur" placeholder="192.168.88.2/24"></label>
 <label>Gateway<input name=gw value="$gw" placeholder="192.168.88.1"></label>
@@ -220,7 +220,7 @@ if [ "${REQUEST_METHOD:-GET}" = POST ]; then
     a=restart-radius) sudo -n /bin/systemctl restart freeradius ;;
     a=sync) sudo -n /bin/systemctl start nexora-agent.service ;;
   esac
-  printf 'Status: 303 See Other\r\nLocation: /\r\n\r\n'; exit 0
+  printf 'Status: 303 See Other\r\nLocation: /appliance\r\n\r\n'; exit 0
 fi
 if [ "$q" = "a=log" ]; then
   printf 'Content-Type: text/plain; charset=utf-8\r\n\r\n'
@@ -249,9 +249,9 @@ cat <<HTML
 <div class=c>Sistema<br>CPU $load · RAM $mem<br>Disco $disk<br>$(uptime -p)</div>
 </div>
 <div class=c><b>Roteadores autorizados</b><table><tr><td><small>Nome</small></td><td><small>IP</small></td></tr>${clients:-<tr><td colspan=2>Nenhum roteador com RADIUS ativo.</td></tr>}</table></div>
-<p><form method=post action="/?a=restart-radius" style=display:inline><button>Reiniciar RADIUS</button></form>
-<form method=post action="/?a=sync" style=display:inline><button>Sincronizar agora</button></form>
-<a class=b href="/?a=log" target=_blank>Ver log do RADIUS</a> <a class=b href="/?a=net">Trocar IP / Rede</a></p>
+<p><form method=post action="/appliance?a=restart-radius" style=display:inline><button>Reiniciar RADIUS</button></form>
+<form method=post action="/appliance?a=sync" style=display:inline><button>Sincronizar agora</button></form>
+<a class=b href="/appliance?a=log" target=_blank>Ver log do RADIUS</a> <a class=b href="/appliance?a=net">Trocar IP / Rede</a></p>
 HTML
 EOF
 chmod 755 /opt/nexora/www/index.cgi
@@ -260,15 +260,34 @@ www-data ALL=(root) NOPASSWD: /bin/systemctl restart freeradius, /bin/systemctl 
 EOF
 chmod 440 /etc/sudoers.d/nexora-web
 chmod 640 /opt/nexora/env; chown root:www-data /opt/nexora/env
-cat > /etc/nginx/sites-available/nexora <<'EOF'
+PANEL_HOST=$(echo "$PANEL_URL" | sed -E 's#^https?://##;s#/.*##')
+cat > /etc/nginx/sites-available/nexora <<EOF
 server {
   listen 80 default_server;
-  auth_basic "Syncron RADIUS";
-  auth_basic_user_file /etc/nginx/nexora.htpasswd;
-  location / {
+  listen [::]:80 default_server;
+  client_max_body_size 200m;
+  # Ferramentas da maquina (IP, logs, reiniciar) - protegidas por senha
+  location /appliance {
+    auth_basic "Syncron RADIUS";
+    auth_basic_user_file /etc/nginx/nexora.htpasswd;
     include fastcgi_params;
     fastcgi_param SCRIPT_FILENAME /opt/nexora/www/index.cgi;
     fastcgi_pass unix:/run/fcgiwrap.socket;
+  }
+  # Painel completo (mesmo acesso do painel na nuvem)
+  location / {
+    resolver 1.1.1.1 8.8.8.8 valid=300s ipv6=off;
+    set \$up https://$PANEL_HOST;
+    proxy_pass \$up;
+    proxy_ssl_server_name on;
+    proxy_ssl_name $PANEL_HOST;
+    proxy_set_header Host $PANEL_HOST;
+    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade \$http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_redirect https://$PANEL_HOST/ /;
+    proxy_read_timeout 120s;
   }
 }
 EOF
@@ -301,6 +320,7 @@ bash /opt/nexora/agent.sh || true
 IP=$(hostname -I | awk '{print $1}')
 echo
 echo "Servidor RADIUS pronto e conectado ao painel. IP deste servidor: $IP"
-echo "Painel web local: http://$IP  (usuário: admin  senha: $WEBPW)"
+echo "Painel completo local: http://$IP  (mesmo login do painel na nuvem)"
+echo "Ferramentas do servidor: http://$IP/appliance  (usuario: admin  senha: $WEBPW)"
 [ -n "$CFTOKEN" ] && echo "Cloudflare Tunnel: $(systemctl is-active cloudflared)"
 echo "Os roteadores com RADIUS ativo no painel são autorizados automaticamente."
