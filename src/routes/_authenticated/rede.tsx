@@ -50,7 +50,7 @@ function NetworkRouteGate() {
 }
 
 
-type Cust = { id: string; full_name: string; latitude: number | null; longitude: number | null; cto_id: string | null; cto_port: number | null };
+type Cust = { id: string; full_name: string; latitude: number | null; longitude: number | null; cto_id: string | null; cto_port: number | null; online: boolean | null };
 const db = supabase as any;
 const DEFAULTS: Record<NodeType, Partial<FtthNode>> = {
   olt: { tx_power_dbm: 5, splitter_ratio: 1, connector_count: 1, fusion_count: 0, ports: 16, splitter_type: "balanced", splitter_tap: 10, parent_leg: "tap", distribution_ratio: 1, slack_m: 10 },
@@ -75,7 +75,7 @@ function NetworkPage() {
   async function load() {
     const [n, c, r] = await Promise.all([
       db.from("ftth_nodes").select("*").order("created_at"),
-      db.from("customers").select("id, full_name, latitude, longitude, cto_id, cto_port").order("full_name"),
+      db.from("customers").select("id, full_name, latitude, longitude, cto_id, cto_port, online").order("full_name"),
       db.from("user_roles").select("owner_id").eq("user_id", user.id).not("owner_id", "is", null).maybeSingle(),
     ]);
     if (n.error) setMessage(n.error.message);
@@ -99,7 +99,7 @@ function NetworkPage() {
   };
   const mapCustomers: MapCustomer[] = customers.filter((c) => c.latitude !== null && c.longitude !== null).map((c) => {
     const s = custSignal(c);
-    return { id: c.id, name: c.full_name, latitude: c.latitude!, longitude: c.longitude!, cto_id: c.cto_id, weak: s !== null && s < MIN_SIGNAL_DBM };
+    return { id: c.id, name: c.full_name, latitude: c.latitude!, longitude: c.longitude!, cto_id: c.cto_id, weak: s !== null && s < MIN_SIGNAL_DBM, online: !!c.online };
   });
 
   function nextFiberForParent(parentId: string | null, total = 12) {
@@ -239,7 +239,7 @@ function NetworkPage() {
           <div className="relative min-h-[520px] lg:min-h-[720px]">
             <NetworkMap nodes={nodes} onFindNode={(id) => { setSelectedId(id); setPlacing(null); }} customers={mapCustomers} selectedId={selectedId} placing={!!placing} onSelect={(id) => { setSelectedId(id); setPlacing(null); }} onMapClick={(a, b) => void handleMapClick(a, b)} onAnchorSelect={setSelectedAnchor} onAnchorMove={(index, point) => { if (!selected) return; const anchors = [...(selected.cable_anchors ?? [])]; anchors[index] = point; void updateAnchors(selected.id, anchors, "Ponto de ancoragem ajustado."); }} onCustomerMove={(id, lat, lng) => void moveCustomer(id, lat, lng)} />
             <div className="absolute bottom-4 left-4 flex flex-wrap gap-3 border bg-card/95 px-3 py-2 text-xs shadow backdrop-blur-sm">
-              <span className="flex items-center gap-1"><span className="h-3 w-3 bg-ftth-olt" />OLT</span><span className="flex items-center gap-1"><span className="h-3 w-3 bg-ftth-ceo" />CEO</span><span className="flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-ftth-cto" />CTO</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-map-active" />Cliente</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-map-suspended" />Sinal fraco</span>
+              <span className="flex items-center gap-1"><span className="h-3 w-3 bg-ftth-olt" />OLT</span><span className="flex items-center gap-1"><span className="h-3 w-3 bg-ftth-ceo" />CEO</span><span className="flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-ftth-cto" />CTO</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-map-active" />Cliente online</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-map-suspended" />Cliente offline</span><span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full border-2 border-foreground" />Sinal fraco</span>
             </div>
           </div>
 
@@ -331,7 +331,7 @@ function NetworkPage() {
                 <div className="space-y-2">{Array.from({ length: selected.ports }, (_, i) => i + 1).map((port) => {
                   const c = customers.find((x) => x.cto_id === selected.id && x.cto_port === port);
                   const s = c ? custSignal(c) : null;
-                  return <div key={port} className="flex items-center gap-2"><span className="w-8 font-mono text-xs">P{port}</span>
+                  return <div key={port} className="flex items-center gap-2"><span className="w-8 font-mono text-xs">P{port}</span><span title={c ? (c.online ? "Conectado" : "Desconectado") : "Livre"} className={`h-2.5 w-2.5 shrink-0 rounded-full ${c ? (c.online ? "bg-map-active" : "bg-map-suspended") : "bg-muted"}`} />
                     <Select value={c?.id ?? "none"} onValueChange={(v) => void assignPort(port, v)}><SelectTrigger className="h-9 flex-1"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Livre</SelectItem>{customers.filter((x) => !x.cto_id || x.id === c?.id).map((x) => <SelectItem key={x.id} value={x.id}>{x.full_name}</SelectItem>)}</SelectContent></Select>
                     <span className={`w-24 text-right font-mono text-xs ${s !== null && s < MIN_SIGNAL_DBM ? "text-destructive" : "text-muted-foreground"}`}>{c ? fmtDbm(s) : ""}</span></div>;
                 })}</div>
