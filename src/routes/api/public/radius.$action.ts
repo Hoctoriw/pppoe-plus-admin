@@ -113,7 +113,7 @@ export const Route = createFileRoute("/api/public/radius/$action")({
         const h = createHash("sha256").update(String((c as any).id)).digest();
         const o = (i: number) => ((h[i] ?? 0) % 254) + 1;
         const blocked = c.status === "suspended";
-        const fixedIp = blocked ? `10.${o(0)}.${o(1)}.${o(2)}` : (c.technology === "ipoe" && c.ipoe_ip ? String(c.ipoe_ip) : `192.168.${o(1)}.${o(2)}`);
+        const fixedIp = blocked ? `10.${o(0)}.${o(1)}.${o(2)}` : (c.ipoe_ip ? String(c.ipoe_ip) : `192.168.${o(1)}.${o(2)}`);
 
         const out: Record<string, string> = { "reply:Framed-IP-Address": fixedIp };
         const p = (c as any).plans;
