@@ -114,11 +114,19 @@ systemctl restart networking`}</pre>
       <pre className={pre}>{`/radius add service=ppp,dhcp,hotspot address=IP_DO_RADIUS secret="SEGREDO" authentication-port=1812 accounting-port=1813 timeout=3s comment="nexora-radius"
 /ppp aaa set use-radius=yes accounting=yes interim-update=5m
 /ip hotspot profile set [find] use-radius=yes radius-interim-update=5m
-/radius incoming set accept=yes`}</pre></div>
-    <div><p className="font-semibold text-foreground">4. Verificar</p>
-      <pre className={pre}>{`systemctl status freeradius nginx nexora-agent
+/radius incoming set accept=yes`}</pre>
+      <p className="mt-1">Portas UDP: <b>1812</b> (autenticação), <b>1813</b> (contabilização) e <b>3799</b> (desconexão, opcional).</p></div>
+    <div><p className="font-semibold text-foreground">4. Faixas de IP dos clientes</p>
+      <p>Ativos recebem IP fixo da faixa <code>192.168.0.0/16</code> (a 192.168.0.x fica para o roteador). Suspensos recebem IP de <code>10.0.0.0/8</code> e entram na lista <code>bloqueados</code>. No MikroTik:</p>
+      <pre className={pre}>{`/ip firewall nat add chain=srcnat src-address=192.168.0.0/16 action=masquerade comment="syncron-ativos"
+/ip firewall nat add chain=srcnat src-address=10.0.0.0/8 action=masquerade comment="syncron-bloqueados"`}</pre>
+      <p className="mt-1">O redirecionamento para a página de aviso está em MikroTik → Página de bloqueio.</p></div>
+    <div><p className="font-semibold text-foreground">5. Ponte local (MikroTik sem IP público)</p>
+      <p>No painel, cadastre o roteador como <b>IP local (via servidor)</b>, ex.: <code>192.168.88.1</code>. O servidor Syncron da sua rede faz a ponte — ele precisa estar ligado.</p></div>
+    <div><p className="font-semibold text-foreground">6. Verificar</p>
+      <pre className={pre}>{`systemctl status freeradius nexora-bridge nexora-agent nginx
 tail -f /var/log/freeradius/radius.log`}</pre>
       <p className="mt-1">Se o FreeRADIUS não subir, rode <code>freeradius -XC</code> e veja a última linha de erro.</p></div>
-    <div><p className="font-semibold text-foreground">5. Central do Assinante</p><p>Divulgue o endereço <code>/central</code> para seus clientes: eles entram com CPF/CNPJ e a senha da conexão para ver plano, consumo e boletos.</p></div>
+    <div><p className="font-semibold text-foreground">7. Central do Assinante</p><p>Divulgue o endereço <code>/central</code> para seus clientes: eles entram com CPF/CNPJ e a senha da conexão para ver plano, consumo e boletos.</p></div>
   </div>;
 }

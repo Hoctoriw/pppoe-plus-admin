@@ -165,7 +165,7 @@ function BlockPageCard() {
   const url = `${origin}/bloqueado${qs.toString() ? `?${qs}` : ""}`;
   return <section className="mt-6 border bg-card p-5 text-sm">
     <h2 className="font-bold">Página de bloqueio para clientes</h2>
-    <p className="mt-1 text-muted-foreground">Clientes suspensos entram na lista <code className="font-mono">nexora_bloqueados</code>. Preencha os dados abaixo, copie o endereço e aplique o script no roteador: quem estiver bloqueado cai direto nessa página ao abrir qualquer site.</p>
+    <p className="mt-1 text-muted-foreground">Clientes suspensos recebem IP da faixa <code className="font-mono">10.0.0.0/8</code> e entram na lista <code className="font-mono">bloqueados</code>; ativos usam <code className="font-mono">192.168.0.0/16</code>. Preencha os dados abaixo, copie o endereço e aplique o script no roteador: quem estiver bloqueado cai direto nessa página ao abrir qualquer site.</p>
     <div className="mt-4 grid gap-4 md:grid-cols-2">
       <F label="Nome do provedor (aparece na página)"><Input value={empresa} onChange={e => setEmpresa(e.target.value)} placeholder="Syncron Telecom" /></F>
       <F label="WhatsApp do atendimento"><Input value={fone} onChange={e => setFone(e.target.value)} placeholder="11999998888" /></F>
@@ -175,11 +175,14 @@ function BlockPageCard() {
       <Button size="sm" variant="outline" onClick={() => void navigator.clipboard.writeText(url)}>Copiar endereço</Button>
       <Button size="sm" variant="outline" asChild><a href={url} target="_blank" rel="noreferrer">Abrir página</a></Button>
     </div>
-    <pre className="mt-4 overflow-x-auto rounded-md bg-muted p-3 font-mono text-xs">{`/ip proxy set enabled=yes port=8181
-/ip proxy access add action=deny redirect-to="${url.replace(/^https?:\/\//, "")}" comment="nexora-bloqueio"
-/ip firewall nat add chain=dstnat src-address-list=nexora_bloqueados protocol=tcp dst-port=80 action=redirect to-ports=8181 comment="nexora-bloqueio"
-/ip firewall filter add chain=forward src-address-list=nexora_bloqueados protocol=udp dst-port=53 action=accept comment="nexora-bloqueio"
-/ip firewall filter add chain=forward src-address-list=nexora_bloqueados action=drop comment="nexora-bloqueio"`}</pre>
+    <pre className="mt-4 overflow-x-auto rounded-md bg-muted p-3 font-mono text-xs">{`/ip firewall nat add chain=srcnat src-address=192.168.0.0/16 action=masquerade comment="syncron-ativos"
+/ip firewall nat add chain=srcnat src-address=10.0.0.0/8 action=masquerade comment="syncron-bloqueados"
+/ip proxy set enabled=yes port=8181
+/ip proxy access add action=deny redirect-to="${url.replace(/^https?:\/\//, "")}" comment="syncron-bloqueio"
+/ip firewall nat add chain=dstnat src-address-list=bloqueados protocol=tcp dst-port=80 action=redirect to-ports=8181 comment="syncron-bloqueio"
+/ip firewall filter add chain=forward src-address-list=bloqueados protocol=udp dst-port=53 action=accept comment="syncron-bloqueio"
+/ip firewall filter add chain=forward src-address-list=bloqueados protocol=tcp dst-port=443 dst-address=[:resolve ${new URL(url).hostname}] action=accept comment="syncron-bloqueio"
+/ip firewall filter add chain=forward src-address-list=bloqueados action=drop comment="syncron-bloqueio"`}</pre>
     <p className="mt-2 text-xs text-muted-foreground">Sites abertos em HTTPS não podem ser redirecionados pelo roteador: o cliente vê erro de conexão até abrir um endereço comum (http). Por isso a página também deve ser divulgada no atendimento.</p>
   </section>;
 }
