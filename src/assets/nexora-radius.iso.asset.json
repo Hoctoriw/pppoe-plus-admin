@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "asset_id": "d2609189-8d42-40b4-9de0-01088ba6fad8",
+  "asset_id": "27c04766-da4d-4a4b-8ec5-0f9121c55e20",
   "project_id": "aa3ec09a-2c1d-4f98-b86b-c50f30443679",
-  "url": "/__l5e/assets-v1/d2609189-8d42-40b4-9de0-01088ba6fad8/syncron-radius_v5.iso",
-  "r2_key": "a/v1/aa3ec09a-2c1d-4f98-b86b-c50f30443679/d2609189-8d42-40b4-9de0-01088ba6fad8/syncron-radius_v5.iso",
-  "original_filename": "syncron-radius_v5.iso",
+  "url": "/__l5e/assets-v1/27c04766-da4d-4a4b-8ec5-0f9121c55e20/syncron-radius_v6.iso",
+  "r2_key": "a/v1/aa3ec09a-2c1d-4f98-b86b-c50f30443679/27c04766-da4d-4a4b-8ec5-0f9121c55e20/syncron-radius_v6.iso",
+  "original_filename": "syncron-radius_v6.iso",
   "size": 709165056,
   "content_type": "application/x-iso9660-image",
-  "created_at": "2026-10-13T00:20:29Z"
+  "created_at": "2026-10-14T00:13:25Z"
 }
