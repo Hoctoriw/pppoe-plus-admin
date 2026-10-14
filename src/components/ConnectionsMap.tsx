@@ -7,6 +7,7 @@ type Point = {
   latitude: number;
   longitude: number;
   status: "active" | "suspended" | "pending" | "cancelled";
+  online: boolean;
 };
 
 type Props = {
@@ -80,10 +81,10 @@ export function ConnectionsMap({ points, selectedId, onSelect, onMoveSelected }:
     const bounds = L.latLngBounds([]);
     for (const point of points) {
       const selected = point.id === selectedId;
-      const color = cssVar(`--map-${point.status}`);
+      const color = cssVar(point.online ? "--map-active" : "--map-suspended");
       const marker = L.circleMarker([point.latitude, point.longitude], {
         radius: selected ? 11 : 8, color: selected ? cssVar("--foreground") : color, weight: selected ? 4 : 2, fillColor: color, fillOpacity: 1,
-      }).bindTooltip(point.name);
+      }).bindTooltip(`${point.name} — ${point.online ? "Conectado" : "Desconectado"}`);
       marker.on("click", (e) => { L.DomEvent.stopPropagation(e); callbacksRef.current.onSelect(point.id); });
       marker.addTo(layer);
       bounds.extend([point.latitude, point.longitude]);
