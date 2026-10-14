@@ -155,7 +155,9 @@ OnUnitActiveSec=60
 [Install]
 WantedBy=timers.target
 EOF
-curl -fsSL "$PANEL_URL/radius-bridge.sh" -o /opt/nexora/bridge.sh; chmod 700 /opt/nexora/bridge.sh
+curl -fsSL "$PANEL_URL/radius-bridge.sh" -o /opt/nexora/bridge.sh.new && grep -q bash /opt/nexora/bridge.sh.new && mv /opt/nexora/bridge.sh.new /opt/nexora/bridge.sh
+[ -s /opt/nexora/bridge.sh ] || cp /opt/nexora/bridge-local.sh /opt/nexora/bridge.sh 2>/dev/null || true
+chmod 700 /opt/nexora/bridge.sh
 cat > /etc/systemd/system/nexora-bridge.service <<'EOF2'
 [Unit]
 Description=Syncron Bridge (MikroTik por IP local)
