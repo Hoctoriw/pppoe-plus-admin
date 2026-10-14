@@ -127,6 +127,6 @@ systemctl restart networking`}</pre>
       <pre className={pre}>{`systemctl status freeradius nexora-bridge nexora-agent nginx
 tail -f /var/log/freeradius/radius.log`}</pre>
       <p className="mt-1">Se o FreeRADIUS não subir, rode <code>freeradius -XC</code> e veja a última linha de erro.</p></div>
-    <div><p className="font-semibold text-foreground">5. Central do Assinante</p><p>Divulgue o endereço <code>/central</code> para seus clientes: eles entram com CPF/CNPJ e a senha da conexão para ver plano, consumo e boletos.</p></div>
+    <div><p className="font-semibold text-foreground">7. Central do Assinante</p><p>Divulgue o endereço <code>/central</code> para seus clientes: eles entram com CPF/CNPJ e a senha da conexão para ver plano, consumo e boletos.</p></div>
   </div>;
 }
