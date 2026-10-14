@@ -111,7 +111,7 @@ export const Route = createFileRoute("/api/public/radius/$action")({
 
         // IP fixo derivado do ID do cliente: ativos em 192.168.0.0/16, bloqueados em 10.0.0.0/8
         const h = createHash("sha256").update(String((c as any).id)).digest();
-        const o = (i: number) => (h[i] % 254) + 1;
+        const o = (i: number) => ((h[i] ?? 0) % 254) + 1;
         const blocked = c.status === "suspended";
         const fixedIp = blocked ? `10.${o(0)}.${o(1)}.${o(2)}` : (c.technology === "ipoe" && c.ipoe_ip ? String(c.ipoe_ip) : `192.168.${o(1)}.${o(2)}`);
 
