@@ -5,6 +5,7 @@ import { Bell, ChevronRight, CircleDollarSign, Crosshair, LayoutDashboard, Locat
 import { AdminOnly } from "@/components/AdminOnly";
 import { NetworkModuleOnly } from "@/components/NetworkModuleOnly";
 import { ConnectionsMap } from "@/components/ConnectionsMap";
+import { IpPoolPanel } from "@/components/IpPoolPanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -115,6 +116,7 @@ function ConnectionsPage() {
             </div>
           </div>
         </section>
+        <IpPoolPanel />
       </div>
     </main>
   </div>;
