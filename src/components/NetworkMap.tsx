@@ -93,7 +93,7 @@ export function NetworkMap({ nodes, customers, selectedId, placing, onSelect, on
       const cto = c.cto_id ? byId.get(c.cto_id) : undefined;
       if (cto) L.polyline([[cto.latitude, cto.longitude], [c.latitude, c.longitude]], { color: cssVar("--muted-foreground"), weight: 2, opacity: 0.8, dashArray: "4 6", interactive: false }).addTo(layer);
       const fill = cssVar(c.online ? "--map-active" : "--map-suspended");
-      const ring = c.weak ? `2px solid ${cssVar("--warning") || cssVar("--foreground")}` : `1px solid ${cssVar("--card")}`;
+      const ring = c.weak ? `2px solid ${cssVar("--foreground")}` : `1px solid ${cssVar("--card")}`;
       const m = L.marker([c.latitude, c.longitude], {
         draggable: true, title: `${c.name} — ${c.online ? "Conectado" : "Desconectado"}${c.weak ? " · sinal fraco" : ""} — arraste para corrigir a posição`,
         icon: L.divIcon({ className: "", iconSize: [12, 12], html: `<div style="width:12px;height:12px;border-radius:999px;background:${fill};border:${ring}"></div>` }),
