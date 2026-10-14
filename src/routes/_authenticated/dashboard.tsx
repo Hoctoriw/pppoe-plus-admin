@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
+import { freeIps, nextFreeIp } from "@/lib/ip-pool";
 import type { Tables } from "@/integrations/supabase/types";
 
 export type Customer = Tables<"customers"> & { plans: Pick<Tables<"plans">, "name"> | null };
@@ -83,7 +84,7 @@ function FixedIpField({ initial, customerId }: { initial: string; customerId?: s
   useEffect(() => { void supabase.from("customers").select("id, ipoe_ip").not("ipoe_ip", "is", null).then(({ data }) => setUsed(new Set((data ?? []).filter(c => c.id !== customerId).map(c => String(c.ipoe_ip))))); }, [customerId]);
   const free = useMemo(() => freeIps(used, 30), [used]);
   const taken = !!value && used.has(value.trim());
-  return <div className="space-y-1"><div className="flex gap-2"><Input name="fixed_ip" list="free-ips" value={value} onChange={e => setValue(e.target.value)} placeholder="Vazio = próximo IP livre (192.168.x.x)" pattern="(\\d{1,3}\\.){3}\\d{1,3}" title="Formato: 192.168.10.20" /><Button type="button" variant="outline" onClick={() => setValue(nextFreeIp(used) ?? "")}>Sugerir livre</Button></div><datalist id="free-ips">{free.map(ip => <option key={ip} value={ip} />)}</datalist>{taken && <p className="text-xs text-destructive">Este IP já está em uso por outro cliente.</p>}</div>;
+  return <div className="space-y-1"><div className="flex gap-2"><Input name="fixed_ip" list="free-ips" value={value} onChange={e => setValue(e.target.value)} placeholder="Vazio = próximo IP livre (192.168.x.x)" pattern="(\d{1,3}\.){3}\d{1,3}" title="Formato: 192.168.10.20" /><Button type="button" variant="outline" onClick={() => setValue(nextFreeIp(used) ?? "")}>Sugerir livre</Button></div><datalist id="free-ips">{free.map(ip => <option key={ip} value={ip} />)}</datalist>{taken && <p className="text-xs text-destructive">Este IP já está em uso por outro cliente.</p>}</div>;
 }
 export function addressFromForm(f: FormData) {
   const v = (k: string) => String(f.get(k) ?? "").trim() || null;

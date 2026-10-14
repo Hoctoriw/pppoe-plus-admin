@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { freeIps } from "@/lib/ip-pool";
 import { createHash, timingSafeEqual } from "crypto";
 
 function authorized(request: Request) {
@@ -102,7 +103,7 @@ export const Route = createFileRoute("/api/public/radius/$action")({
         if (!user) return new Response("Missing user", { status: 400 });
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-        const cols = "id, status, technology, pppoe_password, ipoe_ip, plans(upload_mbps, download_mbps)";
+        const cols = "id, owner_id, status, technology, pppoe_password, ipoe_ip, plans(upload_mbps, download_mbps)";
         let { data: c } = await supabaseAdmin.from("customers").select(cols).eq("pppoe_username", user).in("technology", ["pppoe", "hotspot"]).maybeSingle();
         if (!c && MAC.test(user)) {
           ({ data: c } = await supabaseAdmin.from("customers").select(cols).eq("mac_address", user.replace(/-/g, ":").toUpperCase()).eq("technology", "ipoe").maybeSingle());
@@ -113,7 +114,19 @@ export const Route = createFileRoute("/api/public/radius/$action")({
         const h = createHash("sha256").update(String((c as any).id)).digest();
         const o = (i: number) => ((h[i] ?? 0) % 254) + 1;
         const blocked = c.status === "suspended";
-        const fixedIp = blocked ? `10.${o(0)}.${o(1)}.${o(2)}` : (c.ipoe_ip ? String(c.ipoe_ip) : `192.168.${o(1)}.${o(2)}`);
+        let fixedIp = blocked ? `10.${o(0)}.${o(1)}.${o(2)}` : (c.ipoe_ip ? String(c.ipoe_ip) : "");
+        if (!fixedIp) {
+          // Reserva o próximo IP livre da pool 192.168.0.0/16 do provedor e grava no cadastro (fica fixo)
+          const { data: usedRows } = await supabaseAdmin.from("customers").select("ipoe_ip").eq("owner_id", (c as any).owner_id).not("ipoe_ip", "is", null);
+          const used = new Set((usedRows ?? []).map(r => String(r.ipoe_ip)));
+          for (const ip of freeIps(used, 5)) {
+            const { data: upd } = await supabaseAdmin.from("customers").update({ ipoe_ip: ip }).eq("id", (c as any).id).is("ipoe_ip", null).select("ipoe_ip");
+            if (upd?.length) { fixedIp = String(upd[0].ipoe_ip); break; }
+            const { data: cur } = await supabaseAdmin.from("customers").select("ipoe_ip").eq("id", (c as any).id).maybeSingle();
+            if (cur?.ipoe_ip) { fixedIp = String(cur.ipoe_ip); break; }
+          }
+          if (!fixedIp) fixedIp = `192.168.${o(1)}.${o(2)}`;
+        }
 
         const out: Record<string, string> = { "reply:Framed-IP-Address": fixedIp };
         const p = (c as any).plans;
