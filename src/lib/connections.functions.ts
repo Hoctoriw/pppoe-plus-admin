@@ -17,6 +17,7 @@ export type ConnectionCustomer = {
   postal_code: string | null;
   latitude: number | null;
   longitude: number | null;
+  online: boolean;
   plans: { name: string } | null;
 };
 
@@ -57,7 +58,7 @@ export const listConnectionCustomers = createServerFn({ method: "GET" })
     const owner = await ownerOf(context.supabase, context.userId);
     const { data, error } = await context.supabase
       .from("customers")
-      .select("id,full_name,technology,status,pppoe_username,ipoe_ip,street,address_number,district,city,state,postal_code,latitude,longitude,plans(name)")
+      .select("id,full_name,technology,status,pppoe_username,ipoe_ip,street,address_number,district,city,state,postal_code,latitude,longitude,online,plans(name)")
       .eq("owner_id", owner)
       .order("full_name");
     if (error) throw new Error(error.message);
