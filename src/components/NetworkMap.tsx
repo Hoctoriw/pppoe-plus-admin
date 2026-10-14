@@ -4,7 +4,7 @@ import { addBaseLayers, cssVar, loadMaps } from "@/components/ConnectionsMap";
 import { geocodePlaceQuery, type PlaceResult } from "@/lib/connections.functions";
 import type { CableAnchor, FtthNode } from "@/lib/ftth";
 
-export type MapCustomer = { id: string; name: string; latitude: number; longitude: number; cto_id: string | null; weak: boolean };
+export type MapCustomer = { id: string; name: string; latitude: number; longitude: number; cto_id: string | null; weak: boolean; online: boolean };
 
 type Props = {
   nodes: FtthNode[];
@@ -92,10 +92,11 @@ export function NetworkMap({ nodes, customers, selectedId, placing, onSelect, on
     for (const c of customers) {
       const cto = c.cto_id ? byId.get(c.cto_id) : undefined;
       if (cto) L.polyline([[cto.latitude, cto.longitude], [c.latitude, c.longitude]], { color: cssVar("--muted-foreground"), weight: 2, opacity: 0.8, dashArray: "4 6", interactive: false }).addTo(layer);
-      const fill = cssVar(c.weak ? "--map-suspended" : "--map-active");
+      const fill = cssVar(c.online ? "--map-active" : "--map-suspended");
+      const ring = c.weak ? `2px solid ${cssVar("--foreground")}` : `1px solid ${cssVar("--card")}`;
       const m = L.marker([c.latitude, c.longitude], {
-        draggable: true, title: `${c.name} — arraste para corrigir a posição`,
-        icon: L.divIcon({ className: "", iconSize: [12, 12], html: `<div style="width:12px;height:12px;border-radius:999px;background:${fill};border:1px solid ${cssVar("--card")}"></div>` }),
+        draggable: true, title: `${c.name} — ${c.online ? "Conectado" : "Desconectado"}${c.weak ? " · sinal fraco" : ""} — arraste para corrigir a posição`,
+        icon: L.divIcon({ className: "", iconSize: [12, 12], html: `<div style="width:12px;height:12px;border-radius:999px;background:${fill};border:${ring}"></div>` }),
       });
       m.on("dragend", () => { const p = m.getLatLng(); cb.current.onCustomerMove(c.id, p.lat, p.lng); });
       m.addTo(layer);
