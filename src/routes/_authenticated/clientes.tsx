@@ -77,7 +77,7 @@ function Clientes() {
       plan_id: String(f.get("plan") ?? "") || null, router_id: String(f.get("router") ?? "") || null,
       pppoe_username: technology !== "ipoe" ? String(f.get("connection")) : null,
       pppoe_password: technology !== "ipoe" ? String(f.get("secret")) || null : null,
-      ipoe_ip: technology === "ipoe" ? String(f.get("connection")) : null,
+      ipoe_ip: technology === "ipoe" ? String(f.get("connection")) : (String(f.get("fixed_ip") ?? "").trim() || null),
       mac_address: technology === "ipoe" ? String(f.get("mac")).trim().toUpperCase().replace(/-/g, ":") : null,
       notes: String(f.get("notes") ?? "") || null,
       due_day: Number(f.get("due_day")) || null,
