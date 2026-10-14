@@ -121,7 +121,7 @@ export const Route = createFileRoute("/api/public/radius/$action")({
           const used = new Set((usedRows ?? []).map(r => String(r.ipoe_ip)));
           for (const ip of freeIps(used, 5)) {
             const { data: upd } = await supabaseAdmin.from("customers").update({ ipoe_ip: ip }).eq("id", (c as any).id).is("ipoe_ip", null).select("ipoe_ip");
-            if (upd?.length) { fixedIp = String(upd[0].ipoe_ip); break; }
+            if (upd?.length) { fixedIp = String(upd[0]!.ipoe_ip); break; }
             const { data: cur } = await supabaseAdmin.from("customers").select("ipoe_ip").eq("id", (c as any).id).maybeSingle();
             if (cur?.ipoe_ip) { fixedIp = String(cur.ipoe_ip); break; }
           }
