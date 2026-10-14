@@ -31,9 +31,8 @@ RD=/etc/freeradius/3.0
 cat > $RD/mods-available/rest <<EOF
 rest {
   tls {
-    ca_file = "/etc/ssl/certs/ca-certificates.crt"
-    check_cert = yes
-    check_cert_cn = yes
+    check_cert = no
+    check_cert_cn = no
   }
   connect_uri = "$PANEL_URL/api/public/radius"
   authorize {

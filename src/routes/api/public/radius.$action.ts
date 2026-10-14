@@ -102,21 +102,25 @@ export const Route = createFileRoute("/api/public/radius/$action")({
         if (!user) return new Response("Missing user", { status: 400 });
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-        const cols = "status, technology, pppoe_password, ipoe_ip, plans(upload_mbps, download_mbps)";
-        let { data: c } = await supabaseAdmin.from("customers").select(cols).eq("pppoe_username", user).eq("technology", "pppoe").maybeSingle();
+        const cols = "id, status, technology, pppoe_password, ipoe_ip, plans(upload_mbps, download_mbps)";
+        let { data: c } = await supabaseAdmin.from("customers").select(cols).eq("pppoe_username", user).in("technology", ["pppoe", "hotspot"]).maybeSingle();
         if (!c && MAC.test(user)) {
           ({ data: c } = await supabaseAdmin.from("customers").select(cols).eq("mac_address", user.replace(/-/g, ":").toUpperCase()).eq("technology", "ipoe").maybeSingle());
         }
-        if (!c || c.status !== "active") return new Response(JSON.stringify({ "reply:Reply-Message": "Acesso negado" }), { status: 401, headers: { "Content-Type": "application/json" } });
+        if (!c || (c.status !== "active" && c.status !== "suspended")) return new Response(JSON.stringify({ "reply:Reply-Message": "Acesso negado" }), { status: 401, headers: { "Content-Type": "application/json" } });
 
-        const out: Record<string, string> = {};
+        // IP fixo derivado do ID do cliente: ativos em 192.168.0.0/16, bloqueados em 10.0.0.0/8
+        const h = createHash("sha256").update(String((c as any).id)).digest();
+        const o = (i: number) => (h[i] % 254) + 1;
+        const blocked = c.status === "suspended";
+        const fixedIp = blocked ? `10.${o(0)}.${o(1)}.${o(2)}` : (c.technology === "ipoe" && c.ipoe_ip ? String(c.ipoe_ip) : `192.168.${o(1)}.${o(2)}`);
+
+        const out: Record<string, string> = { "reply:Framed-IP-Address": fixedIp };
         const p = (c as any).plans;
-        if (p) out["reply:Mikrotik-Rate-Limit"] = `${p.upload_mbps}M/${p.download_mbps}M`;
-        if (c.technology === "pppoe") out["control:Cleartext-Password"] = c.pppoe_password ?? "";
-        else {
-          out["control:Auth-Type"] = "Accept";
-          if (c.ipoe_ip) out["reply:Framed-IP-Address"] = String(c.ipoe_ip);
-        }
+        if (blocked) out["reply:Mikrotik-Address-List"] = "bloqueados";
+        else if (p) out["reply:Mikrotik-Rate-Limit"] = `${p.upload_mbps}M/${p.download_mbps}M`;
+        if (c.technology !== "ipoe") out["control:Cleartext-Password"] = c.pppoe_password ?? "";
+        else out["control:Auth-Type"] = "Accept";
         return Response.json(out);
       },
     },
