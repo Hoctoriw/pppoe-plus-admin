@@ -361,8 +361,7 @@ export const createAutoLicensePayment = createServerFn({ method: "POST" })
     const since = new Date(Date.now() - 15 * 60000).toISOString();
     const { data: recent } = await db.from("license_payments").select("id, pix_payload").eq("user_id", context.userId).eq("plan_id", plan.id).eq("status", "pending").not("provider_charge_id", "is", null).not("pix_payload", "is", null).gte("created_at", since).order("created_at", { ascending: false }).limit(1).maybeSingle();
     if (recent?.pix_payload) {
-      const QR = (await import("qrcode")).default;
-      return { id: recent.id as string, payload: recent.pix_payload as string, image: await QR.toDataURL(recent.pix_payload as string, { width: 240, margin: 1 }), amount: Number(plan.price) };
+      return { id: recent.id as string, payload: recent.pix_payload as string, image: "", amount: Number(plan.price) };
     }
     const { data: prof } = await db.from("profiles").select("full_name").eq("id", context.userId).maybeSingle();
     const { data: u } = await db.auth.admin.getUserById(context.userId);

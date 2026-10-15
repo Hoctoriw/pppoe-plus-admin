@@ -32,7 +32,7 @@ export function PixCheckout() {
       if (auto) {
         if (!doc.trim()) { setMsg("Informe seu CPF ou CNPJ."); return; }
         const r = await autoFn({ data: { planId: plan.id, cpfCnpj: doc } });
-        setQr({ img: r.image, code: r.payload, plan }); setPayId(r.id); return;
+        setQr({ img: r.image || await QRCode.toDataURL(r.payload, { width: 240, margin: 1 }), code: r.payload, plan }); setPayId(r.id); return;
       }
       const pay = await payFn({ data: { planId: plan.id } });
       const code = pixPayload(pay.amount, pay.txid);
