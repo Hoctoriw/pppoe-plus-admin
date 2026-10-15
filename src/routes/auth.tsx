@@ -79,7 +79,7 @@ function AuthPage() {
         {tab === "guia" ? <Guia /> : tab === "download" ? <div>
           <p className="text-sm font-semibold text-primary">SERVIDOR RADIUS</p>
           <h2 className="mt-2 text-3xl font-extrabold">Baixar a ISO Syncron</h2>
-          <p className="mt-2 text-sm text-muted-foreground">Debian 12 + FreeRADIUS + painel web local, instalação automática em modo texto.</p>
+          <p className="mt-2 text-sm text-muted-foreground">syncron-radius + painel web local, instalação automática em modo texto.</p>
           <Button asChild className="mt-6 h-11 w-full"><a href={iso.url} download={iso.original_filename}><Download />Baixar {iso.original_filename} ({Math.round(iso.size / 1048576)} MB)</a></Button>
           <ol className="mt-6 list-decimal space-y-2 pl-5 text-sm text-muted-foreground">
             <li>Grave num pendrive com Rufus ou Balena Etcher, ou use numa máquina virtual.</li>
