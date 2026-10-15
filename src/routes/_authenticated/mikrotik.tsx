@@ -33,6 +33,7 @@ function RadiusInstaller() {
         <span className="font-semibold">{a.hostname}</span><span className="font-mono text-xs">{a.local_ip}</span>
         <Badge variant="outline">v{a.version || "?"}</Badge>
         <span className="text-xs text-muted-foreground">{online(a.last_seen_at) ? (a.radius_ok ? "online" : "RADIUS parado") : "offline"} · último contato {new Date(a.last_seen_at).toLocaleString("pt-BR")} · {a.uptime}</span>
+        {a.local_ip && <Button size="sm" variant="outline" className="ml-auto" asChild><a href={`http://${a.local_ip}/appliance?a=net`} target="_blank" rel="noreferrer">Trocar IP do servidor</a></Button>}
       </li>)}</ul> : <p className="mt-1 text-xs text-muted-foreground">Nenhum servidor conectado ainda.</p>}
     </div>
 
