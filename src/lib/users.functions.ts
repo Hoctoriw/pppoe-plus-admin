@@ -249,11 +249,18 @@ export const deleteLicensePlan = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// Só o dono da conta compra licença (funcionários usam a licença do dono).
+async function assertNotTeamMember(db: any, userId: string) {
+  const { data: rows } = await db.from("user_roles").select("owner_id").eq("user_id", userId);
+  if ((rows ?? []).some((r: any) => r.owner_id)) throw new Error("Somente o dono da conta pode renovar a licença.");
+}
+
 export const createLicensePayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ planId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const db = await admin();
+    await assertNotTeamMember(db, context.userId);
     const { data: plan } = await db.from("license_plans").select("*").eq("id", data.planId).eq("active", true).maybeSingle();
     if (!plan) throw new Error("Plano indisponível.");
     const txid = "NX" + crypto.randomUUID().replace(/-/g, "").slice(0, 20).toUpperCase();
@@ -349,6 +356,14 @@ export const createAutoLicensePayment = createServerFn({ method: "POST" })
     if (!s?.active || !s.api_key) throw new Error("Pagamento automático indisponível.");
     const { data: plan } = await db.from("license_plans").select("*").eq("id", data.planId).eq("active", true).maybeSingle();
     if (!plan) throw new Error("Plano indisponível.");
+    await assertNotTeamMember(db, context.userId);
+    // Reaproveita Pix pendente recente do mesmo plano (evita cobranças repetidas no provedor)
+    const since = new Date(Date.now() - 15 * 60000).toISOString();
+    const { data: recent } = await db.from("license_payments").select("id, pix_payload").eq("user_id", context.userId).eq("plan_id", plan.id).eq("status", "pending").not("provider_charge_id", "is", null).not("pix_payload", "is", null).gte("created_at", since).order("created_at", { ascending: false }).limit(1).maybeSingle();
+    if (recent?.pix_payload) {
+      const QR = (await import("qrcode")).default;
+      return { id: recent.id as string, payload: recent.pix_payload as string, image: await QR.toDataURL(recent.pix_payload as string, { width: 240, margin: 1 }), amount: Number(plan.price) };
+    }
     const { data: prof } = await db.from("profiles").select("full_name").eq("id", context.userId).maybeSingle();
     const { data: u } = await db.auth.admin.getUserById(context.userId);
     const txid = "NX" + crypto.randomUUID().replace(/-/g, "").slice(0, 20).toUpperCase();
@@ -367,7 +382,10 @@ export const checkLicensePayment = createServerFn({ method: "POST" })
     const db = await admin();
     const { data: p } = await db.from("license_payments").select("*").eq("id", data.id).eq("user_id", context.userId).maybeSingle();
     if (!p) throw new Error("Pagamento não encontrado.");
-    if (p.status === "pending" && p.provider_charge_id) {
+    // Cooldown: consulta o provedor no máximo a cada 15s por cobrança
+    const fresh = Date.now() - new Date(p.updated_at).getTime() < 15000;
+    if (p.status === "pending" && p.provider_charge_id && !fresh) {
+      await db.from("license_payments").update({ updated_at: new Date().toISOString() }).eq("id", p.id).eq("status", "pending");
       const s = await loadLicenseSettings(db);
       if (s?.api_key) {
         const { licensePixStatus } = await import("./billing.server");

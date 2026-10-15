@@ -22,7 +22,7 @@ export function PixCheckout() {
   useEffect(() => { plansFn().then(p => setPlans(p.filter(x => x.active))).catch(e => setMsg(e.message)); modeFn().then(m => setAuto(m.automatic)).catch(() => {}); }, []);
   useEffect(() => {
     if (!payId) return;
-    const t = setInterval(() => { checkFn({ data: { id: payId } }).then(r => { if (r.paid) { setPaid(true); clearInterval(t); setTimeout(() => window.location.reload(), 1500); } }).catch(() => {}); }, 5000);
+    const t = setInterval(() => { checkFn({ data: { id: payId } }).then(r => { if (r.paid) { setPaid(true); clearInterval(t); setTimeout(() => window.location.reload(), 1500); } }).catch(() => {}); }, 10000);
     return () => clearInterval(t);
   }, [payId]);
 
