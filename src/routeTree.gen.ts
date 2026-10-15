@@ -20,6 +20,7 @@ import { Route as AuthenticatedConexoesRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedEquipeRouteImport } from './routes/_authenticated/equipe'
 import { Route as AuthenticatedFinanceiroRouteImport } from './routes/_authenticated/financeiro'
+import { Route as AuthenticatedLicencaRouteImport } from './routes/_authenticated/licenca'
 import { Route as AuthenticatedMikrotikRouteImport } from './routes/_authenticated/mikrotik'
 import { Route as AuthenticatedPlanosRouteImport } from './routes/_authenticated/planos'
 import { Route as AuthenticatedPrecosRouteImport } from './routes/_authenticated/precos'
@@ -84,6 +85,11 @@ const AuthenticatedEquipeRoute = AuthenticatedEquipeRouteImport.update({
 const AuthenticatedFinanceiroRoute = AuthenticatedFinanceiroRouteImport.update({
   id: '/financeiro',
   path: '/financeiro',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedLicencaRoute = AuthenticatedLicencaRouteImport.update({
+  id: '/licenca',
+  path: '/licenca',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedMikrotikRoute = AuthenticatedMikrotikRouteImport.update({
@@ -157,6 +163,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/equipe': typeof AuthenticatedEquipeRoute
   '/financeiro': typeof AuthenticatedFinanceiroRoute
+  '/licenca': typeof AuthenticatedLicencaRoute
   '/mikrotik': typeof AuthenticatedMikrotikRoute
   '/planos': typeof AuthenticatedPlanosRoute
   '/precos': typeof AuthenticatedPrecosRoute
@@ -180,6 +187,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/equipe': typeof AuthenticatedEquipeRoute
   '/financeiro': typeof AuthenticatedFinanceiroRoute
+  '/licenca': typeof AuthenticatedLicencaRoute
   '/mikrotik': typeof AuthenticatedMikrotikRoute
   '/planos': typeof AuthenticatedPlanosRoute
   '/precos': typeof AuthenticatedPrecosRoute
@@ -205,6 +213,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/equipe': typeof AuthenticatedEquipeRoute
   '/_authenticated/financeiro': typeof AuthenticatedFinanceiroRoute
+  '/_authenticated/licenca': typeof AuthenticatedLicencaRoute
   '/_authenticated/mikrotik': typeof AuthenticatedMikrotikRoute
   '/_authenticated/planos': typeof AuthenticatedPlanosRoute
   '/_authenticated/precos': typeof AuthenticatedPrecosRoute
@@ -230,6 +239,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/equipe'
     | '/financeiro'
+    | '/licenca'
     | '/mikrotik'
     | '/planos'
     | '/precos'
@@ -253,6 +263,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/equipe'
     | '/financeiro'
+    | '/licenca'
     | '/mikrotik'
     | '/planos'
     | '/precos'
@@ -277,6 +288,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/equipe'
     | '/_authenticated/financeiro'
+    | '/_authenticated/licenca'
     | '/_authenticated/mikrotik'
     | '/_authenticated/planos'
     | '/_authenticated/precos'
@@ -383,6 +395,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFinanceiroRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/licenca': {
+      id: '/_authenticated/licenca'
+      path: '/licenca'
+      fullPath: '/licenca'
+      preLoaderRoute: typeof AuthenticatedLicencaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/mikrotik': {
       id: '/_authenticated/mikrotik'
       path: '/mikrotik'
@@ -470,6 +489,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEquipeRoute: typeof AuthenticatedEquipeRoute
   AuthenticatedFinanceiroRoute: typeof AuthenticatedFinanceiroRoute
+  AuthenticatedLicencaRoute: typeof AuthenticatedLicencaRoute
   AuthenticatedMikrotikRoute: typeof AuthenticatedMikrotikRoute
   AuthenticatedPlanosRoute: typeof AuthenticatedPlanosRoute
   AuthenticatedPrecosRoute: typeof AuthenticatedPrecosRoute
@@ -484,6 +504,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEquipeRoute: AuthenticatedEquipeRoute,
   AuthenticatedFinanceiroRoute: AuthenticatedFinanceiroRoute,
+  AuthenticatedLicencaRoute: AuthenticatedLicencaRoute,
   AuthenticatedMikrotikRoute: AuthenticatedMikrotikRoute,
   AuthenticatedPlanosRoute: AuthenticatedPlanosRoute,
   AuthenticatedPrecosRoute: AuthenticatedPrecosRoute,
