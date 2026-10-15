@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
-import { Download, Eye, EyeOff, Radio, ShieldCheck } from "lucide-react";
+import { Activity, Download, Eye, EyeOff, MapPin, Radio, Ruler, Search, ShieldCheck, Split, Wifi } from "lucide-react";
 import iso from "@/assets/nexora-radius.iso.asset.json";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,7 +57,19 @@ function AuthPage() {
   return <main className="grid min-h-screen lg:grid-cols-[1.05fr_.95fr]">
     <section className="hidden bg-sidebar p-12 text-sidebar-foreground lg:flex lg:flex-col lg:justify-between">
       <div className="flex items-center gap-3 text-xl font-extrabold"><span className="flex h-10 w-10 items-center justify-center rounded-md bg-sidebar text-sidebar-primary-foreground"><img src="/syncron-logo.png" alt="Syncron" className="h-full w-full object-contain" /></span>SYNCRON <span className="text-sidebar-primary">ISP</span></div>
-      <div className="max-w-xl"><p className="mb-6 text-sm font-semibold uppercase text-sidebar-primary">Operação sob controle</p><h1 className="text-5xl font-extrabold leading-tight">Sua rede, seus clientes e seus planos em um só lugar.</h1><p className="mt-6 max-w-lg text-lg text-sidebar-foreground/70">Uma base moderna para operar acessos PPPoE e IPoE com clareza e segurança.</p></div>
+      <div className="max-w-xl"><p className="mb-6 text-sm font-semibold uppercase text-sidebar-primary">Operação sob controle</p><h1 className="text-5xl font-extrabold leading-tight">Sua rede, seus clientes e seus planos em um só lugar.</h1><p className="mt-6 max-w-lg text-lg text-sidebar-foreground/70">Uma base moderna para operar acessos PPPoE e IPoE com clareza e segurança.</p>
+        <div className="mt-8 max-w-lg rounded-md border border-sidebar-border bg-sidebar-accent/40 p-5">
+          <p className="text-sm font-bold uppercase text-sidebar-primary">O que dá para fazer no mapa da Rede FTTH</p>
+          <ul className="mt-3 space-y-2.5 text-sm text-sidebar-foreground/75">
+            <li className="flex gap-2.5"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-sidebar-primary" /><span>Marcar OLT, CEO e CTO direto no mapa, na posição real de cada caixa.</span></li>
+            <li className="flex gap-2.5"><Split className="mt-0.5 h-4 w-4 shrink-0 text-sidebar-primary" /><span>Escolher o splitter de cada caixa — balanceado de 1:2 a 1:64 ou desbalanceado — e a porta e a fibra usadas em cada cabo.</span></li>
+            <li className="flex gap-2.5"><Ruler className="mt-0.5 h-4 w-4 shrink-0 text-sidebar-primary" /><span>Desenhar o trajeto do cabo com pontos de ancoragem em postes, esquinas e curvas, e ver a metragem com as sobras deixadas em cada caixa.</span></li>
+            <li className="flex gap-2.5"><Activity className="mt-0.5 h-4 w-4 shrink-0 text-sidebar-primary" /><span>Conferir o sinal que chega e o sinal que sai de cada caixa, com aviso quando ficar abaixo de -27 dBm.</span></li>
+            <li className="flex gap-2.5"><Wifi className="mt-0.5 h-4 w-4 shrink-0 text-sidebar-primary" /><span>Ligar clientes às portas da CTO e ver no mapa quem está conectado (verde) ou desconectado (vermelho).</span></li>
+            <li className="flex gap-2.5"><Search className="mt-0.5 h-4 w-4 shrink-0 text-sidebar-primary" /><span>Buscar por cidade, endereço ou nome de uma caixa para localizá-la na rede.</span></li>
+          </ul>
+        </div>
+      </div>
       <div className="flex items-center gap-2 text-sm text-sidebar-foreground/60"><ShieldCheck className="h-4 w-4 text-sidebar-primary" />Acesso protegido e dados isolados por função</div>
     </section>
     <section className="flex items-center justify-center bg-background px-6 py-12">
