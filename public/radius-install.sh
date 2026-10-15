@@ -220,7 +220,8 @@ if [ "$q" = "a=net" ]; then
   cat <<HTML
 <!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Rede - Syncron RADIUS</title>
 <style>body{font-family:system-ui,sans-serif;background:#0f1418;color:#e6edf0;padding:24px;max-width:560px}label{display:block;margin-top:12px}input,select{width:100%;padding:8px;background:#172028;color:#e6edf0;border:1px solid #26333d}button{margin-top:16px;background:#e8a23a;border:0;padding:10px 14px;font-weight:600}a{color:#e8a23a}</style>
-<p><a href="/appliance">&larr; Status</a></p><h1>Trocar IP / Rede</h1><p>Atual: <b>$mode</b> &middot; IP $cur &middot; gateway $gw &middot; DNS $dns</p>
+<style>.tabs a{display:inline-block;padding:8px 14px;border:1px solid #26333d;margin-right:4px;text-decoration:none;color:#e6edf0}.tabs a.on{background:#e8a23a;color:#111;font-weight:600}</style>
+<p class=tabs><a href="/appliance">Status</a><a class=on href="/appliance?a=net">Trocar IP</a><a href="/appliance?a=log" target=_blank>Log</a></p><h1>Trocar IP / Rede</h1><p>Atual: <b>$mode</b> &middot; IP $cur &middot; gateway $gw &middot; DNS $dns</p>
 <form method=post action="/appliance?a=setip" onsubmit="return confirm('Aplicar? O painel vai mudar de endereco.')">
 <label>Modo<select name=mode onchange="document.getElementById('st').style.display=this.value=='dhcp'?'none':'block'"><option value=static>IP estatico</option><option value=dhcp>DHCP (automatico)</option></select></label>
 <div id=st><label>IP/prefixo<input name=ip value="$cur" placeholder="192.168.88.2/24"></label>
@@ -256,6 +257,8 @@ cat <<HTML
 <style>body{font-family:system-ui,sans-serif;background:#0f1418;color:#e6edf0;margin:0;padding:24px}h1{margin:0 0 4px}small{color:#8aa}
 .g{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin:16px 0}.c{background:#172028;border:1px solid #26333d;padding:14px}
 .ok{color:#4ade80}.bad{color:#f87171}table{width:100%;border-collapse:collapse}td{border-top:1px solid #26333d;padding:6px}button,a.b{background:#e8a23a;color:#111;border:0;padding:8px 12px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block;margin-right:6px}</style>
+<style>.tabs a{display:inline-block;padding:8px 14px;border:1px solid #26333d;margin:0 4px 16px 0;text-decoration:none;color:#e6edf0}.tabs a.on{background:#e8a23a;color:#111;font-weight:600}</style>
+<p class=tabs><a class=on href="/appliance">Status</a><a href="/appliance?a=net">Trocar IP</a><a href="/appliance?a=log" target=_blank>Log</a></p>
 <h1>Syncron RADIUS</h1><small>$(hostname) · IP local $(hostname -I | awk '{print $1}') · versão $(cat /opt/nexora/version 2>/dev/null || echo ?)</small>
 <div class=g>
 <div class=c>FreeRADIUS (1812/1813 UDP)<br>$(st freeradius)</div>
