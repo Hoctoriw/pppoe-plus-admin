@@ -146,7 +146,7 @@ export async function createLicensePix(s: LicenseSettings, buyer: { id: string; 
   if (s.provider === "mercadopago") {
     const pay = await mp(s.api_key!, "POST", "/v1/payments", {
       transaction_amount: Math.round(amount * 100) / 100, description, payment_method_id: "pix", external_reference: ref,
-      payer: { email: buyer.email || "cliente@nexora.app", first_name: buyer.name || "Cliente", identification: { type: doc.length > 11 ? "CNPJ" : "CPF", number: doc } },
+      payer: { email: buyer.email || "cliente@nexora.app", first_name: (buyer.name || "Cliente").trim().split(/\s+/)[0], last_name: (buyer.name || "").trim().split(/\s+/).slice(1).join(" ") || "Syncron", identification: { type: doc.length > 11 ? "CNPJ" : "CPF", number: doc } },
     });
     const td = pay?.point_of_interaction?.transaction_data;
     if (!td?.qr_code) throw new Error("Mercado Pago não retornou o QR Code Pix. Verifique se sua conta tem chave Pix cadastrada.");
