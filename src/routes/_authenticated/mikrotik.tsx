@@ -35,6 +35,7 @@ function RadiusInstaller() {
         <span className="text-xs text-muted-foreground">{online(a.last_seen_at) ? (a.radius_ok ? "online" : "RADIUS parado") : "offline"} · último contato {new Date(a.last_seen_at).toLocaleString("pt-BR")} · {a.uptime}</span>
         {a.local_ip && <Button size="sm" variant="outline" className="ml-auto" asChild><a href={`http://${a.local_ip}/appliance?a=net`} target="_blank" rel="noreferrer">Trocar IP do servidor</a></Button>}
       </li>)}</ul> : <p className="mt-1 text-xs text-muted-foreground">Nenhum servidor conectado ainda.</p>}
+      <p className="mt-2 text-xs text-muted-foreground"><b>Appliance:</b> abra <code>http://IP-do-servidor/appliance</code> e entre com seu e-mail e senha do painel (usuário master). Lá você vê o status, os roteadores autorizados, troca o IP, lê o log e reinicia/sincroniza o RADIUS.</p>
     </div>
 
     {!token ? <Button className="mt-4" size="sm" onClick={reveal}>Gerar comandos da ISO e instalação</Button> : <div className="mt-4 space-y-3">

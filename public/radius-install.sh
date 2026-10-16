@@ -181,6 +181,28 @@ WEBPW="${NEXORA_WEB_PW:-}"
 echo "$WEBPW" > /opt/nexora/webpw; chmod 600 /opt/nexora/webpw
 printf 'admin:%s\n' "$(openssl passwd -apr1 "$WEBPW")" > /etc/nginx/nexora.htpasswd
 chown root:www-data /etc/nginx/nexora.htpasswd; chmod 640 /etc/nginx/nexora.htpasswd
+chown root:www-data /opt/nexora/webpw; chmod 640 /opt/nexora/webpw
+mkdir -p /opt/nexora/www /var/cache/nexora-auth; chown www-data /var/cache/nexora-auth; chmod 700 /var/cache/nexora-auth
+cat > /opt/nexora/www/auth.cgi <<'EOF'
+#!/bin/bash
+# Valida o login do /appliance com o e-mail/senha do usuario master no painel (cache de 10 min)
+. /opt/nexora/env 2>/dev/null
+ok(){ printf 'Status: 204 No Content\r\n\r\n'; exit 0; }
+no(){ printf 'Status: 401 Unauthorized\r\n\r\n'; exit 0; }
+a="${HTTP_AUTHORIZATION:-}"; [ "${a:0:6}" = "Basic " ] || no
+cred=$(printf '%s' "${a:6}" | base64 -d 2>/dev/null) || no
+u="${cred%%:*}"; p="${cred#*:}"; [ -n "$u" ] && [ -n "$p" ] || no
+h=$(printf '%s' "$cred" | sha256sum | cut -c1-64); c=/var/cache/nexora-auth/$h
+[ -f "$c" ] && [ $(( $(date +%s) - $(stat -c %Y "$c") )) -lt 600 ] && ok
+body=$(jq -nc --arg e "$u" --arg p "$p" '{email:$e,password:$p}')
+code=$(curl -s -o /dev/null -m 8 -w '%{http_code}' -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d "$body" "$PANEL_URL/api/public/radius/auth-master")
+if [ "$code" = 204 ]; then touch "$c"; ok; fi
+# Sem conexao com o painel: aceita admin + senha local (/opt/nexora/webpw)
+case "$code" in 000|5*) [ "$u" = admin ] && [ "$p" = "$(cat /opt/nexora/webpw 2>/dev/null)" ] && ok ;; esac
+no
+EOF
+chmod 755 /opt/nexora/www/auth.cgi
+command -v jq >/dev/null || apt-get install -y jq
 cat > /opt/nexora/setip.sh <<'SETIP'
 #!/bin/bash
 # uso: setip.sh dhcp | setip.sh static IP/PREFIXO GATEWAY "DNS"
@@ -249,7 +271,7 @@ case "$code" in 200*) cloud="<b class=ok>CONECTADO</b> (${code#* })";; *) cloud=
 mem=$(free -m | awk '/Mem:/{printf "%d / %d MB", $3, $2}')
 disk=$(df -h / | awk 'NR==2{print $3" / "$2" ("$5")"}')
 load=$(cut -d' ' -f1-3 /proc/loadavg)
-clients=$(grep -E '^\s*(client|ipaddr)' /etc/freeradius/3.0/clients.d/nexora.conf 2>/dev/null | paste - - | awk '{print "<tr><td>"$2"</td><td>"$5"</td></tr>"}')
+clients=$(awk '/^client /{n="";i=""} /shortname/{gsub(/"/,"",$3);n=$3} /ipaddr/{i=$3} /^}/{if(i!="")print "<tr><td>"(n!=""?n:"roteador")"</td><td>"i"</td></tr>"}' /etc/freeradius/3.0/clients.d/nexora.conf 2>/dev/null)
 printf 'Content-Type: text/html; charset=utf-8\r\n\r\n'
 cat <<HTML
 <!doctype html><html lang=pt-BR><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1">
@@ -286,11 +308,24 @@ server {
   client_max_body_size 200m;
   # Ferramentas da maquina (IP, logs, reiniciar) - protegidas por senha
   location /appliance {
-    auth_basic "Syncron RADIUS";
-    auth_basic_user_file /etc/nginx/nexora.htpasswd;
+    auth_request /_nexora_auth;
+    error_page 401 = @nexora401;
     include fastcgi_params;
     fastcgi_param SCRIPT_FILENAME /opt/nexora/www/index.cgi;
     fastcgi_pass unix:/run/fcgiwrap.socket;
+  }
+  # Login = e-mail/senha do usuario master do painel web (sem internet: admin + senha local)
+  location = /_nexora_auth {
+    internal;
+    include fastcgi_params;
+    fastcgi_param SCRIPT_FILENAME /opt/nexora/www/auth.cgi;
+    fastcgi_param CONTENT_LENGTH "";
+    fastcgi_pass_request_body off;
+    fastcgi_pass unix:/run/fcgiwrap.socket;
+  }
+  location @nexora401 {
+    add_header WWW-Authenticate 'Basic realm="Syncron RADIUS - e-mail e senha do painel"' always;
+    return 401;
   }
   # Painel completo (mesmo acesso do painel na nuvem)
   location / {
@@ -339,6 +374,7 @@ IP=$(hostname -I | awk '{print $1}')
 echo
 echo "Servidor RADIUS pronto e conectado ao painel. IP deste servidor: $IP"
 echo "Painel completo local: http://$IP  (mesmo login do painel na nuvem)"
-echo "Ferramentas do servidor: http://$IP/appliance  (usuario: admin  senha: $WEBPW)"
+echo "Ferramentas do servidor: http://$IP/appliance  (mesmo e-mail e senha do usuario master do painel web)"
+echo "Sem internet: usuario admin  senha local: $WEBPW"
 [ -n "$CFTOKEN" ] && echo "Cloudflare Tunnel: $(systemctl is-active cloudflared)"
 echo "Os roteadores com RADIUS ativo no painel são autorizados automaticamente."

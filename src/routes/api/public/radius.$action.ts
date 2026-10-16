@@ -22,7 +22,7 @@ function attr(body: any, name: string): string {
 
 const MAC = /^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$/;
 
-export const AGENT_VERSION = "1.1.0";
+export const AGENT_VERSION = "1.2.0";
 
 export const Route = createFileRoute("/api/public/radius/$action")({
   server: {
@@ -53,14 +53,15 @@ export const Route = createFileRoute("/api/public/radius/$action")({
         if (params.action !== "clients") return new Response("Not found", { status: 404 });
         // Lista de roteadores autorizados (clients.conf do FreeRADIUS)
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { data } = await supabaseAdmin.from("routers").select("id, base_url, radius_secret").eq("radius_enabled", true);
+        const { data } = await supabaseAdmin.from("routers").select("id, name, base_url, radius_secret").eq("radius_enabled", true);
         const lines: string[] = [];
         for (const r of data ?? []) {
           let host = "";
           try { host = new URL(r.base_url).hostname; } catch { continue; }
           const secret = String(r.radius_secret ?? "").replace(/[^\x21-\x7e]/g, "").replace(/["\\]/g, "");
           if (!host || !secret || !/^[A-Za-z0-9.:-]+$/.test(host)) continue;
-          lines.push(`client nx_${r.id.replace(/-/g, "")} {\n  ipaddr = ${host}\n  secret = "${secret}"\n  nas_type = other\n}`);
+          const short = String(r.name ?? "").replace(/[^A-Za-z0-9 ._-]/g, "").trim().slice(0, 40) || "roteador";
+          lines.push(`client nx_${r.id.replace(/-/g, "")} {\n  shortname = "${short}"\n  ipaddr = ${host}\n  secret = "${secret}"\n  nas_type = other\n}`);
         }
         return new Response(lines.join("\n") + "\n", { headers: { "Content-Type": "text/plain" } });
       },
@@ -75,6 +76,22 @@ export const Route = createFileRoute("/api/public/radius/$action")({
           try { result = decodeURIComponent(escape(atob(String(body?.result ?? "")))); } catch { result = ""; }
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
           await (supabaseAdmin as any).from("router_commands").update({ status: "done", http_status: Number(body?.http_status) || 0, result: result.slice(0, 2_000_000), done_at: new Date().toISOString() }).eq("id", id).eq("status", "running");
+          return new Response(null, { status: 204 });
+        }
+        if (params.action === "auth-master") {
+          // Login do appliance: mesmo e-mail/senha do painel web, apenas contas master (não membros de equipe)
+          const email = String(body?.email ?? "").trim().toLowerCase().slice(0, 200);
+          const password = String(body?.password ?? "").slice(0, 200);
+          if (!email || !password) return new Response("Bad request", { status: 400 });
+          const key = process.env["SUPABASE_PUBLISHABLE_KEY"]!;
+          const r = await fetch(`${process.env["SUPABASE_URL"]}/auth/v1/token?grant_type=password`, { method: "POST", headers: { apikey: key, "Content-Type": "application/json" }, body: JSON.stringify({ email, password }) });
+          if (!r.ok) return new Response("Unauthorized", { status: 401 });
+          const j: any = await r.json().catch(() => ({}));
+          const uid = String(j?.user?.id ?? "");
+          if (!uid) return new Response("Unauthorized", { status: 401 });
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          const { data: team } = await (supabaseAdmin as any).from("user_roles").select("owner_id").eq("user_id", uid).not("owner_id", "is", null).neq("owner_id", uid).limit(1);
+          if (team?.length) return new Response("Forbidden", { status: 403 });
           return new Response(null, { status: 204 });
         }
         if (params.action === "heartbeat") {
