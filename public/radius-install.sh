@@ -116,6 +116,8 @@ ln -sf ../sites-available/nexora $RD/sites-enabled/nexora
 
 mkdir -p $RD/clients.d
 touch $RD/clients.d/nexora.conf
+usermod -a -G freerad www-data 2>/dev/null || true
+grep -v secret $RD/clients.d/nexora.conf > /opt/nexora/routers.list 2>/dev/null || true; chmod 644 /opt/nexora/routers.list 2>/dev/null || true
 grep -q 'clients.d/nexora.conf' $RD/clients.conf || echo '$INCLUDE clients.d/nexora.conf' >> $RD/clients.conf
 
 cat > /usr/local/bin/nexora-radius-add-router <<'EOF'
@@ -271,7 +273,7 @@ case "$code" in 200*) cloud="<b class=ok>CONECTADO</b> (${code#* })";; *) cloud=
 mem=$(free -m | awk '/Mem:/{printf "%d / %d MB", $3, $2}')
 disk=$(df -h / | awk 'NR==2{print $3" / "$2" ("$5")"}')
 load=$(cut -d' ' -f1-3 /proc/loadavg)
-clients=$(awk '/^client /{n="";i=""} /shortname/{gsub(/"/,"",$3);n=$3} /ipaddr/{i=$3} /^}/{if(i!="")print "<tr><td>"(n!=""?n:"roteador")"</td><td>"i"</td></tr>"}' /etc/freeradius/3.0/clients.d/nexora.conf 2>/dev/null)
+clients=$(awk '/^client /{n="";i=""} /shortname/{gsub(/"/,"",$3);n=$3} /ipaddr/{i=$3} /^}/{if(i!="")print "<tr><td>"(n!=""?n:"roteador")"</td><td>"i"</td></tr>"}' /opt/nexora/routers.list 2>/dev/null)
 printf 'Content-Type: text/html; charset=utf-8\r\n\r\n'
 cat <<HTML
 <!doctype html><html lang=pt-BR><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1">

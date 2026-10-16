@@ -18,6 +18,9 @@ if curl "${H[@]}" "$API/clients" -o /tmp/nexora-clients.conf; then
   fi
 fi
 
+# Lista sem segredos para a tela do appliance
+grep -v secret "$F" > /opt/nexora/routers.list 2>/dev/null; chmod 644 /opt/nexora/routers.list 2>/dev/null
+
 # 2. Status para o painel
 OK=false; systemctl is-active --quiet freeradius && OK=true
 RESP=$(curl "${H[@]}" -X POST -H "Content-Type: application/json" "$API/heartbeat" \
