@@ -75,12 +75,11 @@ function MikrotikPage() {
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [addrKind, setAddrKind] = useState<"local" | "domain" | "ip" | "ipv6">("domain");
-  const [tab, setTab] = useState<"vpn" | "public_ip" | "radius">("public_ip");
+  const [tab, setTab] = useState<"public_ip" | "radius">("public_ip");
   const listApp = useServerFn(listRadiusAppliances);
   const [apps, setApps] = useState<Awaited<ReturnType<typeof listRadiusAppliances>>>([]);
   useEffect(() => { if (tab === "radius") listApp().then(setApps).catch(() => setApps([])); }, [tab]);
-  const shown = tab === "radius" ? routers : routers.filter(r => (r.connection_mode ?? "vpn") === tab);
+  const shown = tab === "radius" ? routers : routers;
 
   async function load() { try { setRouters(await list()); } catch (e) { setMsg((e as Error).message); } }
   useEffect(() => { void load(); }, []);
@@ -88,7 +87,7 @@ function MikrotikPage() {
 
   async function onSave(e: FormEvent<HTMLFormElement>) {
     e.preventDefault(); const f = new FormData(e.currentTarget);
-    await run(async () => { await save({ data: { name: String(f.get("name")), base_url: tab === "public_ip" ? `${f.get("proto")}://${addrKind === "ipv6" ? `[${String(f.get("ip")).trim().replace(/^\[|\]$/g, "")}]` : String(f.get("ip")).trim()}:${f.get("port")}` : String(f.get("url")), connection_mode: tab, via_agent: tab === "public_ip" && addrKind === "local", username: String(f.get("user")), password: String(f.get("pass")), dhcp_server: String(f.get("dhcp")) } }); setShowForm(false); await load(); });
+    await run(async () => { await save({ data: { name: String(f.get("name")), base_url: `${f.get("proto")}://${String(f.get("ip")).trim()}:${f.get("port")}`, connection_mode: "public_ip", via_agent: true, username: String(f.get("user")), password: String(f.get("pass")), dhcp_server: String(f.get("dhcp")) } }); setShowForm(false); await load(); });
   }
   async function loadStatus(id: string) { setSelected(id); setConn(null); await run(async () => setConn(await status({ data: { id } }))); }
 
@@ -99,19 +98,18 @@ function MikrotikPage() {
         <div><p className="text-sm text-muted-foreground">Integração RouterOS 7</p><h1 className="text-3xl font-extrabold">MikroTik</h1></div>
         {tab !== "radius" && <Button onClick={() => setShowForm(v => !v)}><Plus />Novo roteador</Button>}
       </div>
-      <div className="mt-6 inline-flex rounded-md border bg-card p-1">{([["public_ip", "IP público"], ["vpn", "VPN"], ["radius", "RADIUS"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => { setTab(k); setSelected(null); }} className={`rounded px-4 py-1.5 text-sm font-semibold ${tab === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{l}</button>)}</div>
+      <div className="mt-6 inline-flex rounded-md border bg-card p-1">{([["public_ip", "IP local"], ["radius", "RADIUS"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => { setTab(k); setSelected(null); }} className={`rounded px-4 py-1.5 text-sm font-semibold ${tab === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{l}</button>)}</div>
       {msg && <p className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">{msg}</p>}
 
       {showForm && tab !== "radius" && <form onSubmit={onSave} className="mt-6 grid gap-4 border bg-card p-5 md:grid-cols-2">
         <F label="Nome"><Input name="name" required placeholder="Concentrador Centro" /></F>
-        {tab === "public_ip" ? <><F label="Endereço do roteador"><div className="flex gap-1">{([["local", "IP local (via servidor)"], ["domain", "Domínio / DDNS"], ["ip", "IPv4 público"], ["ipv6", "IPv6 público"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => setAddrKind(k)} className={`rounded-md border px-3 py-1 text-xs font-semibold ${addrKind === k ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>{l}</button>)}</div>
-          {addrKind === "local" ? <><Input key="loc" name="ip" required placeholder="192.168.88.1" pattern="^(\d{1,3}\.){3}\d{1,3}$" title="Digite o IP local, ex.: 192.168.88.1" /><p className="text-xs text-muted-foreground">Sem IP público: o servidor Syncron da sua rede faz a ponte. Ele precisa estar ligado e atualizado. Use HTTP (porta 80) ou HTTPS (porta 443) do MikroTik.</p></> : addrKind === "ipv6" ? <><Input key="ip6" name="ip" required placeholder="2804:abcd:1234::1" pattern="^[0-9a-fA-F:]+$" title="Digite um IPv6, ex.: 2804:abcd::1" /><p className="text-xs text-muted-foreground">Libere a porta no firewall IPv6 do MikroTik (<code>/ipv6 firewall filter</code>).</p></> : addrKind === "ip" ? <><Input key="ip" name="ip" required placeholder="200.200.200.10" pattern="^(\d{1,3}\.){3}\d{1,3}$" title="Digite um IPv4, ex.: 200.200.200.10" /><p className="text-xs text-muted-foreground">Se o teste mostrar <b>erro 1003</b>, troque para <b>Domínio / DDNS</b>.</p></>
-          : <><Input key="dom" name="ip" required placeholder="xxxx.sn.mynetname.net" /><p className="text-xs text-muted-foreground">Mais confiável. DDNS grátis: <code>/ip cloud set ddns-enabled=yes</code> e cole o <b>dns-name</b> de <code>/ip cloud print</code>.</p></>}</F><div className="grid grid-cols-2 gap-3"><F label="Protocolo"><select name="proto" key={addrKind} defaultValue={addrKind === "local" ? "http" : "https"} className="h-9 w-full rounded-md border bg-background px-3 text-sm"><option value="https">HTTPS</option><option value="http">HTTP (inseguro)</option></select></F><F label="Porta"><Input name="port" key={"p" + addrKind} type="number" required defaultValue={addrKind === "local" ? "80" : "443"} min="1" max="65535" /></F></div></> : <F label="Endereço na VPN (HTTPS)"><Input name="url" required type="url" placeholder="https://10.8.0.1" /></F>}
+        <F label="IP local do roteador"><Input name="ip" required placeholder="192.168.88.1" pattern="^(\d{1,3}\.){3}\d{1,3}$" title="Digite o IP local, ex.: 192.168.88.1" /><p className="text-xs text-muted-foreground">O servidor Syncron da sua rede faz a ponte com o MikroTik. Ele precisa estar ligado.</p></F>
+        <div className="grid grid-cols-2 gap-3"><F label="Protocolo"><select name="proto" defaultValue="http" className="h-9 w-full rounded-md border bg-background px-3 text-sm"><option value="http">HTTP</option><option value="https">HTTPS</option></select></F><F label="Porta"><Input name="port" type="number" required defaultValue="80" min="1" max="65535" /></F></div>
         <F label="Usuário da API"><Input name="user" required /></F>
         <F label="Senha"><Input name="pass" type="password" required /></F>
         <F label="Servidor DHCP (IPoE)"><Input name="dhcp" placeholder="dhcp-clientes" /></F>
         <div className="flex items-end"><Button disabled={busy} className="w-full" type="submit">Salvar roteador</Button></div>
-        {tab === "public_ip" ? <p className="text-xs text-muted-foreground md:col-span-2">No RouterOS, ative o serviço <b>www-ssl</b> com um certificado válido (ex.: Let's Encrypt via <code>/certificate enable-ssl-certificate</code>), mude a porta padrão se quiser e libere-a no firewall apenas para os IPs do painel. Use um usuário com permissões read, write, api e rest-api.</p> : <p className="text-xs text-muted-foreground md:col-span-2">Ative o serviço <b>www-ssl</b> no RouterOS e garanta que o endereço seja alcançável pela internet (encaminhamento de porta a partir da VPN, restrito por IP). Use um usuário com permissões read, write, api e rest-api.</p>}
+        <p className="text-xs text-muted-foreground md:col-span-2">No Winbox/Webfig, em <b>IP → Services</b>, ative <b>www</b> (porta 80) ou <b>www-ssl</b> (443). Em <b>System → Users</b>, crie um usuário com permissões read, write, api e rest-api.</p>
       </form>}
 
       {tab === "radius" && <section className="mt-6 space-y-4">

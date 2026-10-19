@@ -111,37 +111,18 @@ function Guia() {
   return <div className="space-y-5 text-sm text-muted-foreground">
     <div><p className="text-sm font-semibold text-primary">GUIA RÁPIDO</p><h2 className="mt-2 text-3xl font-extrabold text-foreground">Instalação e configuração</h2></div>
     <div><p className="font-semibold text-foreground">1. Instalar a ISO</p>
-      <ol className="mt-1 list-decimal space-y-1 pl-5"><li>Baixe a ISO na aba Download e grave num pendrive (Rufus/Balena Etcher) ou use numa máquina virtual.</li><li>Dê boot: a instalação é automática em modo texto. <b className="text-foreground">Apaga o primeiro disco.</b></li><li>Login no terminal: usuário <code>root</code>, senha <code>yy6ErrpgZlhBb9A</code> (troque com <code>passwd</code>).</li><li>Painel local: <code>http://IP-da-máquina</code> (mesmo login do painel na nuvem).</li></ol></div>
-    <div><p className="font-semibold text-foreground">Appliance (ferramentas do servidor)</p>
-      <p>Acesse <code>http://IP-da-máquina/appliance</code> ou clique em <b>Trocar IP do servidor</b> em MikroTik → RADIUS. Entre com o <b>mesmo e-mail e senha do usuário master</b> do painel web — se trocar a senha no painel, ela vale lá também. Sem internet no servidor, use <code>admin</code> e a senha local (<code>cat /opt/nexora/webpw</code>).</p>
-      <ul className="mt-1 list-disc space-y-1 pl-5"><li><b>Status:</b> RADIUS, sincronização, conexão com a nuvem, CPU, memória e disco.</li><li><b>Roteadores autorizados:</b> nome e IP de cada MikroTik com RADIUS ativo.</li><li><b>Trocar IP:</b> IP fixo ou DHCP, gateway e DNS.</li><li><b>Log:</b> últimos eventos do RADIUS para ver rejeições e timeouts.</li><li><b>Reiniciar RADIUS</b> e <b>Sincronizar agora</b> com um clique.</li></ul></div>
-    <div><p className="font-semibold text-foreground">2. Trocar o IP do servidor RADIUS (IP fixo)</p>
-      <pre className={pre}>{`ip -br a        # veja o nome da placa (ex.: ens18)
-nano /etc/network/interfaces
-# troque "iface ens18 inet dhcp" por:
-iface ens18 inet static
-  address 192.168.88.2/24
-  gateway 192.168.88.1
-  dns-nameservers 1.1.1.1 8.8.8.8
-systemctl restart networking`}</pre>
-      <p className="mt-1">Depois, no painel em MikroTik → RADIUS, coloque o novo IP e clique em <b>Aplicar no roteador</b>.</p></div>
-    <div><p className="font-semibold text-foreground">3. Ligar o MikroTik ao RADIUS (PPPoE, IPoE e Hotspot)</p>
-      <pre className={pre}>{`/radius add service=ppp,dhcp,hotspot address=IP_DO_RADIUS secret="SEGREDO" authentication-port=1812 accounting-port=1813 timeout=3s comment="nexora-radius"
-/ppp aaa set use-radius=yes accounting=yes interim-update=5m
-/ip hotspot profile set [find] use-radius=yes radius-interim-update=5m
-/radius incoming set accept=yes`}</pre>
-      <p className="mt-1">Portas UDP: <b>1812</b> (autenticação), <b>1813</b> (contabilização) e <b>3799</b> (desconexão, opcional).</p></div>
-    <div><p className="font-semibold text-foreground">4. Faixas de IP dos clientes</p>
-      <p>Ativos recebem IP fixo da faixa <code>192.168.0.0/16</code> (a 192.168.0.x fica para o roteador). Suspensos recebem IP de <code>10.0.0.0/8</code> e entram na lista <code>bloqueados</code>. No MikroTik:</p>
-      <pre className={pre}>{`/ip firewall nat add chain=srcnat src-address=192.168.0.0/16 action=masquerade comment="syncron-ativos"
-/ip firewall nat add chain=srcnat src-address=10.0.0.0/8 action=masquerade comment="syncron-bloqueados"`}</pre>
-      <p className="mt-1">O redirecionamento para a página de aviso está em MikroTik → Página de bloqueio.</p></div>
-    <div><p className="font-semibold text-foreground">5. Ponte local (MikroTik sem IP público)</p>
-      <p>No painel, cadastre o roteador como <b>IP local (via servidor)</b>, ex.: <code>192.168.88.1</code>. O servidor Syncron da sua rede faz a ponte — ele precisa estar ligado.</p></div>
+      <ol className="mt-1 list-decimal space-y-1 pl-5"><li>Baixe a ISO na aba Download e grave num pendrive (Rufus/Balena Etcher) ou use numa máquina virtual.</li><li>Dê boot: a instalação é automática. <b className="text-foreground">Apaga o primeiro disco.</b></li><li>No fim, a tela mostra o IP da máquina. Abra <code>http://IP-da-máquina/appliance</code> no navegador.</li></ol></div>
+    <div><p className="font-semibold text-foreground">2. Painel web local (appliance)</p>
+      <p>Abra <code>http://IP-da-máquina/appliance</code> ou clique em <b>Trocar IP do servidor</b> em MikroTik → RADIUS no painel na nuvem. Entre com o <b>mesmo e-mail e senha do usuário master</b>.</p>
+      <ul className="mt-1 list-disc space-y-1 pl-5"><li><b>Status:</b> RADIUS, ponte, conexão com a nuvem, CPU, memória e disco.</li><li><b>Roteadores autorizados:</b> nome e IP de cada MikroTik.</li><li><b>Trocar IP:</b> IP fixo ou automático, gateway e DNS — tudo pelo navegador.</li><li><b>Log:</b> rejeições e timeouts do RADIUS.</li><li><b>Reiniciar RADIUS</b> e <b>Sincronizar agora</b> com um clique.</li></ul></div>
+    <div><p className="font-semibold text-foreground">3. Cadastrar o MikroTik (IP local)</p>
+      <p>No painel na nuvem, abra <b>MikroTik → IP local → Novo roteador</b> e informe o IP local do roteador (ex.: <code>192.168.88.1</code>), usuário e senha da API. O servidor local faz a ponte — ele precisa estar ligado. No Winbox/Webfig, ative <b>IP → Services → www</b>.</p></div>
+    <div><p className="font-semibold text-foreground">4. Ligar o RADIUS</p>
+      <p>Em <b>MikroTik → RADIUS</b>, marque <b>Usar RADIUS</b>, escolha o servidor conectado, defina o segredo, clique em <b>Salvar</b> e depois em <b>Aplicar no roteador</b>. Use <b>Testar comunicação</b> para conferir. Portas UDP: <b>1812</b>, <b>1813</b> e <b>3799</b>.</p></div>
+    <div><p className="font-semibold text-foreground">5. Faixas de IP dos clientes</p>
+      <p>Ativos recebem IP fixo de <code>192.168.0.0/16</code>; suspensos recebem <code>10.0.0.0/8</code> e vão para a lista <code>bloqueados</code>. Veja os IPs livres em <b>Conexões</b> e a página de aviso em <b>MikroTik → Página de bloqueio</b>.</p></div>
     <div><p className="font-semibold text-foreground">6. Verificar</p>
-      <pre className={pre}>{`systemctl status freeradius nexora-bridge nexora-agent nginx
-tail -f /var/log/freeradius/radius.log`}</pre>
-      <p className="mt-1">Se o FreeRADIUS não subir, rode <code>freeradius -XC</code> e veja a última linha de erro.</p></div>
+      <p>No painel na nuvem, o servidor aparece <b>online</b> em MikroTik → RADIUS. No painel local, confira as abas <b>Status</b> e <b>Log</b>.</p></div>
     <div><p className="font-semibold text-foreground">7. Central do Assinante</p><p>Divulgue o endereço <code>/central</code> para seus clientes: eles entram com CPF/CNPJ e a senha da conexão para ver plano, consumo e boletos.</p></div>
   </div>;
 }
