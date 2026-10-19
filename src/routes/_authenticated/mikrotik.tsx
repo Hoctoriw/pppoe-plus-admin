@@ -99,7 +99,7 @@ function MikrotikPage() {
         <div><p className="text-sm text-muted-foreground">Integração RouterOS 7</p><h1 className="text-3xl font-extrabold">MikroTik</h1></div>
         {tab !== "radius" && <Button onClick={() => setShowForm(v => !v)}><Plus />Novo roteador</Button>}
       </div>
-      <div className="mt-6 inline-flex rounded-md border bg-card p-1">{([["public_ip", "IP público"], ["vpn", "VPN"], ["radius", "RADIUS"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => { setTab(k); setSelected(null); }} className={`rounded px-4 py-1.5 text-sm font-semibold ${tab === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{l}</button>)}</div>
+      <div className="mt-6 inline-flex rounded-md border bg-card p-1">{([["public_ip", "IP local"], ["radius", "RADIUS"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => { setTab(k); setSelected(null); }} className={`rounded px-4 py-1.5 text-sm font-semibold ${tab === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{l}</button>)}</div>
       {msg && <p className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">{msg}</p>}
 
       {showForm && tab !== "radius" && <form onSubmit={onSave} className="mt-6 grid gap-4 border bg-card p-5 md:grid-cols-2">
@@ -111,7 +111,7 @@ function MikrotikPage() {
         <F label="Senha"><Input name="pass" type="password" required /></F>
         <F label="Servidor DHCP (IPoE)"><Input name="dhcp" placeholder="dhcp-clientes" /></F>
         <div className="flex items-end"><Button disabled={busy} className="w-full" type="submit">Salvar roteador</Button></div>
-        {tab === "public_ip" ? <p className="text-xs text-muted-foreground md:col-span-2">No RouterOS, ative o serviço <b>www-ssl</b> com um certificado válido (ex.: Let's Encrypt via <code>/certificate enable-ssl-certificate</code>), mude a porta padrão se quiser e libere-a no firewall apenas para os IPs do painel. Use um usuário com permissões read, write, api e rest-api.</p> : <p className="text-xs text-muted-foreground md:col-span-2">Ative o serviço <b>www-ssl</b> no RouterOS e garanta que o endereço seja alcançável pela internet (encaminhamento de porta a partir da VPN, restrito por IP). Use um usuário com permissões read, write, api e rest-api.</p>}
+        <p className="text-xs text-muted-foreground md:col-span-2">No Winbox/Webfig, em <b>IP → Services</b>, ative <b>www</b> (porta 80) ou <b>www-ssl</b> (443). Em <b>System → Users</b>, crie um usuário com permissões read, write, api e rest-api.</p>
       </form>}
 
       {tab === "radius" && <section className="mt-6 space-y-4">
