@@ -75,12 +75,11 @@ function MikrotikPage() {
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [addrKind, setAddrKind] = useState<"local" | "domain" | "ip" | "ipv6">("domain");
-  const [tab, setTab] = useState<"vpn" | "public_ip" | "radius">("public_ip");
+  const [tab, setTab] = useState<"public_ip" | "radius">("public_ip");
   const listApp = useServerFn(listRadiusAppliances);
   const [apps, setApps] = useState<Awaited<ReturnType<typeof listRadiusAppliances>>>([]);
   useEffect(() => { if (tab === "radius") listApp().then(setApps).catch(() => setApps([])); }, [tab]);
-  const shown = tab === "radius" ? routers : routers.filter(r => (r.connection_mode ?? "vpn") === tab);
+  const shown = tab === "radius" ? routers : routers;
 
   async function load() { try { setRouters(await list()); } catch (e) { setMsg((e as Error).message); } }
   useEffect(() => { void load(); }, []);
@@ -88,7 +87,7 @@ function MikrotikPage() {
 
   async function onSave(e: FormEvent<HTMLFormElement>) {
     e.preventDefault(); const f = new FormData(e.currentTarget);
-    await run(async () => { await save({ data: { name: String(f.get("name")), base_url: tab === "public_ip" ? `${f.get("proto")}://${addrKind === "ipv6" ? `[${String(f.get("ip")).trim().replace(/^\[|\]$/g, "")}]` : String(f.get("ip")).trim()}:${f.get("port")}` : String(f.get("url")), connection_mode: tab, via_agent: tab === "public_ip" && addrKind === "local", username: String(f.get("user")), password: String(f.get("pass")), dhcp_server: String(f.get("dhcp")) } }); setShowForm(false); await load(); });
+    await run(async () => { await save({ data: { name: String(f.get("name")), base_url: `${f.get("proto")}://${String(f.get("ip")).trim()}:${f.get("port")}`, connection_mode: "public_ip", via_agent: true, username: String(f.get("user")), password: String(f.get("pass")), dhcp_server: String(f.get("dhcp")) } }); setShowForm(false); await load(); });
   }
   async function loadStatus(id: string) { setSelected(id); setConn(null); await run(async () => setConn(await status({ data: { id } }))); }
 
