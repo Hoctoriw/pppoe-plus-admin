@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Wifi, Router, Network, Receipt, Map, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SupportChat } from "@/components/SupportChat";
 
 const URL = "https://rede.syncrontelecom.com/";
 const TITLE = "Syncron ISP | Sistema para provedor de internet";
@@ -43,6 +44,7 @@ const FEATURES = [
 function Landing() {
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <SupportChat />
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
         <div className="flex items-center gap-2 font-semibold">
           <img src="/syncron-logo.png" alt="Syncron ISP" className="h-8 w-8" /> Syncron ISP
