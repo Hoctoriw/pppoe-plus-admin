@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Wifi, Router, Network, Receipt, Map, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SupportChat } from "@/components/SupportChat";
 
 const URL = "https://rede.syncrontelecom.com/";
 const TITLE = "Syncron ISP | Sistema para provedor de internet";
