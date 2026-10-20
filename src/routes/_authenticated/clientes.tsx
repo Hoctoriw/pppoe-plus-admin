@@ -3,8 +3,9 @@ import { NetworkModuleOnly } from "@/components/NetworkModuleOnly";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { LifeBuoy, KeyRound, Bell, ChevronRight, CircleDollarSign, LayoutDashboard, LogOut, Menu, Package, Plus, Radio, UserPlus, RefreshCw, Router as RouterIcon, Search, ShieldCheck, Users, Wifi, X, Network } from "lucide-react";
+import { FileSpreadsheet, LifeBuoy, KeyRound, Bell, ChevronRight, CircleDollarSign, LayoutDashboard, LogOut, Menu, Package, Plus, Radio, UserPlus, RefreshCw, Router as RouterIcon, Search, ShieldCheck, Users, Wifi, X, Network } from "lucide-react";
 import { listRouters, provisionCustomer } from "@/lib/mikrotik.functions";
+import { CustomerImport } from "@/components/CustomerImport";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +39,7 @@ function Clientes() {
   const [editing, setEditing] = useState<Customer | null>(null);
   const [message, setMessage] = useState("");
   const [mobileNav, setMobileNav] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [syncing, setSyncing] = useState<string | null>(null);
   const listRoutersFn = useServerFn(listRouters);
   const provisionFn = useServerFn(provisionCustomer);
@@ -104,7 +106,7 @@ function Clientes() {
       <div className="p-4 md:p-7">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div><p className="text-sm text-muted-foreground">{filtered.length} de {customers.length} clientes</p><h1 className="mt-1 text-2xl font-extrabold md:text-3xl">Todos os clientes</h1></div>
-          <Button onClick={() => { setEditing(null); setPanel(true); }}><Plus />Novo cliente</Button>
+          <div className="flex gap-2"><Button variant="outline" onClick={() => setImporting(true)}><FileSpreadsheet />Importar Excel</Button><Button onClick={() => { setEditing(null); setPanel(true); }}><Plus />Novo cliente</Button></div>
         </div>
         <section className="mt-7 border bg-card">
           <div className="flex flex-col gap-3 border-b p-4 lg:flex-row lg:items-center">
@@ -135,6 +137,7 @@ function Clientes() {
       </div>
     </main>
     {panel && <div className="fixed inset-0 z-50 flex justify-end bg-foreground/30"><div className="h-full w-full max-w-lg overflow-y-auto bg-card p-6 shadow-xl"><div className="flex items-center justify-between"><div><p className="text-sm font-semibold text-primary">{editing ? "EDITAR CADASTRO" : "NOVO CADASTRO"}</p><h2 className="text-2xl font-extrabold">Cliente</h2></div><Button variant="ghost" size="icon" aria-label="Fechar" onClick={() => { setPanel(false); setEditing(null); }}><X /></Button></div><CustomerForm key={editing?.id ?? "new"} plans={plans} routers={routers} initial={editing} onSubmit={saveCustomer} />{message && <p className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">{message}</p>}</div></div>}
+    {importing && <CustomerImport plans={plans} userId={user.id} onClose={() => setImporting(false)} onDone={() => void loadData()} />}
   </div>;
 }
 
