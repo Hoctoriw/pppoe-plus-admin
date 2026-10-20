@@ -6,25 +6,26 @@ import { supabase } from "@/integrations/supabase/client";
 type Plan = { id: string; name: string };
 type Row = Record<string, unknown>;
 
-const COLS = ["nome", "documento", "telefone", "email", "tecnologia", "plano", "usuario", "senha", "ip", "mac", "vencimento", "rua", "numero", "bairro", "cidade", "uf", "cep", "observacoes"];
+const COLS = ["nome", "documento", "telefone", "email", "tecnologia", "plano", "usuario", "senha", "ip", "mac", "vencimento", "rua", "numero", "bairro", "cidade", "uf", "cep", "observacoes"] as const;
 
 const norm = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
 const ALIAS: Record<string, string> = { nome: "nome", nomecompleto: "nome", cliente: "nome", documento: "documento", cpf: "documento", cnpj: "documento", cpfcnpj: "documento", telefone: "telefone", celular: "telefone", whatsapp: "telefone", email: "email", tecnologia: "tecnologia", tipo: "tecnologia", plano: "plano", usuario: "usuario", login: "usuario", pppoe: "usuario", senha: "senha", ip: "ip", ipfixo: "ip", mac: "mac", vencimento: "vencimento", diavencimento: "vencimento", rua: "rua", endereco: "rua", logradouro: "rua", numero: "numero", bairro: "bairro", cidade: "cidade", uf: "uf", estado: "uf", cep: "cep", observacoes: "observacoes", obs: "observacoes" };
 
-function mapRow(r: Row) {
-  const o: Record<string, string> = {};
-  for (const [k, v] of Object.entries(r)) { const key = ALIAS[norm(k)]; if (key) o[key] = String(v ?? "").trim(); }
+type D = Record<(typeof COLS)[number], string>;
+function mapRow(r: Row): D {
+  const o = Object.fromEntries(COLS.map(c => [c, ""])) as D;
+  for (const [k, v] of Object.entries(r)) { const key = ALIAS[norm(k)]; if (key) o[key as keyof D] = String(v ?? "").trim(); }
   return o;
 }
 
 export function CustomerImport({ plans, userId, onClose, onDone }: { plans: Plan[]; userId: string; onClose: () => void; onDone: () => void }) {
-  const [rows, setRows] = useState<{ data: Record<string, string>; error?: string }[]>([]);
+  const [rows, setRows] = useState<{ data: D; error?: string | undefined }[]>([]);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState("");
 
   async function template() {
     const XLSX = await import("xlsx");
-    const ws = XLSX.utils.aoa_to_sheet([COLS, ["João da Silva", "123.456.789-00", "(11) 99999-0000", "joao@email.com", "pppoe", plans[0]?.name ?? "100 Mega", "joao", "senha123", "", "", "10", "Rua A", "100", "Centro", "São Paulo", "SP", "01000-000", ""]]);
+    const ws = XLSX.utils.aoa_to_sheet([[...COLS], ["João da Silva", "123.456.789-00", "(11) 99999-0000", "joao@email.com", "pppoe", plans[0]?.name ?? "100 Mega", "joao", "senha123", "", "", "10", "Rua A", "100", "Centro", "São Paulo", "SP", "01000-000", ""]]);
     const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Clientes");
     XLSX.writeFile(wb, "modelo-clientes-syncron.xlsx");
   }
@@ -33,7 +34,7 @@ export function CustomerImport({ plans, userId, onClose, onDone }: { plans: Plan
     setResult("");
     const XLSX = await import("xlsx");
     const wb = XLSX.read(await file.arrayBuffer());
-    const json = XLSX.utils.sheet_to_json<Row>(wb.Sheets[wb.SheetNames[0]], { defval: "", raw: false });
+    const json = XLSX.utils.sheet_to_json<Row>(wb.Sheets[wb.SheetNames[0] ?? ""]!, { defval: "", raw: false });
     setRows(json.map(mapRow).filter(d => Object.values(d).some(Boolean)).map(d => {
       const tech = (d.tecnologia || "pppoe").toLowerCase();
       let error: string | undefined;
