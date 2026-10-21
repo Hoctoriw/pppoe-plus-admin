@@ -64,7 +64,7 @@ export function CustomerImport({ plans, userId, onClose, onDone }: { plans: Plan
         let text = new TextDecoder("utf-8").decode(buf);
         if (text.includes("\uFFFD")) text = new TextDecoder("windows-1252").decode(buf);
         const first = text.split(/\r?\n/)[0] ?? "";
-        const FS = [";", "\t", ","].sort((a, b) => first.split(b).length - first.split(a).length)[0];
+        const FS = [";", "\t", ","].sort((a, b) => first.split(b).length - first.split(a).length)[0] ?? ",";
         wb = XLSX.read(text, { type: "string", FS });
       } else wb = XLSX.read(await file.arrayBuffer());
       json = XLSX.utils.sheet_to_json<Row>(wb.Sheets[wb.SheetNames[0] ?? ""]!, { defval: "", raw: false });
