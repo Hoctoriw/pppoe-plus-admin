@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Download, FileSpreadsheet, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +9,23 @@ type Row = Record<string, unknown>;
 const COLS = ["nome", "documento", "telefone", "email", "tecnologia", "plano", "usuario", "senha", "ip", "mac", "vencimento", "rua", "numero", "bairro", "cidade", "uf", "cep", "observacoes"] as const;
 
 const norm = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
-const ALIAS: Record<string, string> = { nome: "nome", nomecompleto: "nome", cliente: "nome", documento: "documento", cpf: "documento", cnpj: "documento", cpfcnpj: "documento", telefone: "telefone", celular: "telefone", whatsapp: "telefone", email: "email", tecnologia: "tecnologia", tipo: "tecnologia", plano: "plano", usuario: "usuario", login: "usuario", pppoe: "usuario", senha: "senha", ip: "ip", ipfixo: "ip", mac: "mac", vencimento: "vencimento", diavencimento: "vencimento", rua: "rua", endereco: "rua", logradouro: "rua", numero: "numero", bairro: "bairro", cidade: "cidade", uf: "uf", estado: "uf", cep: "cep", observacoes: "observacoes", obs: "observacoes" };
+const ALIAS: Record<string, string> = { nome: "nome", nomecompleto: "nome", cliente: "nome", razaosocial: "nome", nomerazaosocial: "nome", nomecliente: "nome", documento: "documento", cpf: "documento", cnpj: "documento", cpfcnpj: "documento", cnpjcpf: "documento", cpfoucnpj: "documento", telefone: "telefone", celular: "telefone", whatsapp: "telefone", fone: "telefone", telefonecelular: "telefone", fonecelular: "telefone", celular1: "telefone", email: "email", email1: "email", tecnologia: "tecnologia", tipo: "tecnologia", tipoconexao: "tecnologia", plano: "plano", nomeplano: "plano", planoacesso: "plano", profile: "plano", perfil: "plano", usuario: "usuario", login: "usuario", pppoe: "usuario", loginpppoe: "usuario", user: "usuario", name: "usuario", senha: "senha", password: "senha", senhapppoe: "senha", ip: "ip", ipfixo: "ip", remoteaddress: "ip", enderecoip: "ip", mac: "mac", macaddress: "mac", callerid: "mac", vencimento: "vencimento", diavencimento: "vencimento", diavenc: "vencimento", venc: "vencimento", rua: "rua", endereco: "rua", logradouro: "rua", numero: "numero", num: "numero", bairro: "bairro", cidade: "cidade", municipio: "cidade", uf: "uf", estado: "uf", cep: "cep", observacoes: "observacoes", obs: "observacoes", observacao: "observacoes", comment: "observacoes" };
+
+// MikroTik "/ppp secret export" (.rsc) → linhas de planilha
+function parseRsc(text: string): Row[] {
+  const out: Row[] = [];
+  const joined = text.replace(/\\\r?\n\s*/g, "");
+  for (const line of joined.split(/\r?\n/)) {
+    if (!/^\s*add\s/.test(line)) continue;
+    const r: Row = {};
+    for (const m of line.matchAll(/([\w-]+)=("(?:[^"\\]|\\.)*"|\S+)/g)) r[m[1]!] = m[2]!.replace(/^"|"$/g, "").replace(/\\"/g, '"');
+    const tech = String(r["service"] ?? "pppoe");
+    const comment = String(r["comment"] ?? "");
+    const doc = comment.match(/\d{3}\.?\d{3}\.?\d{3}-?\d{2}|\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}/)?.[0] ?? "";
+    out.push({ usuario: r["name"] ?? "", senha: r["password"] ?? "", plano: r["profile"] && r["profile"] !== "default" ? r["profile"] : "", ip: r["remote-address"] ?? "", tecnologia: tech === "any" ? "pppoe" : tech, nome: comment.replace(doc, "").replace(/[-|;,]+\s*$/, "").trim() || String(r["name"] ?? ""), documento: doc || String(r["name"] ?? ""), observacoes: "Importado do MikroTik" });
+  }
+  return out;
+}
 
 type D = Record<(typeof COLS)[number], string>;
 function mapRow(r: Row): D {
@@ -30,23 +46,51 @@ export function CustomerImport({ plans, userId, onClose, onDone }: { plans: Plan
     XLSX.writeFile(wb, "modelo-clientes-syncron.xlsx");
   }
 
+  const [defaultPlan, setDefaultPlan] = useState("");
+  const [raw, setRaw] = useState<D[]>([]);
+  const [source, setSource] = useState("");
+
   async function readFile(file: File) {
     setResult("");
-    const XLSX = await import("xlsx");
-    const wb = XLSX.read(await file.arrayBuffer());
-    const json = XLSX.utils.sheet_to_json<Row>(wb.Sheets[wb.SheetNames[0] ?? ""]!, { defval: "", raw: false });
-    setRows(json.map(mapRow).filter(d => Object.values(d).some(Boolean)).map(d => {
-      const tech = (d.tecnologia || "pppoe").toLowerCase();
+    let json: Row[];
+    const name = file.name.toLowerCase();
+    if (/\.(rsc|txt)$/.test(name)) {
+      json = parseRsc(await file.text()); setSource("MikroTik (/ppp secret export)");
+    } else {
+      const XLSX = await import("xlsx");
+      let wb;
+      if (name.endsWith(".csv")) {
+        const buf = new Uint8Array(await file.arrayBuffer());
+        let text = new TextDecoder("utf-8").decode(buf);
+        if (text.includes("\uFFFD")) text = new TextDecoder("windows-1252").decode(buf);
+        const first = text.split(/\r?\n/)[0] ?? "";
+        const FS = [";", "\t", ","].sort((a, b) => first.split(b).length - first.split(a).length)[0];
+        wb = XLSX.read(text, { type: "string", FS });
+      } else wb = XLSX.read(await file.arrayBuffer());
+      json = XLSX.utils.sheet_to_json<Row>(wb.Sheets[wb.SheetNames[0] ?? ""]!, { defval: "", raw: false });
+      const keys = Object.keys(json[0] ?? {}).map(norm).join(",");
+      setSource(/razaosocial|cnpjcpf/.test(keys) ? "IXC / SGP" : /login/.test(keys) && /cpfcnpj|fone/.test(keys) ? "MK-AUTH" : "Planilha");
+    }
+    setRaw(json.map(mapRow).filter(d => Object.values(d).some(Boolean)));
+  }
+
+  const findPlan = (n: string) => plans.find(p => p.name.toLowerCase() === n.toLowerCase());
+  useEffect(() => {
+    setRows(raw.map(d => {
+      let tech = (d.tecnologia || "pppoe").toLowerCase();
+      if (tech.includes("ppp")) tech = "pppoe"; else if (tech.includes("hot")) tech = "hotspot"; else if (tech.includes("ipoe") || tech.includes("dhcp")) tech = "ipoe";
+      const plano = d.plano && findPlan(d.plano) ? d.plano : (defaultPlan || d.plano);
       let error: string | undefined;
       if (!d.nome) error = "Sem nome";
       else if (!d.documento) error = "Sem documento";
       else if (!["pppoe", "ipoe", "hotspot"].includes(tech)) error = "Tecnologia inválida";
       else if (tech === "ipoe" && !/^(\d{1,3}\.){3}\d{1,3}$/.test(d.ip)) error = "IPoE exige IP";
       else if (tech === "ipoe" && !/^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$/.test(d.mac)) error = "IPoE exige MAC";
-      else if (d.plano && !plans.some(p => p.name.toLowerCase() === d.plano.toLowerCase())) error = `Plano "${d.plano}" não existe`;
-      return { data: { ...d, tecnologia: tech }, error };
+      else if (plano && !findPlan(plano)) error = `Plano "${plano}" não existe`;
+      return { data: { ...d, tecnologia: tech, plano, ip: /^(\d{1,3}\.){3}\d{1,3}$/.test(d.ip) ? d.ip : "" }, error };
     }));
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [raw, defaultPlan, plans]);
 
   async function importAll() {
     setBusy(true);
