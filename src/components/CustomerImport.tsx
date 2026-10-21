@@ -117,17 +117,20 @@ export function CustomerImport({ plans, userId, onClose, onDone }: { plans: Plan
     }
     setBusy(false);
     setResult(`${done} cliente(s) importado(s).${fails.length ? ` ${fails.length} falharam: ${fails.slice(0, 5).join("; ")}` : ""}`);
-    setRows([]); onDone();
+    setRows([]); setRaw([]); onDone();
   }
 
   const valid = rows.filter(r => !r.error).length;
   return <div className="fixed inset-0 z-50 flex justify-end bg-foreground/30"><div className="h-full w-full max-w-3xl overflow-y-auto bg-card p-6 shadow-xl">
-    <div className="flex items-center justify-between"><div><p className="text-sm font-semibold text-primary">IMPORTAR</p><h2 className="text-2xl font-extrabold">Clientes do Excel</h2></div><Button variant="ghost" size="icon" aria-label="Fechar" onClick={onClose}><X /></Button></div>
+    <div className="flex items-center justify-between"><div><p className="text-sm font-semibold text-primary">IMPORTAR</p><h2 className="text-2xl font-extrabold">Clientes de planilha ou outro sistema</h2></div><Button variant="ghost" size="icon" aria-label="Fechar" onClick={onClose}><X /></Button></div>
     <p className="mt-3 text-sm text-muted-foreground">Envie um arquivo .xlsx, .xls ou .csv. A primeira linha deve ter os nomes das colunas: nome, documento, telefone, email, tecnologia (pppoe, ipoe ou hotspot), plano, usuario, senha, ip, mac, vencimento, rua, numero, bairro, cidade, uf, cep e observacoes. Só nome e documento são obrigatórios.</p>
+    <p className="mt-2 text-sm text-muted-foreground">Também aceita exportações do <b>MK-AUTH</b>, <b>IXC</b>, <b>SGP</b> e o arquivo <b>.rsc</b> do MikroTik (Winbox → Files, gerado com PPP → Secrets → Export). As colunas são reconhecidas automaticamente.</p>
     <div className="mt-4 flex flex-wrap gap-2">
       <Button variant="outline" onClick={template}><Download />Baixar modelo</Button>
-      <label className="inline-flex cursor-pointer items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"><Upload className="h-4 w-4" />Escolher arquivo<input type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) void readFile(f); e.target.value = ""; }} /></label>
+      <label className="inline-flex cursor-pointer items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"><Upload className="h-4 w-4" />Escolher arquivo<input type="file" accept=".xlsx,.xls,.csv,.rsc,.txt" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) void readFile(f); e.target.value = ""; }} /></label>
     </div>
+    <label className="mt-4 block text-sm">Plano para clientes sem plano ou com plano não cadastrado<select className="mt-1 block w-full rounded-md border bg-background p-2" value={defaultPlan} onChange={e => setDefaultPlan(e.target.value)}><option value="">Nenhum (mostrar erro)</option>{plans.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}</select></label>
+    {source && rows.length > 0 && <p className="mt-2 text-sm">Formato detectado: <b>{source}</b></p>}
     {result && <p className="mt-4 rounded-md bg-muted p-3 text-sm">{result}</p>}
     {rows.length > 0 && <>
       <div className="mt-5 flex items-center justify-between"><p className="text-sm"><FileSpreadsheet className="mr-1 inline h-4 w-4" />{rows.length} linhas · <b>{valid} prontas</b> · {rows.length - valid} com problema</p><Button disabled={busy || !valid} onClick={importAll}>{busy ? "Importando..." : `Importar ${valid}`}</Button></div>
