@@ -394,3 +394,14 @@ export const checkLicensePayment = createServerFn({ method: "POST" })
     }
     return { paid: p.status === "approved" };
   });
+
+export const setUserPassword = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ userId: z.string().uuid(), password: z.string().min(6).max(72) }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const db = await admin();
+    const { error } = await db.auth.admin.updateUserById(data.userId, { password: data.password });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });

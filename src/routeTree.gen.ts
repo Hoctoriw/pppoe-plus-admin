@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as BloqueadoRouteImport } from './routes/bloqueado'
 import { Route as CentralRouteImport } from './routes/central'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedBackupRouteImport } from './routes/_authenticated/backup'
 import { Route as AuthenticatedClientesRouteImport } from './routes/_authenticated/clientes'
 import { Route as AuthenticatedConexoesRouteImport } from './routes/_authenticated/conexoes'
@@ -56,6 +57,11 @@ const BloqueadoRoute = BloqueadoRouteImport.update({
 const CentralRoute = CentralRouteImport.update({
   id: '/central',
   path: '/central',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedBackupRoute = AuthenticatedBackupRouteImport.update({
@@ -163,6 +169,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/bloqueado': typeof BloqueadoRoute
   '/central': typeof CentralRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/backup': typeof AuthenticatedBackupRoute
   '/clientes': typeof AuthenticatedClientesRoute
   '/conexoes': typeof AuthenticatedConexoesRoute
@@ -188,6 +195,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/bloqueado': typeof BloqueadoRoute
   '/central': typeof CentralRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/backup': typeof AuthenticatedBackupRoute
   '/clientes': typeof AuthenticatedClientesRoute
   '/conexoes': typeof AuthenticatedConexoesRoute
@@ -215,6 +223,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/bloqueado': typeof BloqueadoRoute
   '/central': typeof CentralRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/backup': typeof AuthenticatedBackupRoute
   '/_authenticated/clientes': typeof AuthenticatedClientesRoute
   '/_authenticated/conexoes': typeof AuthenticatedConexoesRoute
@@ -242,6 +251,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/bloqueado'
     | '/central'
+    | '/reset-password'
     | '/backup'
     | '/clientes'
     | '/conexoes'
@@ -267,6 +277,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/bloqueado'
     | '/central'
+    | '/reset-password'
     | '/backup'
     | '/clientes'
     | '/conexoes'
@@ -293,6 +304,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/bloqueado'
     | '/central'
+    | '/reset-password'
     | '/_authenticated/backup'
     | '/_authenticated/clientes'
     | '/_authenticated/conexoes'
@@ -320,6 +332,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   BloqueadoRoute: typeof BloqueadoRoute
   CentralRoute: typeof CentralRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   ApiPublicHooksDailyBackupRoute: typeof ApiPublicHooksDailyBackupRoute
   ApiPublicHooksSyncMikrotikRoute: typeof ApiPublicHooksSyncMikrotikRoute
   ApiPublicRadiusActionRoute: typeof ApiPublicRadiusActionRoute
@@ -363,6 +376,13 @@ declare module '@tanstack/react-router' {
       path: '/central'
       fullPath: '/central'
       preLoaderRoute: typeof CentralRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/backup': {
@@ -542,6 +562,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   BloqueadoRoute: BloqueadoRoute,
   CentralRoute: CentralRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   ApiPublicHooksDailyBackupRoute: ApiPublicHooksDailyBackupRoute,
   ApiPublicHooksSyncMikrotikRoute: ApiPublicHooksSyncMikrotikRoute,
   ApiPublicRadiusActionRoute: ApiPublicRadiusActionRoute,
