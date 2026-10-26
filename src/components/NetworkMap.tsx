@@ -3,6 +3,7 @@ import { Loader2, MapPin, Search } from "lucide-react";
 import { addBaseLayers, cssVar, loadMaps } from "@/components/ConnectionsMap";
 import { geocodePlaceQuery, type PlaceResult } from "@/lib/connections.functions";
 import type { CableAnchor, FtthNode } from "@/lib/ftth";
+import { fiberColor } from "@/lib/fiber-colors";
 
 export type MapCustomer = { id: string; name: string; latitude: number; longitude: number; cto_id: string | null; weak: boolean; online: boolean };
 
@@ -71,8 +72,10 @@ export function NetworkMap({ nodes, customers, selectedId, placing, onSelect, on
       if (!parent) continue;
       const anchors = n.cable_anchors ?? [];
       const path: [number, number][] = [[parent.latitude, parent.longitude], ...anchors.map((a): [number, number] => [a.latitude, a.longitude]), [n.latitude, n.longitude]];
-      const pc = cssVar(`--ftth-${parent.node_type}`);
-      const line = L.polyline(path, { color: pc, opacity: 0.9, weight: n.id === selectedId ? 6 : 4 });
+      const pc = cssVar(`--${fiberColor(n.cable_fiber_number ?? 1).className}`);
+      const w = n.id === selectedId ? 6 : 4;
+      L.polyline(path, { color: cssVar("--foreground"), opacity: 0.55, weight: w + 2, interactive: false }).addTo(layer);
+      const line = L.polyline(path, { color: pc, opacity: 1, weight: w });
       line.on("click", (e) => { stop(e); cb.current.onSelect(n.id); });
       line.addTo(layer);
       const middle = path[Math.floor(path.length / 2)];
