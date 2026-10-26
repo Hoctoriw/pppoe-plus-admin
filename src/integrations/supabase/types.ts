@@ -341,6 +341,7 @@ export type Database = {
           notes: string | null
           owner_id: string
           parent_id: string | null
+          parent_in_fiber: number | null
           parent_leg: string
           parent_port: number | null
           pon_port: number | null
@@ -369,6 +370,7 @@ export type Database = {
           notes?: string | null
           owner_id?: string
           parent_id?: string | null
+          parent_in_fiber?: number | null
           parent_leg?: string
           parent_port?: number | null
           pon_port?: number | null
@@ -397,6 +399,7 @@ export type Database = {
           notes?: string | null
           owner_id?: string
           parent_id?: string | null
+          parent_in_fiber?: number | null
           parent_leg?: string
           parent_port?: number | null
           pon_port?: number | null
