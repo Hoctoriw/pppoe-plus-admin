@@ -15,7 +15,7 @@ export function LicenseGate({ children }: { children: ReactNode }) {
     const days = state.expires_at ? Math.ceil((new Date(state.expires_at).getTime() - Date.now()) / 86400000) : null;
     return <>
       {!state.admin && days !== null && days <= 7 && (
-        <div className="bg-primary/10 px-4 py-2 text-center text-sm text-foreground">Seu acesso expira em {days} dia(s). <a href="/licenca" className="ml-2 font-bold text-primary underline">Renovar agora</a></div>
+        <div className="bg-primary/10 px-4 py-2 text-center text-sm text-foreground">Seu acesso expira em {days} dia(s). <Link to="/licenca" className="ml-2 font-bold text-primary underline">Renovar agora</Link></div>
       )}
       {children}
     </>;
