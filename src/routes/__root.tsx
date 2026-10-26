@@ -129,6 +129,12 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  // Link de recuperação de senha que caiu em outra página: leva para a tela de nova senha.
+  useEffect(() => {
+    const { pathname, search, hash } = window.location;
+    if (pathname !== "/reset-password" && /type=recovery/.test(search + hash)) window.location.replace(`/reset-password${search}${hash}`);
+  }, []);
+
   // Stale tab after an update: a lazily loaded file no longer exists. Reload once.
   useEffect(() => {
     const KEY = "chunk-reload-at";

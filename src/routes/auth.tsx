@@ -37,6 +37,7 @@ function AuthPage() {
 
   // Link de confirmação do e-mail: ao voltar com sessão, entra direto no painel.
   useEffect(() => {
+    if (/type=recovery/.test(window.location.href)) return;
     const confirming = /type=signup|access_token=|[?&]code=/.test(window.location.href);
     if (confirming) setMessage("Conta confirmada com sucesso! Entrando no painel...");
     void supabase.auth.getSession().then(({ data }) => { if (data.session) navigate({ to: "/dashboard", replace: true }); });
