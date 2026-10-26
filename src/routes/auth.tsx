@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { Activity, Download, Eye, EyeOff, MapPin, Radio, Ruler, Search, ShieldCheck, Split, Wifi } from "lucide-react";
 import iso from "@/assets/nexora-radius.iso.asset.json";
 import { Button } from "@/components/ui/button";
