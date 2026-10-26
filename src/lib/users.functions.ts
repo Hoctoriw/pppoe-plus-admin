@@ -405,3 +405,17 @@ export const setUserPassword = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// Público: confere se o e-mail tem conta antes de enviar o link de nova senha
+export const emailIsRegistered = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({ email: z.string().trim().toLowerCase().email().max(200) }).parse(d))
+  .handler(async ({ data }) => {
+    const db = await admin();
+    for (let page = 1; page <= 20; page++) {
+      const { data: res } = await db.auth.admin.listUsers({ page, perPage: 1000 });
+      const users = res?.users ?? [];
+      if (users.some((u) => (u.email ?? "").toLowerCase() === data.email)) return { exists: true };
+      if (users.length < 1000) break;
+    }
+    return { exists: false };
+  });
