@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
+import { emailIsRegistered } from "@/lib/users.functions";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [
@@ -111,7 +112,7 @@ function AuthPage() {
           {mode === "signup" && <div className="space-y-2"><Label htmlFor="fullName">Nome completo</Label><Input id="fullName" name="fullName" required placeholder="Seu nome" /></div>}
           <div className="space-y-2"><Label htmlFor="email">E-mail</Label><Input id="email" name="email" type="email" required placeholder="voce@provedor.com.br" /></div>
           <div className="space-y-2"><Label htmlFor="password">Senha</Label><div className="relative"><Input id="password" name="password" type={showPassword ? "text" : "password"} required minLength={6} className="pr-10" /><Button type="button" variant="ghost" size="icon" aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"} className="absolute right-0 top-0" onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff /> : <Eye />}</Button></div></div>
-          {mode === "login" && <div className="-mt-2 text-right"><Button type="button" variant="link" className="h-auto px-0 text-xs" onClick={async (e) => { const email = String(new FormData(e.currentTarget.form!).get("email") ?? "").trim(); if (!email) { setMessage("Digite seu e-mail acima e clique em Esqueci minha senha."); return; } setLoading(true); const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` }); setLoading(false); setMessage(error ? error.message : "Enviamos um link para seu e-mail para criar uma nova senha."); }}>Esqueci minha senha</Button></div>}
+          {mode === "login" && <div className="-mt-2 text-right"><Button type="button" variant="link" className="h-auto px-0 text-xs" onClick={async (e) => { const email = String(new FormData(e.currentTarget.form!).get("email") ?? "").trim(); if (!email) { setMessage("Digite seu e-mail acima e clique em Esqueci minha senha."); return; } setLoading(true); const { exists } = await emailIsRegistered({ data: { email } }).catch(() => ({ exists: false })); if (!exists) { setLoading(false); setMessage("Este e-mail não está cadastrado no painel."); return; } const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` }); setLoading(false); setMessage(error ? error.message : "Enviamos um link para seu e-mail para criar uma nova senha."); }}>Esqueci minha senha</Button></div>}
           {message && <p className="rounded-md bg-muted px-3 py-2 text-sm text-foreground">{message}</p>}
           <Button type="submit" className="h-11 w-full" disabled={loading}>{loading ? "Aguarde..." : mode === "login" ? "Entrar" : "Criar conta"}</Button>
         </form>
