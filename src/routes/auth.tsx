@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { Activity, Download, Eye, EyeOff, MapPin, Radio, Ruler, Search, ShieldCheck, Split, Wifi } from "lucide-react";
 import iso from "@/assets/nexora-radius.iso.asset.json";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,17 @@ function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+
+  // Link de confirmação do e-mail: ao voltar com sessão, entra direto no painel.
+  useEffect(() => {
+    const confirming = /type=signup|access_token=|[?&]code=/.test(window.location.href);
+    if (confirming) setMessage("Conta confirmada com sucesso! Entrando no painel...");
+    void supabase.auth.getSession().then(({ data }) => { if (data.session) navigate({ to: "/dashboard", replace: true }); });
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" && session) { setMessage("Conta confirmada com sucesso! Entrando no painel..."); navigate({ to: "/dashboard", replace: true }); }
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setLoading(true); setMessage("");
