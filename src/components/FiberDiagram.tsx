@@ -21,11 +21,12 @@ export function FiberConnections({ node, nodes, onSelect }: { node: FtthNode; no
     {children.length === 0 ? <p className="text-xs text-muted-foreground">Nenhuma caixa de saída ligada.</p> : <ul className="divide-y">
       {children.map((child) => <li key={child.id} className="py-2">
         <Button type="button" variant="ghost" className="h-auto w-full justify-start whitespace-normal px-1 py-2 text-left" onClick={() => onSelect(child.id)} aria-label={`Abrir ligação de ${child.name}`}>
+          {node.node_type === "ceo" && child.parent_in_fiber ? <><FiberSwatch number={child.parent_in_fiber} /><span className="font-mono text-xs">F{child.parent_in_fiber}</span><span className="text-xs text-muted-foreground">fusão →</span></> : null}
           <FiberSwatch number={child.cable_fiber_number} />
           <span className="min-w-0 flex-1 text-xs">
-            <span className="block">{fiberLabel(child.cable_fiber_number)}</span>
+            <span className="block">{node.node_type === "ceo" && child.parent_in_fiber ? `Entrada ${fiberLabel(child.parent_in_fiber)} fundida na saída ${fiberLabel(child.cable_fiber_number)}` : fiberLabel(child.cable_fiber_number)}</span>
             <span className="mt-1 block break-words font-semibold">Conectada a {child.name}</span>
-            <span className="mt-1 block font-normal text-muted-foreground">{node.splitter_type === "unbalanced" ? `Passagem ${100 - node.splitter_tap}%` : node.splitter_ratio > 1 ? child.parent_port ? `Porta ${child.parent_port} do splitter` : "Porta do splitter não definida" : "Emenda direta"} · cabo {child.cable_fibers ?? "—"} fibras</span>
+            <span className="mt-1 block font-normal text-muted-foreground">{node.splitter_type === "unbalanced" ? `Passagem ${100 - node.splitter_tap}%` : node.splitter_ratio > 1 ? child.parent_port ? `Porta ${child.parent_port} do splitter` : "Porta do splitter não definida" : node.node_type === "ceo" ? child.parent_in_fiber ? "Fusão na bandeja" : "Fusão: fibra de entrada não definida" : "Emenda direta"} · cabo {child.cable_fibers ?? "—"} fibras</span>
           </span><ArrowRight className="h-4 w-4 text-muted-foreground" />
         </Button>
       </li>)}

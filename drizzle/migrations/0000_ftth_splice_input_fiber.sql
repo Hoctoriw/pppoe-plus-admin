@@ -1,0 +1,2 @@
+ALTER TABLE public.ftth_nodes ADD COLUMN IF NOT EXISTS parent_in_fiber integer;
+COMMENT ON COLUMN public.ftth_nodes.parent_in_fiber IS 'Fiber of the parent CEO incoming cable fused to this node cable_fiber_number';

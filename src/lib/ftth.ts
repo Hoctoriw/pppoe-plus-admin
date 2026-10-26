@@ -17,6 +17,8 @@ export type FtthNode = {
   cable_fibers: number | null;
   cable_fiber_number: number;
   parent_port: number | null;
+  /** Fibra de entrada da CEO-mãe fundida com a cable_fiber_number desta caixa. */
+  parent_in_fiber?: number | null;
   cable_length_m: number | null;
   slack_m: number;
   notes: string | null;
