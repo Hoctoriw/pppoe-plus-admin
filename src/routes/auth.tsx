@@ -34,6 +34,17 @@ function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
+  // Link de confirmação do e-mail: ao voltar com sessão, entra direto no painel.
+  useEffect(() => {
+    const confirming = /type=signup|access_token=|[?&]code=/.test(window.location.href);
+    if (confirming) setMessage("Conta confirmada com sucesso! Entrando no painel...");
+    void supabase.auth.getSession().then(({ data }) => { if (data.session) navigate({ to: "/dashboard", replace: true }); });
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" && session) { setMessage("Conta confirmada com sucesso! Entrando no painel..."); navigate({ to: "/dashboard", replace: true }); }
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setLoading(true); setMessage("");
     const form = new FormData(event.currentTarget);
