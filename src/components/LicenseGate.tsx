@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { Link } from "@tanstack/react-router";
 import { KeyRound } from "lucide-react";
 import { getMyLicense } from "@/lib/users.functions";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,13 +10,18 @@ import { PixCheckout } from "@/components/PixCheckout";
 export function LicenseGate({ children }: { children: ReactNode }) {
   const fetchLicense = useServerFn(getMyLicense);
   const [state, setState] = useState<{ valid: boolean; admin: boolean; expires_at: string | null } | null>(null);
-  useEffect(() => { fetchLicense().then(setState).catch(() => setState({ valid: true, admin: false, expires_at: null })); }, []);
+  useEffect(() => {
+    const load = () => fetchLicense().then(setState).catch(() => setState((s) => s ?? { valid: true, admin: false, expires_at: null }));
+    load();
+    window.addEventListener("license-updated", load);
+    return () => window.removeEventListener("license-updated", load);
+  }, []);
   if (!state) return null;
   if (state.valid) {
     const days = state.expires_at ? Math.ceil((new Date(state.expires_at).getTime() - Date.now()) / 86400000) : null;
     return <>
       {!state.admin && days !== null && days <= 7 && (
-        <div className="bg-primary/10 px-4 py-2 text-center text-sm text-foreground">Seu acesso expira em {days} dia(s). <a href="/licenca" className="ml-2 font-bold text-primary underline">Renovar agora</a></div>
+        <div className="bg-primary/10 px-4 py-2 text-center text-sm text-foreground">Seu acesso expira em {days} dia(s). <Link to="/licenca" className="ml-2 font-bold text-primary underline">Renovar agora</Link></div>
       )}
       {children}
     </>;

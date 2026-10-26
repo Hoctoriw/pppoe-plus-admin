@@ -17,11 +17,17 @@ export const Route = createFileRoute("/auth")({
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary_large_image" },
   ]}),
+  validateSearch: (s: Record<string, unknown>): { redirect?: string | undefined } => {
+    const r = s["redirect"];
+    return { redirect: typeof r === "string" && r.startsWith("/") && !r.startsWith("//") ? r : undefined };
+  },
   component: AuthPage,
 });
 
 function AuthPage() {
-  const navigate = useNavigate();
+  const nav = useNavigate();
+  const { redirect: back } = Route.useSearch();
+  const navigate = (_o: { to: string; replace?: boolean }) => nav({ to: (back || "/dashboard") as "/dashboard", replace: true });
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [tab, setTab] = useState<"login" | "download" | "guia">("login");
   const [showPassword, setShowPassword] = useState(false);
