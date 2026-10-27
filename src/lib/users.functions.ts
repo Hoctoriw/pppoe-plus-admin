@@ -81,6 +81,11 @@ export const getMyLicense = createServerFn({ method: "GET" })
     const { data: roles } = await db.from("user_roles").select("owner_id").eq("user_id", context.userId);
     const ownerId = (roles ?? []).find((r) => r.owner_id)?.owner_id as string | undefined;
     const licenseUser = ownerId ?? context.userId;
+    if (ownerId) {
+      // Equipe da conta master (admin da plataforma) não precisa de licença
+      const { data: ownerAdmin } = await db.from("user_roles").select("id").eq("user_id", ownerId).eq("role", "admin").maybeSingle();
+      if (ownerAdmin) return { valid: true, admin: false, expires_at: null as string | null, network: true };
+    }
     const { data } = await db.from("licenses").select("expires_at, has_network").eq("user_id", licenseUser).maybeSingle();
     const exp = (data?.expires_at as string | undefined) ?? null;
     const valid = !!exp && new Date(exp) > new Date();
