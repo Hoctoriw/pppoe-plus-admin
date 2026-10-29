@@ -1,4 +1,5 @@
 import { AdminOnly } from "@/components/AdminOnly";
+import { geocodeCustomerAddress } from "@/lib/connections.functions";
 import { NetworkModuleOnly } from "@/components/NetworkModuleOnly";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
@@ -85,11 +86,13 @@ function Clientes() {
       due_day: Number(f.get("due_day")) || null,
       ...addressFromForm(f),
     };
-    const { error } = editing
-      ? await supabase.from("customers").update(payload).eq("id", editing.id)
-      : await supabase.from("customers").insert({ ...payload, status: "active", created_by: user.id });
-    if (error) setMessage(error.message);
-    else { setPanel(false); setEditing(null); setMessage(""); await loadData(); }
+    const { data: saved, error } = editing
+      ? await supabase.from("customers").update(payload).eq("id", editing.id).select("id").single()
+      : await supabase.from("customers").insert({ ...payload, status: "active", created_by: user.id }).select("id").single();
+    if (error) { setMessage(error.message); return; }
+    const addrChanged = !editing || editing.latitude === null || ["street", "address_number", "district", "city", "state"].some(k => (editing as Record<string, unknown>)[k] !== (payload as Record<string, unknown>)[k]);
+    if (saved && addrChanged && payload.street && payload.city && payload.state) { try { await geocodeCustomerAddress({ data: { customerId: saved.id } }); } catch { /* cliente pode ser posicionado manualmente no mapa */ } }
+    setPanel(false); setEditing(null); setMessage(""); await loadData();
   }
 
   async function provision(id: string) { setSyncing(id); try { const r = await provisionFn({ data: { id } }); if (!r.ok) alert(r.error); } catch (e) { alert((e as Error).message); } finally { setSyncing(null); await loadData(); } }
