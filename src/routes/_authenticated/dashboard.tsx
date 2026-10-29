@@ -86,6 +86,28 @@ function FixedIpField({ initial, customerId }: { initial: string; customerId?: s
   const taken = !!value && used.has(value.trim());
   return <div className="space-y-1"><div className="flex gap-2"><Input name="fixed_ip" list="free-ips" value={value} onChange={e => setValue(e.target.value)} placeholder="Vazio = próximo IP livre (192.168.x.x)" pattern="(\d{1,3}\.){3}\d{1,3}" title="Formato: 192.168.10.20" /><Button type="button" variant="outline" onClick={() => setValue(nextFreeIp(used) ?? "")}>Sugerir livre</Button></div><datalist id="free-ips">{free.map(ip => <option key={ip} value={ip} />)}</datalist>{taken && <p className="text-xs text-destructive">Este IP já está em uso por outro cliente.</p>}</div>;
 }
+function CepField({ initial }: { initial: string }) {
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const ref = useRef<HTMLInputElement>(null);
+  async function lookup() {
+    const cep = (ref.current?.value ?? "").replace(/\D/g, "");
+    if (cep.length !== 8) { setMsg("Digite os 8 números do CEP."); return; }
+    setBusy(true); setMsg("");
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const d = await res.json();
+      if (!res.ok || d.erro) { setMsg("CEP não encontrado."); return; }
+      const form = ref.current?.form;
+      const set = (name: string, val?: string) => { const el = form?.elements.namedItem(name) as HTMLInputElement | null; if (el && val) el.value = val; };
+      if (ref.current) ref.current.value = `${cep.slice(0, 5)}-${cep.slice(5)}`;
+      set("street", d.logradouro); set("district", d.bairro); set("city", d.localidade); set("state", d.uf);
+      (form?.elements.namedItem("address_number") as HTMLInputElement | null)?.focus();
+    } catch { setMsg("Não foi possível buscar o CEP agora."); }
+    finally { setBusy(false); }
+  }
+  return <div className="space-y-1"><div className="flex gap-1"><Input ref={ref} name="postal_code" defaultValue={initial} placeholder="00000-000" onChange={e => { if (e.target.value.replace(/\D/g, "").length === 8) void lookup(); }} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); void lookup(); } }} /><Button type="button" size="icon" variant="outline" aria-label="Buscar CEP" disabled={busy} onClick={() => void lookup()}><Search className={busy ? "animate-pulse" : ""} /></Button></div>{msg && <p className="text-xs text-destructive">{msg}</p>}</div>;
+}
 export function addressFromForm(f: FormData) {
   const v = (k: string) => String(f.get(k) ?? "").trim() || null;
   const state = v("state");
