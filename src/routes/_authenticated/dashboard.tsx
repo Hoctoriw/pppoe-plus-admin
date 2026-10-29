@@ -4,7 +4,7 @@ import { NetworkModuleOnly } from "@/components/NetworkModuleOnly";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { freeIps, nextFreeIp } from "@/lib/ip-pool";
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useState, useRef, type FormEvent, type ReactNode } from "react";
 import { LifeBuoy, KeyRound, Activity, Bell, ChevronRight, CircleDollarSign, LayoutDashboard, LogOut, Menu, Package, Plus, Radio, UserPlus, RefreshCw, Router as RouterIcon, Search, ShieldCheck, Users, Wifi, X } from "lucide-react";
 import { listRouters, provisionCustomer } from "@/lib/mikrotik.functions";
 import { Button } from "@/components/ui/button";
