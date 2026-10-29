@@ -87,7 +87,7 @@ function Clientes() {
     };
     const { error } = editing
       ? await supabase.from("customers").update(payload).eq("id", editing.id)
-      : await supabase.from("customers").insert({ ...payload, created_by: user.id });
+      : await supabase.from("customers").insert({ ...payload, status: "active", created_by: user.id });
     if (error) setMessage(error.message);
     else { setPanel(false); setEditing(null); setMessage(""); await loadData(); }
   }
@@ -127,7 +127,7 @@ function Clientes() {
                 <TableCell className="whitespace-nowrap">
                   <Button size="sm" variant="outline" onClick={() => { setEditing(c); setPanel(true); }}>Editar</Button>
                   <Button size="sm" variant="ghost" disabled={syncing === c.id || !c.router_id} title={c.router_id ? "Provisionar no MikroTik" : "Sem roteador vinculado"} onClick={() => provision(c.id)}><RefreshCw className={syncing === c.id ? "animate-spin" : ""} />Provisionar</Button>
-                  {c.status === "suspended" ? <Button size="sm" variant="outline" onClick={() => setStatus(c.id, "active")}>Reativar</Button> : <Button size="sm" variant="outline" onClick={() => setStatus(c.id, "suspended")}>Suspender</Button>}
+                  {c.status === "suspended" || c.status === "pending" ? <Button size="sm" variant="outline" onClick={() => setStatus(c.id, "active")}>{c.status === "pending" ? "Ativar" : "Reativar"}</Button> : <Button size="sm" variant="outline" onClick={() => setStatus(c.id, "suspended")}>Suspender</Button>}
                 </TableCell>
               </TableRow>)}
               {!filtered.length && <TableRow><TableCell colSpan={7} className="h-32 text-center text-muted-foreground">Nenhum cliente encontrado com esses filtros.</TableCell></TableRow>}

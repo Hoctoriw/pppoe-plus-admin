@@ -105,7 +105,7 @@ export function CustomerImport({ plans, userId, onClose, onDone }: { plans: Plan
         ipoe_ip: d.ip || null, mac_address: d.mac ? d.mac.toUpperCase().replace(/-/g, ":") : null,
         due_day: due >= 1 && due <= 31 ? due : null, notes: d.observacoes || null,
         street: d.rua || null, address_number: d.numero || null, district: d.bairro || null, city: d.cidade || null,
-        state: d.uf ? d.uf.toUpperCase() : null, postal_code: d.cep || null, created_by: userId,
+        state: d.uf ? d.uf.toUpperCase() : null, postal_code: d.cep || null, created_by: userId, status: "active",
       };
     });
     let done = 0; const fails: string[] = [];
