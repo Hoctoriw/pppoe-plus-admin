@@ -81,15 +81,22 @@ export const geocodeCustomerAddress = createServerFn({ method: "POST" })
       .single();
     if (error || !customer) throw new Error("Cliente não encontrado.");
 
-    const address = [customer.street, customer.address_number, customer.district, customer.city, customer.state, customer.postal_code, "Brasil"]
-      .filter(Boolean)
-      .join(", ");
     if (!customer.street || !customer.city || !customer.state) {
       throw new Error("Complete rua, cidade e estado no cadastro do cliente antes de localizar.");
     }
-
-    const [match] = await nominatim(address, 1);
-    if (!match) throw new Error("Endereço não encontrado. Confira os dados do cadastro.");
+    const j = (...p: (string | null)[]) => [...p, "Brasil"].filter(Boolean).join(", ");
+    const attempts = [
+      j(customer.street, customer.address_number, customer.district, customer.city, customer.state),
+      j(customer.street, customer.address_number, customer.city, customer.state),
+      j(customer.street, customer.district, customer.city, customer.state),
+      j(customer.street, customer.city, customer.state),
+    ];
+    let match: NominatimHit | undefined;
+    for (const q of [...new Set(attempts)]) {
+      [match] = await nominatim(q, 1);
+      if (match) break;
+    }
+    if (!match) throw new Error("Endereço não encontrado. Clique no mapa para posicionar o cliente.");
     const latitude = match.lat;
     const longitude = match.lon;
     const { error: updateError } = await context.supabase
