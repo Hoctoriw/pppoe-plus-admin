@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          id: number
+          support_email: string
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          support_email?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          support_email?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       backup_settings: {
         Row: {
           created_at: string
@@ -950,6 +968,7 @@ export type Database = {
       }
       user_roles: {
         Row: {
+          can_export_network: boolean
           created_at: string
           id: string
           owner_id: string | null
@@ -957,6 +976,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          can_export_network?: boolean
           created_at?: string
           id?: string
           owner_id?: string | null
@@ -964,6 +984,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          can_export_network?: boolean
           created_at?: string
           id?: string
           owner_id?: string | null

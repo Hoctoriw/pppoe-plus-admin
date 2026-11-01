@@ -1,4 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { canExportNetwork } from "@/lib/settings.functions";
+import { buildDxf, buildGeoJson, buildKml, downloadText, type ExportCustomer } from "@/lib/network-export";
 import { useEffect, useMemo, useState } from "react";
 import { LifeBuoy, KeyRound, AlertTriangle, Anchor, Box, Cable, ChevronRight, CircleDollarSign, LayoutDashboard, LogOut, Menu, Move, Network, Package, Plus, Radio, Router as RouterIcon, Save, Server, ShieldCheck, Split, Trash2, UserPlus, Users, Wifi, X } from "lucide-react";
 import { AdminOnly } from "@/components/AdminOnly";
@@ -65,6 +68,9 @@ function NetworkPage() {
   const [owner, setOwner] = useState<string>(user.id);
   const [nodes, setNodes] = useState<FtthNode[]>([]);
   const [customers, setCustomers] = useState<Cust[]>([]);
+  const checkExport = useServerFn(canExportNetwork);
+  const [canExport, setCanExport] = useState(false);
+  useEffect(() => { checkExport().then((r) => setCanExport(r.allowed)).catch(() => setCanExport(false)); }, []);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [placing, setPlacing] = useState<NodeType | "move" | "anchor" | null>(null);
   const [draft, setDraft] = useState<FtthNode | null>(null);
@@ -227,6 +233,12 @@ function NetworkPage() {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div><p className="text-sm text-muted-foreground">{nodes.filter(n => n.node_type === "olt").length} OLT · {nodes.filter(n => n.node_type === "ceo").length} CEO · {nodes.filter(n => n.node_type === "cto").length} CTO · {customers.filter(c => c.cto_id).length} clientes ligados{weakCount ? ` · ${weakCount} com sinal fraco` : ""}</p><h1 className="mt-1 text-2xl font-extrabold md:text-3xl">Rede FTTH</h1></div>
           <div className="flex flex-wrap gap-2">
+            {canExport && <select aria-label="Exportar mapa" className="h-9 rounded-md border bg-background px-3 text-sm" value="" onChange={(e) => { const f = e.target.value; e.target.value = ""; const custs = customers as ExportCustomer[]; if (f === "dxf") downloadText(buildDxf(nodes, custs), "rede-ftth.dxf", "application/dxf"); if (f === "kml") downloadText(buildKml(nodes, custs), "rede-ftth.kml", "application/vnd.google-earth.kml+xml"); if (f === "geojson") downloadText(buildGeoJson(nodes, custs), "rede-ftth.geojson", "application/geo+json"); }}>
+              <option value="">Exportar mapa…</option>
+              <option value="dxf">AutoCAD (.dxf)</option>
+              <option value="kml">Google Earth (.kml)</option>
+              <option value="geojson">QGIS / GIS (.geojson)</option>
+            </select>}
             <Button variant={placing === "olt" ? "default" : "outline"} onClick={() => setPlacing(placing === "olt" ? null : "olt")}><Server />OLT</Button>
             <Button variant={placing === "ceo" ? "default" : "outline"} onClick={() => setPlacing(placing === "ceo" ? null : "ceo")}><Box />CEO</Button>
             <Button variant={placing === "cto" ? "default" : "outline"} onClick={() => setPlacing(placing === "cto" ? null : "cto")}><Split />CTO</Button>

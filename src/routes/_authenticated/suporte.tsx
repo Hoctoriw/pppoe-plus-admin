@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Copy, LifeBuoy, Mail } from "lucide-react";
 import { toast } from "sonner";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-
-const SUPPORT_EMAIL = "suporte@syncrontelecom.com.br";
+import { supabase } from "@/integrations/supabase/client";
+import { DEFAULT_SUPPORT_EMAIL } from "@/lib/settings.functions";
 
 export const Route = createFileRoute("/_authenticated/suporte")({
   head: () => ({ meta: [
@@ -18,6 +19,8 @@ export const Route = createFileRoute("/_authenticated/suporte")({
 });
 
 function SupportPage() {
+  const [SUPPORT_EMAIL, setEmail] = useState(DEFAULT_SUPPORT_EMAIL);
+  useEffect(() => { supabase.from("app_settings").select("support_email").eq("id", 1).maybeSingle().then(({ data }) => { if (data?.support_email) setEmail(data.support_email); }); }, []);
   const copy = () => { navigator.clipboard.writeText(SUPPORT_EMAIL); toast.success("E-mail copiado"); };
   return <div className="min-h-screen bg-background p-4 md:p-8"><div className="mx-auto max-w-3xl">
     <Link to="/dashboard" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />Voltar ao painel</Link>
