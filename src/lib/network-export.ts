@@ -46,7 +46,7 @@ export function buildDxf(nodes: FtthNode[], customers: ExportCustomer[]) {
     const parent = n.parent_id ? byId.get(n.parent_id) : undefined;
     if (parent) {
       const path = cablePath(n, parent).map(P);
-      const color = FIBER_ACI[(Math.max(1, n.cable_fiber_number || 1) - 1) % 12];
+      const color = FIBER_ACI[(Math.max(1, n.cable_fiber_number || 1) - 1) % 12] ?? 3;
       w(0, "LWPOLYLINE", 8, "CABOS", 62, color, 90, path.length, 70, 0);
       for (const p of path) w(10, p.x.toFixed(3), 20, p.y.toFixed(3));
       for (const a of n.cable_anchors ?? []) { const q = P(a); w(0, "POINT", 8, "ANCORAGENS", 10, q.x.toFixed(3), 20, q.y.toFixed(3), 30, 0); }
