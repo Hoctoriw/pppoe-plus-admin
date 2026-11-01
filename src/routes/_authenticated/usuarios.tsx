@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { listUsers, setUserActive, setUserRole, listLicenses, extendLicense, deleteUserAccount, setLicenseNetwork, setUserPassword } from "@/lib/users.functions";
+import { setSupportEmail } from "@/lib/settings.functions";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/usuarios")({
   head: () => ({ meta: [
@@ -93,4 +96,15 @@ function UsersPage() {
       </section>
     </div>
   </div>;
+}
+
+function SupportEmailEditor() {
+  const save = useServerFn(setSupportEmail);
+  const [email, setEmail] = useState("");
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { supabase.from("app_settings").select("support_email").eq("id", 1).maybeSingle().then(({ data }) => setEmail(data?.support_email ?? "")); }, []);
+  return <form className="mt-4 flex flex-wrap items-end gap-2 rounded-xl border bg-card p-4" onSubmit={async (e) => { e.preventDefault(); setBusy(true); try { await save({ data: { email } }); toast.success("E-mail de suporte atualizado."); } catch (err) { toast.error(err instanceof Error ? err.message : "Erro ao salvar."); } finally { setBusy(false); } }}>
+    <label className="flex flex-col gap-1 text-sm"><span className="font-semibold">E-mail de suporte</span><input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-9 w-72 rounded-md border bg-background px-3" /></label>
+    <Button type="submit" disabled={busy}>Salvar</Button>
+  </form>;
 }
