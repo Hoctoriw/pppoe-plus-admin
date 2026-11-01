@@ -141,9 +141,9 @@ export const listTeamUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const db = await assertAccountOwner(context);
-    const { data: rows } = await db.from("user_roles").select("user_id, role").eq("owner_id", context.userId);
+    const { data: rows } = await db.from("user_roles").select("user_id, role, can_export_network").eq("owner_id", context.userId);
     const ids = [...new Set((rows ?? []).map((r) => r.user_id as string))];
-    if (!ids.length) return [] as { id: string; full_name: string; email: string; roles: string[]; created_at: string }[];
+    if (!ids.length) return [] as { id: string; full_name: string; email: string; roles: string[]; created_at: string; can_export: boolean }[];
     const { data: profiles } = await db.from("profiles").select("id, full_name, created_at").in("id", ids);
     const emails = new Map<string, string>();
     for (const id of ids) {
@@ -156,6 +156,7 @@ export const listTeamUsers = createServerFn({ method: "GET" })
       email: emails.get(p.id as string) ?? "",
       created_at: p.created_at as string,
       roles: (rows ?? []).filter((r) => r.user_id === p.id).map((r) => r.role as string),
+      can_export: (rows ?? []).some((r) => r.user_id === p.id && r.can_export_network),
     }));
   });
 

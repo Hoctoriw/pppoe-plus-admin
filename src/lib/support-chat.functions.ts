@@ -26,10 +26,16 @@ export const askSupport = createServerFn({ method: "POST" })
   })
   .handler(async ({ data }) => {
     const { generateResponse } = await import("@lovable.dev/ai-gateway");
+    let email = "suporte@syncrontelecom.com.br";
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: s } = await supabaseAdmin.from("app_settings").select("support_email").eq("id", 1).maybeSingle();
+      if (s?.support_email) email = s.support_email;
+    } catch { /* usa o padrão */ }
     try {
       const res = await generateResponse({
         model: "openai/gpt-6-astra",
-        instructions: SYSTEM,
+        instructions: SYSTEM.replaceAll("suporte@syncrontelecom.com.br", email),
         input: data.messages.map((m) => ({ role: m.role, content: m.content })),
       });
       const text = ((res as any).output ?? [])
