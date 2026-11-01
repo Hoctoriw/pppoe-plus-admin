@@ -16,20 +16,15 @@ export const listUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context);
-    const db = await admin();
-    const [{ data: profiles }, { data: roles }, { data: authData }] = await Promise.all([
-      db.from("profiles").select("*").order("full_name"),
-      db.from("user_roles").select("user_id, role"),
-      db.auth.admin.listUsers({ perPage: 1000 }),
-    ]);
-    const emails = new Map((authData?.users ?? []).map((u) => [u.id, u.email ?? ""]));
-    return (profiles ?? []).map((p) => ({
-      id: p.id,
-      full_name: p.full_name,
-      email: emails.get(p.id) ?? "",
-      active: p.active,
-      created_at: p.created_at,
-      roles: (roles ?? []).filter((r) => r.user_id === p.id).map((r) => r.role as string),
+    const { data, error } = await (context.supabase as any).rpc("admin_list_users");
+    if (error) throw new Error(error.message);
+    return ((data ?? []) as any[]).map((p) => ({
+      id: p.id as string,
+      full_name: p.full_name as string,
+      email: (p.email as string) ?? "",
+      active: p.active as boolean,
+      created_at: p.created_at as string,
+      roles: (p.roles ?? []) as string[],
     }));
   });
 
