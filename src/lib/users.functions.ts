@@ -69,22 +69,11 @@ export const setUserActive = createServerFn({ method: "POST" })
 export const getMyLicense = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
-    if (isAdmin) return { valid: true, admin: true, expires_at: null as string | null, network: true };
-    // Funcionários usam a licença da conta principal
-    const db = await admin();
-    const { data: roles } = await db.from("user_roles").select("owner_id").eq("user_id", context.userId);
-    const ownerId = (roles ?? []).find((r) => r.owner_id)?.owner_id as string | undefined;
-    const licenseUser = ownerId ?? context.userId;
-    if (ownerId) {
-      // Equipe da conta master (admin da plataforma) não precisa de licença
-      const { data: ownerAdmin } = await db.from("user_roles").select("id").eq("user_id", ownerId).eq("role", "admin").maybeSingle();
-      if (ownerAdmin) return { valid: true, admin: false, expires_at: null as string | null, network: true };
-    }
-    const { data } = await db.from("licenses").select("expires_at, has_network").eq("user_id", licenseUser).maybeSingle();
-    const exp = (data?.expires_at as string | undefined) ?? null;
-    const valid = !!exp && new Date(exp) > new Date();
-    return { valid, admin: false, expires_at: exp, network: valid && !!(data as any)?.has_network };
+    // Funcionários usam a licença da conta principal (calculado no banco)
+    const { data, error } = await (context.supabase as any).rpc("my_license");
+    if (error) throw new Error(error.message);
+    const r = (data ?? {}) as any;
+    return { valid: !!r.valid, admin: !!r.admin, expires_at: (r.expires_at ?? null) as string | null, network: !!r.network };
   });
 
 export const listLicenses = createServerFn({ method: "GET" })
