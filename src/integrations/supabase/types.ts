@@ -998,6 +998,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_list_users: {
+        Args: never
+        Returns: {
+          active: boolean
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          roles: string[]
+        }[]
+      }
+      can_export_network: { Args: never; Returns: boolean }
       can_manage_network: { Args: never; Returns: boolean }
       has_role: {
         Args: {
@@ -1009,6 +1021,12 @@ export type Database = {
       has_team_access: {
         Args: { _owner_id: string; _user_id: string }
         Returns: boolean
+      }
+      my_license: { Args: never; Returns: Json }
+      set_support_email: { Args: { _email: string }; Returns: undefined }
+      set_team_export: {
+        Args: { _allowed: boolean; _user_id: string }
+        Returns: undefined
       }
     }
     Enums: {

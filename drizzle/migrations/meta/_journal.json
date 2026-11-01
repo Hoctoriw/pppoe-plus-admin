@@ -15,6 +15,13 @@
       "when": 1793529098161,
       "tag": "0001_app_settings_and_export_permission",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793530032116,
+      "tag": "0002_secure_admin_rpcs",
+      "breakpoints": true
     }
   ]
 }
