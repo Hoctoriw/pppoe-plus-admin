@@ -111,14 +111,14 @@ function EquipePage() {
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead><tr className="border-b text-left text-muted-foreground"><th className="pb-2 pr-4">Nome</th><th className="pb-2 pr-4">E-mail</th><th className="pb-2 pr-4">Função</th><th className="pb-2 pr-4">Exportar mapa</th><th className="pb-2 pr-4">Desde</th><th className="pb-2" /></tr></thead>
+                    <thead><tr className="border-b text-left text-muted-foreground"><th className="pb-2 pr-4">Nome</th><th className="pb-2 pr-4">E-mail</th><th className="pb-2 pr-4">Função</th><th className="pb-2 pr-4">Desde</th><th className="pb-2" /></tr></thead>
                     <tbody>
                       {team.map((u) => (
                         <tr key={u.id} className="border-b last:border-0">
                           <td className="py-3 pr-4 font-medium">{u.full_name || "—"}</td>
                           <td className="py-3 pr-4">{u.email}</td>
                           <td className="py-3 pr-4">{u.roles.map((r) => ROLE_LABEL[r] ?? r).join(", ") || "—"}</td>
-                          <td className="py-3 pr-4"><input type="checkbox" aria-label={`Permitir ${u.email} exportar o mapa`} className="h-4 w-4 accent-primary" checked={!!u.can_export} onChange={async (e) => { const allowed = e.target.checked; try { await exportFn({ data: { userId: u.id, allowed } }); toast.success(allowed ? "Exportação liberada." : "Exportação bloqueada."); load(); } catch (err) { toast.error(err instanceof Error ? err.message : "Erro ao salvar."); } }} /></td>
+                          
                           <td className="py-3 pr-4">{new Date(u.created_at).toLocaleDateString("pt-BR")}</td>
                           <td className="py-3 text-right"><Button variant="ghost" size="icon" aria-label="Remover" onClick={() => remove(u)}><Trash2 className="h-4 w-4 text-destructive" /></Button></td>
                         </tr>
