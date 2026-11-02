@@ -111,7 +111,7 @@ export function PageTranslator() {
       aria-label="Idioma"
       value={lang}
       onChange={(e) => setLang(e.target.value as Lang)}
-      className="fixed bottom-3 left-3 z-[1000] h-9 rounded-full border bg-card px-3 text-sm text-foreground shadow-md"
+      className="fixed bottom-3 right-3 z-[1000] h-9 rounded-full border bg-card px-3 text-sm text-foreground shadow-md"
     >
       {LANGS.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
     </select>
