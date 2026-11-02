@@ -36,7 +36,8 @@ export const askSupport = createServerFn({ method: "POST" })
       const res = await generateResponse({
         model: "openai/gpt-6-astra",
         instructions: SYSTEM.replaceAll("suporte@syncrontelecom.com.br", email),
-        input: data.messages.map((m) => ({ role: m.role, content: m.content })),
+        // Só mensagens do visitante entram como entrada; respostas anteriores vão como contexto não confiável.
+        input: data.messages.filter((m) => m.role === "user").map((m) => ({ role: "user" as const, content: m.content })),
       });
       const text = ((res as any).output ?? [])
         .flatMap((o: any) => (o.type === "message" ? o.content ?? [] : []))
