@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { LifeBuoy, KeyRound, Bell, ChevronRight, CircleDollarSign, LayoutDashboard, LogOut, Menu, Package, Plus, Radio, Router as RouterIcon, Search, ShieldCheck, Trash2, UserPlus, Users, Wifi, X, Network } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { listTeamUsers, createTeamUser, deleteTeamUser } from "@/lib/users.functions";
-import { setTeamExport } from "@/lib/settings.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,7 +35,6 @@ function EquipePage() {
   const fetchTeam = useServerFn(listTeamUsers);
   const createFn = useServerFn(createTeamUser);
   const deleteFn = useServerFn(deleteTeamUser);
-  const exportFn = useServerFn(setTeamExport);
   const [team, setTeam] = useState<TeamUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [forbidden, setForbidden] = useState(false);
