@@ -39,7 +39,7 @@ export function addBaseLayers(L: typeof import("leaflet"), map: import("leaflet"
   const g = (lyrs: string) => L.tileLayer(`https://{s}.google.com/vt/lyrs=${lyrs}&x={x}&y={y}&z={z}&hl=pt-BR`, {
     maxZoom: 21, subdomains: ["mt0", "mt1", "mt2", "mt3"], attribution: "&copy; Google",
   });
-  const layers: Record<string, import("leaflet").TileLayer> = {
+  const layers = {
     google_hybrid: g("y"),
     google_streets: g("m"),
     google_satellite: g("s"),
@@ -49,12 +49,12 @@ export function addBaseLayers(L: typeof import("leaflet"), map: import("leaflet"
   const named: Record<string, import("leaflet").TileLayer> = {};
   for (const o of MAP_LAYER_OPTIONS) named[o.label] = layers[o.id];
   layers.google_hybrid.addTo(map);
-  let current = layers.google_hybrid;
+  let current: import("leaflet").TileLayer = layers.google_hybrid;
   map.on("baselayerchange", (e: any) => { current = e.layer; });
   L.control.layers(named, undefined, { position: "topright" }).addTo(map);
   void import("@/integrations/supabase/client").then(({ supabase }) =>
     supabase.from("app_settings").select("default_map_layer").eq("id", 1).maybeSingle().then(({ data }) => {
-      const want = layers[(data as any)?.default_map_layer ?? ""];
+      const want = (layers as Record<string, import("leaflet").TileLayer>)[(data as any)?.default_map_layer ?? ""];
       if (want && want !== current && current === layers.google_hybrid) {
         map.removeLayer(current); want.addTo(map); current = want;
       }
