@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Permitir ao administrador configurar dias de teste de novas contas e validar aplicação
+
 - [x] Adicionar pontos de ancoragem aos cabos da Rede FTTH
 - [x] Validar desenho, ajuste, exclusão e recálculo no mapa
 - [x] Selecionar e identificar a fibra usada em cada ligação

@@ -19,18 +19,21 @@ export type Database = {
           default_map_layer: string
           id: number
           support_email: string
+          trial_days: number
           updated_at: string
         }
         Insert: {
           default_map_layer?: string
           id?: number
           support_email?: string
+          trial_days?: number
           updated_at?: string
         }
         Update: {
           default_map_layer?: string
           id?: number
           support_email?: string
+          trial_days?: number
           updated_at?: string
         }
         Relationships: []
@@ -1027,12 +1030,14 @@ export type Database = {
         Returns: boolean
       }
       my_license: { Args: never; Returns: Json }
+      new_trial_expires_at: { Args: { _started_at: string }; Returns: string }
       set_default_map_layer: { Args: { _layer: string }; Returns: undefined }
       set_support_email: { Args: { _email: string }; Returns: undefined }
       set_team_export: {
         Args: { _allowed: boolean; _user_id: string }
         Returns: undefined
       }
+      set_trial_days: { Args: { _days: number }; Returns: undefined }
     }
     Enums: {
       access_technology: "pppoe" | "ipoe" | "hotspot"

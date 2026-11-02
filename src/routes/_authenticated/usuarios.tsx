@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { listUsers, setUserActive, setUserRole, listLicenses, extendLicense, deleteUserAccount, setLicenseNetwork, setUserPassword } from "@/lib/users.functions";
-import { setSupportEmail, setTeamExport } from "@/lib/settings.functions";
+import { setSupportEmail, setTeamExport, setTrialDays } from "@/lib/settings.functions";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -64,7 +65,7 @@ function UsersPage() {
     <div className="mx-auto max-w-6xl">
       <Link to="/dashboard" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />Voltar ao painel</Link>
       <div className="mt-4 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-        <div><p className="text-sm text-muted-foreground">Administração</p><h1 className="text-3xl font-extrabold">Usuários e permissões</h1><SupportEmailEditor /><MapLayerEditor /></div>
+        <div><p className="text-sm text-muted-foreground">Administração</p><h1 className="text-3xl font-extrabold">Usuários e permissões</h1><SupportEmailEditor /><MapLayerEditor />{!denied && <TrialDaysEditor />}</div>
         <div className="flex gap-2"><Button asChild variant="outline"><Link to="/precos">Preços de licença</Link></Button><Button variant="outline" disabled={busy} onClick={() => run(async () => {})}><RefreshCw />Atualizar</Button></div>
       </div>
       {msg && <p className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">{msg}</p>}
@@ -98,6 +99,38 @@ function UsersPage() {
       </section>
     </div>
   </div>;
+}
+
+function TrialDaysEditor() {
+  const save = useServerFn(setTrialDays);
+  const [days, setDays] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    let active = true;
+    void supabase.from("app_settings").select("trial_days").eq("id", 1).maybeSingle().then(({ data, error }) => {
+      if (!active) return;
+      if (error) { toast.error("Não foi possível carregar o período de teste."); return; }
+      setDays(String(data?.trial_days ?? 7));
+      setReady(true);
+    });
+    return () => { active = false; };
+  }, []);
+  return <form className="mt-2 border-t py-4" onSubmit={async (event) => {
+    event.preventDefault();
+    setBusy(true);
+    try { await save({ data: { days: Number(days) } }); toast.success("Período de teste atualizado para novas contas."); }
+    catch (error) { toast.error(error instanceof Error ? error.message : "Erro ao salvar."); }
+    finally { setBusy(false); }
+  }}>
+    <div className="flex flex-wrap items-end gap-2">
+      <label htmlFor="trial-days" className="flex flex-col gap-1 text-sm"><span className="font-semibold">Dias de teste para novas contas</span>
+        <Input id="trial-days" type="number" min={0} max={365} step={1} required value={days} disabled={!ready || busy} onChange={(event) => setDays(event.target.value)} className="w-32" />
+      </label>
+      <Button type="submit" disabled={!ready || busy || days === ""}>{busy ? "Salvando…" : "Salvar dias de teste"}</Button>
+    </div>
+    <p className="mt-2 text-xs text-muted-foreground">De 0 a 365 dias. Zero desativa o teste grátis. Contas existentes mantêm sua validade.</p>
+  </form>;
 }
 
 function SupportEmailEditor() {

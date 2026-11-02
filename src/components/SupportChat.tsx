@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 type Msg = { role: "user" | "assistant"; content: string };
 const SUGGESTIONS = [
-  "Como funciona o teste de 7 dias?",
+  "Como funciona o período de teste?",
   "Como integro com meu MikroTik?",
   "O que dá para fazer na Rede FTTH?",
   "Preciso de IP público?",
@@ -37,7 +37,7 @@ export function SupportChat() {
     setLoading(true);
     const { data: sess } = await supabase.auth.getSession();
     if (!sess.session) {
-      setMsgs([...next, { role: "assistant", content: "Para conversar com o assistente, [entre ou crie sua conta grátis](/auth) — leva menos de um minuto e já inclui 7 dias de teste." }]);
+      setMsgs([...next, { role: "assistant", content: "Para conversar com o assistente, [entre ou crie sua conta](/auth)." }]);
       setLoading(false);
       return;
     }
