@@ -4,6 +4,7 @@ import { MessageCircle, Send, X, RotateCcw } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { askSupport } from "@/lib/support-chat.functions";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
 type Msg = { role: "user" | "assistant"; content: string };
 const SUGGESTIONS = [
@@ -34,6 +35,12 @@ export function SupportChat() {
     setMsgs(next);
     setText("");
     setLoading(true);
+    const { data: sess } = await supabase.auth.getSession();
+    if (!sess.session) {
+      setMsgs([...next, { role: "assistant", content: "Para conversar com o assistente, [entre ou crie sua conta grátis](/auth) — leva menos de um minuto e já inclui 7 dias de teste." }]);
+      setLoading(false);
+      return;
+    }
     try {
       const r = await ask({ data: { messages: next } });
       setMsgs([...next, { role: "assistant", content: r.reply }]);
