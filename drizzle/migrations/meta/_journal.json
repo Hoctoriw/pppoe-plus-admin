@@ -43,6 +43,13 @@
       "when": 1793580863923,
       "tag": "0005_app_settings_authenticated_only",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793652072324,
+      "tag": "0006_configurable_new_account_trial",
+      "breakpoints": true
     }
   ]
 }
