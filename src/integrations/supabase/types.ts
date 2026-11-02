@@ -16,16 +16,19 @@ export type Database = {
     Tables: {
       app_settings: {
         Row: {
+          default_map_layer: string
           id: number
           support_email: string
           updated_at: string
         }
         Insert: {
+          default_map_layer?: string
           id?: number
           support_email?: string
           updated_at?: string
         }
         Update: {
+          default_map_layer?: string
           id?: number
           support_email?: string
           updated_at?: string
@@ -1023,6 +1026,7 @@ export type Database = {
         Returns: boolean
       }
       my_license: { Args: never; Returns: Json }
+      set_default_map_layer: { Args: { _layer: string }; Returns: undefined }
       set_support_email: { Args: { _email: string }; Returns: undefined }
       set_team_export: {
         Args: { _allowed: boolean; _user_id: string }
