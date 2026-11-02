@@ -29,6 +29,13 @@
       "when": 1793577869142,
       "tag": "0003_default_map_layer",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793579474250,
+      "tag": "0004_export_admin_only",
+      "breakpoints": true
     }
   ]
 }

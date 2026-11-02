@@ -1001,6 +1001,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_export_users: { Args: never; Returns: string[] }
       admin_list_users: {
         Args: never
         Returns: {
