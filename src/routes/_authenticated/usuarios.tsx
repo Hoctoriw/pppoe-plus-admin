@@ -62,7 +62,7 @@ function UsersPage() {
     <div className="mx-auto max-w-6xl">
       <Link to="/dashboard" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />Voltar ao painel</Link>
       <div className="mt-4 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-        <div><p className="text-sm text-muted-foreground">Administração</p><h1 className="text-3xl font-extrabold">Usuários e permissões</h1><SupportEmailEditor /></div>
+        <div><p className="text-sm text-muted-foreground">Administração</p><h1 className="text-3xl font-extrabold">Usuários e permissões</h1><SupportEmailEditor /><MapLayerEditor /></div>
         <div className="flex gap-2"><Button asChild variant="outline"><Link to="/precos">Preços de licença</Link></Button><Button variant="outline" disabled={busy} onClick={() => run(async () => {})}><RefreshCw />Atualizar</Button></div>
       </div>
       {msg && <p className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">{msg}</p>}
@@ -107,4 +107,20 @@ function SupportEmailEditor() {
     <label className="flex flex-col gap-1 text-sm"><span className="font-semibold">E-mail de suporte</span><input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-9 w-72 rounded-md border bg-background px-3" /></label>
     <Button type="submit" disabled={busy}>Salvar</Button>
   </form>;
+}
+
+const MAP_OPTS = [
+  ["google_hybrid", "Google Híbrido"], ["google_streets", "Google Ruas"], ["google_satellite", "Google Satélite"], ["osm", "OpenStreetMap"], ["esri", "Esri Satélite"],
+] as const;
+
+function MapLayerEditor() {
+  const [layer, setLayer] = useState("google_hybrid");
+  useEffect(() => { supabase.from("app_settings").select("default_map_layer").eq("id", 1).maybeSingle().then(({ data }) => setLayer((data as any)?.default_map_layer ?? "google_hybrid")); }, []);
+  return <div className="mt-2 flex flex-wrap items-end gap-2 rounded-xl border bg-card p-4">
+    <label className="flex flex-col gap-1 text-sm"><span className="font-semibold">Mapa padrão</span>
+      <select value={layer} onChange={async (e) => { const v = e.target.value; setLayer(v); const { error } = await (supabase as any).rpc("set_default_map_layer", { _layer: v }); if (error) toast.error(error.message); else toast.success("Mapa padrão atualizado."); }} className="h-9 w-72 rounded-md border bg-background px-3">
+        {MAP_OPTS.map(([id, l]) => <option key={id} value={id}>{l}</option>)}
+      </select>
+    </label>
+  </div>;
 }
