@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertLicensed } from "./license.server";
 
 export type ConnectionCustomer = {
   id: string;
@@ -55,6 +56,7 @@ async function nominatim(q: string, limit: number): Promise<NominatimHit[]> {
 export const listConnectionCustomers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await assertLicensed(context.supabase);
     const owner = await ownerOf(context.supabase, context.userId);
     const { data, error } = await context.supabase
       .from("customers")
@@ -72,6 +74,7 @@ export const geocodeCustomerAddress = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((value) => z.object({ customerId: z.string().uuid() }).parse(value))
   .handler(async ({ data, context }) => {
+    await assertLicensed(context.supabase);
     const owner = await ownerOf(context.supabase, context.userId);
     const { data: customer, error } = await context.supabase
       .from("customers")
@@ -116,6 +119,7 @@ export const saveCustomerCoordinates = createServerFn({ method: "POST" })
     longitude: z.number().min(-180).max(180),
   }).parse(value))
   .handler(async ({ data, context }) => {
+    await assertLicensed(context.supabase);
     const owner = await ownerOf(context.supabase, context.userId);
     const { error } = await context.supabase
       .from("customers")

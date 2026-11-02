@@ -1,11 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertLicensed } from "./license.server";
 import { BLOCK_LIST, BLOCK_PROFILE, profileName, provisionOne, ros, upsert } from "./mikrotik.server";
 
 type Ctx = { supabase: any; userId: string };
 
-async function assertStaff(_ctx: Ctx) { /* cada usuário opera o próprio painel */ }
+async function assertStaff(ctx: Ctx) { await assertLicensed(ctx.supabase); }
 async function assertAdmin(_ctx: Ctx) { /* cada usuário gerencia os próprios roteadores */ }
 async function admin() {
   return (await import("@/integrations/supabase/client.server")).supabaseAdmin;

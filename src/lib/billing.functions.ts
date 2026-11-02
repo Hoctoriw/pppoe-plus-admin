@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertLicensed } from "./license.server";
 import { cancelBoleto, emitBoleto, fetchBoleto, type BankAccount } from "./billing.server";
 
 type Ctx = { supabase: any; userId: string };
@@ -83,6 +84,7 @@ export const emitInvoiceBoleto = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ invoice_id: z.string().uuid(), bank_account_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertManager(context);
+    await assertLicensed(context.supabase);
     const db = await admin();
     const { data: invoice, error } = await db
       .from("invoices")
@@ -122,6 +124,7 @@ export const refreshInvoiceBoleto = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ invoice_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertManager(context);
+    await assertLicensed(context.supabase);
     const db = await admin();
     const { data: invoice } = await db.from("invoices").select("*").eq("id", data.invoice_id).eq("owner_id", context.userId).single();
     if (!invoice?.provider_charge_id || !invoice.bank_account_id) throw new Error("Cobrança sem boleto emitido.");
@@ -148,6 +151,7 @@ export const cancelInvoiceBoleto = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ invoice_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertManager(context);
+    await assertLicensed(context.supabase);
     const db = await admin();
     const { data: invoice } = await db.from("invoices").select("*").eq("id", data.invoice_id).eq("owner_id", context.userId).single();
     if (!invoice?.provider_charge_id || !invoice.bank_account_id) throw new Error("Cobrança sem boleto emitido.");

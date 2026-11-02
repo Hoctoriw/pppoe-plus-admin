@@ -69,8 +69,17 @@ const backupSchema = z.object({
   ftth_nodes: z.array(z.record(z.string(), z.unknown())).optional(),
 });
 
-// Campos que nunca podem vir do arquivo (segredos e identidade de dono).
-const BLOCKED_FIELDS = new Set(["owner_id", "password", "api_key", "radius_secret"]);
+// Somente colunas de negócio conhecidas podem vir do arquivo (nunca owner_id, segredos ou campos internos).
+const ALLOWED: Record<string, string[]> = {
+  plans: ["id","name","download_mbps","upload_mbps","monthly_price","technology","status","description"],
+  routers: ["id","name","base_url","username","dhcp_server","connection_mode","active","radius_enabled","radius_host","radius_auth_port","radius_acct_port","via_agent"],
+  bank_accounts: ["id","name","bank_code","agency","agency_digit","account_number","account_digit","wallet","convenio","provider","environment","active"],
+  ftth_nodes: ["id","node_type","name","latitude","longitude","parent_id","pon_port","tx_power_dbm","splitter_ratio","fusion_count","connector_count","ports","cable_fibers","cable_length_m","notes","splitter_type","splitter_tap","parent_leg","cable_anchors","cable_fiber_number","distribution_ratio","parent_port","slack_m","parent_in_fiber"],
+  customers: ["id","full_name","document","email","phone","street","address_number","district","city","state","postal_code","technology","plan_id","pppoe_username","pppoe_password","ipoe_ip","mac_address","status","notes","router_id","due_day","latitude","longitude","cto_id","cto_port"],
+  customer_equipment: ["id","customer_id","equipment_type","brand","model","serial_number","mac_address","delivered_at","returned_at","notes"],
+  invoices: ["id","customer_id","amount","due_date","paid_at","status","method","notes","bank_account_id","nosso_numero","linha_digitavel","barcode","boleto_url","provider_charge_id","boleto_status"],
+};
+const uuid = z.string().uuid();
 
 export const restoreBackup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -82,17 +91,27 @@ export const restoreBackup = createServerFn({ method: "POST" })
     try { parsed = JSON.parse(data.json); } catch { throw new Error("Arquivo inválido: não é um JSON de backup."); }
     const backup = backupSchema.parse(parsed);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const db = supabaseAdmin as any;
     const restored: Record<string, number> = {};
     for (const table of RESTORE_ORDER) {
       const rows = backup[table as keyof typeof backup] ?? [];
       if (!rows.length) { restored[table] = 0; continue; }
+      const allowed = ALLOWED[table]!;
       const clean = rows.map((r) => {
         const row: Record<string, unknown> = {};
-        for (const [k, v] of Object.entries(r)) if (!BLOCKED_FIELDS.has(k)) row[k] = v;
+        for (const k of allowed) if (k in r) row[k] = r[k];
+        if (!uuid.safeParse(row["id"]).success) throw new Error(`Arquivo inválido: registro sem id válido em ${table}.`);
         row["owner_id"] = owner;
         return row;
       });
-      const { error } = await (supabaseAdmin as any).from(table).upsert(clean, { onConflict: "id" });
+      // Recusa ids que já pertencem a outro provedor (impede sobrescrever dados de terceiros).
+      const ids = clean.map((r) => r["id"] as string);
+      for (let i = 0; i < ids.length; i += 500) {
+        const { data: foreign, error: fe } = await db.from(table).select("id").in("id", ids.slice(i, i + 500)).neq("owner_id", owner).limit(1);
+        if (fe) throw new Error(`Erro ao validar ${table}.`);
+        if (foreign?.length) throw new Error(`Arquivo inválido: contém registros que não pertencem a esta conta (${table}).`);
+      }
+      const { error } = await db.from(table).upsert(clean, { onConflict: "id" });
       if (error) throw new Error(`Erro ao restaurar ${table}: ${error.message}`);
       restored[table] = clean.length;
     }
