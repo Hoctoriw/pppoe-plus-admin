@@ -55,7 +55,7 @@ export function SupportChat() {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground shadow-lg"
+        className="fixed bottom-14 right-3 z-50 flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground shadow-lg"
         aria-label="Abrir chat de dúvidas"
       >
         <MessageCircle className="h-5 w-5" /> Tire dúvidas com nossa IA
