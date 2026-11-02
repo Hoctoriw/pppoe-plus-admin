@@ -44,8 +44,8 @@ export function buildDxf(nodes: FtthNode[], customers: ExportCustomer[]) {
     9, "$LIMMIN", 10, minX.toFixed(3), 20, minY.toFixed(3),
     9, "$LIMMAX", 10, maxX.toFixed(3), 20, maxY.toFixed(3), 0, "ENDSEC");
   w(0, "SECTION", 2, "TABLES", 0, "TABLE", 2, "VPORT", 70, 1, 0, "VPORT", 2, "*ACTIVE", 70, 0,
-    10, 0, 20, 0, 11, 1, 21, 1, 12, cx.toFixed(3), 22, cy.toFixed(3), 40, size.toFixed(3), 41, 1.5, 0, "ENDTAB", 0, "ENDSEC");
-  w(0, "SECTION", 2, "TABLES", 0, "TABLE", 2, "LAYER", 70, Object.keys(LAYERS).length);
+    10, 0, 20, 0, 11, 1, 21, 1, 12, cx.toFixed(3), 22, cy.toFixed(3), 40, size.toFixed(3), 41, 1.5, 0, "ENDTAB");
+  w(0, "TABLE", 2, "LAYER", 70, Object.keys(LAYERS).length);
   for (const [name, color] of Object.entries(LAYERS)) w(0, "LAYER", 2, name, 70, 0, 62, color, 6, "CONTINUOUS");
   w(0, "ENDTAB", 0, "ENDSEC", 0, "SECTION", 2, "ENTITIES");
   const byId = new Map(nodes.map((n) => [n.id, n]));
