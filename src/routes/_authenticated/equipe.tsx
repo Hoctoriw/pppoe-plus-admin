@@ -156,5 +156,5 @@ function EquipePage() {
 }
 
 function NavItem({ icon, label, active }: { icon: React.ReactNode; label: string; active?: boolean }) {
-  return <div className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium ${active ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50"}`}>{icon}{label}</div>;
+  return <div className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium ${active ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50"}`}>{icon}<Tr text={label} /></div>;
 }
