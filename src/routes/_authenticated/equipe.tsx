@@ -1,4 +1,4 @@
-import { Tr, LanguageSelect } from "@/lib/i18n";
+import { Tr } from "@/lib/i18n";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";

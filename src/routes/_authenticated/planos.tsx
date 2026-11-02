@@ -1,4 +1,4 @@
-import { Tr, LanguageSelect } from "@/lib/i18n";
+import { Tr } from "@/lib/i18n";
 import { AdminOnly } from "@/components/AdminOnly";
 import { NetworkModuleOnly } from "@/components/NetworkModuleOnly";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
