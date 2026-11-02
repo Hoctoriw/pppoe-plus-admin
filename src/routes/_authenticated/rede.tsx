@@ -76,6 +76,8 @@ function NetworkPage() {
   const [draft, setDraft] = useState<FtthNode | null>(null);
   const [selectedAnchor, setSelectedAnchor] = useState<number | null>(null);
   const [message, setMessage] = useState("");
+  const [exportOlt, setExportOlt] = useState("");
+  const [exportClients, setExportClients] = useState(true);
   const [mobileNav, setMobileNav] = useState(false);
 
   async function load() {
