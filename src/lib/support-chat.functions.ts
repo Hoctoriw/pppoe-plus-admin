@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -16,6 +17,7 @@ Fatos do produto:
 Se não souber algo ou for questão específica de uma conta, indique o e-mail de suporte. Não invente preços nem recursos. Quando o visitante demonstrar interesse, convide para "Testar grátis por 7 dias".`;
 
 export const askSupport = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: { messages: Msg[] }) => {
     const messages = (input?.messages ?? [])
       .filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
