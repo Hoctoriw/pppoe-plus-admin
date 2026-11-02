@@ -5,7 +5,7 @@ import { SupportChat } from "@/components/SupportChat";
 
 const URL = "https://rede.syncrontelecom.com/";
 const TITLE = "Syncron ISP | Sistema para provedor de internet";
-const DESC = "Sistema de gestão para provedores: PPPoE, RADIUS, MikroTik, boletos, Pix e mapa FTTH. Teste grátis por 7 dias.";
+const DESC = "Sistema de gestão para provedores: PPPoE, RADIUS, MikroTik, boletos, Pix e mapa FTTH. Conheça o Syncron ISP.";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -58,7 +58,7 @@ function Landing() {
             Gerencie clientes, planos, MikroTik, RADIUS, cobranças e sua rede de fibra em um só painel. Uma alternativa moderna ao MK-AUTH.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Button asChild size="lg"><Link to="/auth">Testar grátis por 7 dias</Link></Button>
+            <Button asChild size="lg"><Link to="/auth">Criar minha conta</Link></Button>
             <Button asChild size="lg" variant="outline"><a href="#recursos">Ver recursos</a></Button>
           </div>
         </section>
