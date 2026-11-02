@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { canExportNetwork } from "@/lib/settings.functions";
-import { buildDxf, buildGeoJson, buildKml, downloadText, type ExportCustomer } from "@/lib/network-export";
+import { buildDxf, buildGeoJson, buildKml, downloadText, filterByOlt, type ExportCustomer } from "@/lib/network-export";
 import { useEffect, useMemo, useState } from "react";
 import { LifeBuoy, KeyRound, AlertTriangle, Anchor, Box, Cable, ChevronRight, CircleDollarSign, LayoutDashboard, LogOut, Menu, Move, Network, Package, Plus, Radio, Router as RouterIcon, Save, Server, ShieldCheck, Split, Trash2, UserPlus, Users, Wifi, X } from "lucide-react";
 import { AdminOnly } from "@/components/AdminOnly";
@@ -233,7 +233,12 @@ function NetworkPage() {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div><p className="text-sm text-muted-foreground">{nodes.filter(n => n.node_type === "olt").length} OLT · {nodes.filter(n => n.node_type === "ceo").length} CEO · {nodes.filter(n => n.node_type === "cto").length} CTO · {customers.filter(c => c.cto_id).length} clientes ligados{weakCount ? ` · ${weakCount} com sinal fraco` : ""}</p><h1 className="mt-1 text-2xl font-extrabold md:text-3xl">Rede FTTH</h1></div>
           <div className="flex flex-wrap gap-2">
-            {canExport && <select aria-label="Exportar mapa" className="h-9 rounded-md border bg-background px-3 text-sm" value="" onChange={(e) => { const f = e.target.value; e.target.value = ""; const custs = customers as ExportCustomer[]; if (f === "dxf") downloadText(buildDxf(nodes, custs), "rede-ftth.dxf", "application/dxf"); if (f === "kml") downloadText(buildKml(nodes, custs), "rede-ftth.kml", "application/vnd.google-earth.kml+xml"); if (f === "geojson") downloadText(buildGeoJson(nodes, custs), "rede-ftth.geojson", "application/geo+json"); }}>
+            {canExport && <select aria-label="Projeto a exportar" className="h-9 max-w-48 rounded-md border bg-background px-3 text-sm" value={exportOlt} onChange={(e) => setExportOlt(e.target.value)}>
+              <option value="">Toda a rede</option>
+              {nodes.filter((n) => n.node_type === "olt").map((o) => <option key={o.id} value={o.id}>OLT {o.name} + conectados</option>)}
+            </select>}
+            {canExport && <label className="flex h-9 items-center gap-1 rounded-md border px-2 text-sm"><input type="checkbox" checked={exportClients} onChange={(e) => setExportClients(e.target.checked)} />Clientes</label>}
+            {canExport && <select aria-label="Exportar mapa" className="h-9 rounded-md border bg-background px-3 text-sm" value="" onChange={(e) => { const f = e.target.value; e.target.value = ""; const sub = filterByOlt(nodes, customers as ExportCustomer[], exportOlt || null, exportClients); if (!sub.nodes.length) { setMessage("Nada para exportar nesse projeto."); return; } const olt = nodes.find((n) => n.id === exportOlt); const base = olt ? `rede-olt-${olt.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}` : "rede-ftth"; if (f === "dxf") { downloadText(buildDxf(sub.nodes, sub.customers), `${base}.dxf`, "application/dxf"); setMessage(`Exportado ${sub.nodes.length} caixas e ${sub.customers.length} clientes. No AutoCAD, se a tela vier vazia, digite ZOOM e depois E.`); } if (f === "kml") downloadText(buildKml(sub.nodes, sub.customers), `${base}.kml`, "application/vnd.google-earth.kml+xml"); if (f === "geojson") downloadText(buildGeoJson(sub.nodes, sub.customers), `${base}.geojson`, "application/geo+json"); }}>
               <option value="">Exportar mapa…</option>
               <option value="dxf">AutoCAD (.dxf)</option>
               <option value="kml">Google Earth (.kml)</option>
