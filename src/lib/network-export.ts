@@ -32,7 +32,19 @@ export function buildDxf(nodes: FtthNode[], customers: ExportCustomer[]) {
   const P = (p: Pt) => toUtm(Number(p.latitude), Number(p.longitude), zone);
   const out: string[] = [];
   const w = (...a: (string | number)[]) => out.push(...a.map(String));
-  w(0, "SECTION", 2, "HEADER", 9, "$ACADVER", 1, "AC1015", 9, "$INSUNITS", 70, 6, 0, "ENDSEC");
+  const all: Pt[] = [...pts, ...nodes.flatMap((n) => n.cable_anchors ?? [])];
+  const proj = all.map(P);
+  const xs = proj.map((p) => p.x), ys = proj.map((p) => p.y);
+  const minX = xs.length ? Math.min(...xs) - 20 : 0, maxX = xs.length ? Math.max(...xs) + 20 : 100;
+  const minY = ys.length ? Math.min(...ys) - 20 : 0, maxY = ys.length ? Math.max(...ys) + 20 : 100;
+  const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2, size = Math.max(maxX - minX, maxY - minY) * 1.1;
+  w(0, "SECTION", 2, "HEADER", 9, "$ACADVER", 1, "AC1015", 9, "$INSUNITS", 70, 6,
+    9, "$EXTMIN", 10, minX.toFixed(3), 20, minY.toFixed(3), 30, 0,
+    9, "$EXTMAX", 10, maxX.toFixed(3), 20, maxY.toFixed(3), 30, 0,
+    9, "$LIMMIN", 10, minX.toFixed(3), 20, minY.toFixed(3),
+    9, "$LIMMAX", 10, maxX.toFixed(3), 20, maxY.toFixed(3), 0, "ENDSEC");
+  w(0, "SECTION", 2, "TABLES", 0, "TABLE", 2, "VPORT", 70, 1, 0, "VPORT", 2, "*ACTIVE", 70, 0,
+    10, 0, 20, 0, 11, 1, 21, 1, 12, cx.toFixed(3), 22, cy.toFixed(3), 40, size.toFixed(3), 41, 1.5, 0, "ENDTAB", 0, "ENDSEC");
   w(0, "SECTION", 2, "TABLES", 0, "TABLE", 2, "LAYER", 70, Object.keys(LAYERS).length);
   for (const [name, color] of Object.entries(LAYERS)) w(0, "LAYER", 2, name, 70, 0, 62, color, 6, "CONTINUOUS");
   w(0, "ENDTAB", 0, "ENDSEC", 0, "SECTION", 2, "ENTITIES");
