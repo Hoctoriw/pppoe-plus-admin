@@ -109,3 +109,17 @@ export function downloadText(text: string, filename: string, mime: string) {
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 30_000);
 }
+
+/** Retorna só a árvore ligada a uma OLT (caixas descendentes e clientes dessas CTOs). */
+export function filterByOlt<C extends ExportCustomer>(nodes: FtthNode[], customers: C[], oltId: string | null, withCustomers = true) {
+  let keep = nodes;
+  if (oltId) {
+    const ids = new Set([oltId]);
+    let grew = true;
+    while (grew) { grew = false; for (const n of nodes) if (n.parent_id && ids.has(n.parent_id) && !ids.has(n.id)) { ids.add(n.id); grew = true; } }
+    keep = nodes.filter((n) => ids.has(n.id));
+  }
+  const ids = new Set(keep.map((n) => n.id));
+  const custs = !withCustomers ? [] : oltId ? customers.filter((c) => c.cto_id && ids.has(c.cto_id)) : customers;
+  return { nodes: keep, customers: custs };
+}
