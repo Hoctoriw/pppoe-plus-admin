@@ -79,7 +79,7 @@ function apply(root: Node, lang: Lang) {
         if (v == null) continue;
         if (!o) { o = {}; attrOrig.set(el, o); }
         if (!(a in o)) o[a] = v;
-        const next = tr(o[a], lang);
+        const next = tr(o[a] ?? v, lang);
         if (v !== next) el.setAttribute(a, next);
       }
     }
