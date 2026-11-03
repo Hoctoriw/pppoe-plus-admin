@@ -803,6 +803,7 @@ export type Database = {
           hostname: string
           last_seen_at: string
           local_ip: string | null
+          owner_id: string | null
           radius_ok: boolean
           token_hash: string | null
           uptime: string | null
@@ -812,6 +813,7 @@ export type Database = {
           hostname: string
           last_seen_at?: string
           local_ip?: string | null
+          owner_id?: string | null
           radius_ok?: boolean
           token_hash?: string | null
           uptime?: string | null
@@ -821,6 +823,7 @@ export type Database = {
           hostname?: string
           last_seen_at?: string
           local_ip?: string | null
+          owner_id?: string | null
           radius_ok?: boolean
           token_hash?: string | null
           uptime?: string | null

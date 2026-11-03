@@ -1,16 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { freeIps } from "@/lib/ip-pool";
-import { createHash, timingSafeEqual } from "crypto";
-
-function authorized(request: Request) {
-  const expected = process.env["RADIUS_API_TOKEN"];
-  if (!expected) return false;
-  const url = new URL(request.url);
-  const given = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? url.searchParams.get("token") ?? "";
-  const a = createHash("sha256").update(given).digest();
-  const b = createHash("sha256").update(expected).digest();
-  return timingSafeEqual(a, b);
-}
+import { createHash } from "crypto";
+import { resolveOwner } from "@/lib/radius-token.server";
 
 // rlm_rest envia { "User-Name": { "type": "string", "value": ["x"] }, ... }
 function attr(body: any, name: string): string {
@@ -28,14 +19,15 @@ export const Route = createFileRoute("/api/public/radius/$action")({
   server: {
     handlers: {
       GET: async ({ request, params }) => {
-        if (!authorized(request)) return new Response("Unauthorized", { status: 403 });
+        const owner = await resolveOwner(request);
+        if (!owner) return new Response("Unauthorized", { status: 403 });
         if (params.action === "version") return Response.json({ version: AGENT_VERSION });
         if (params.action === "commands") {
           // Ponte local: entrega comandos pendentes (com credenciais) ao agente e marca como em execução
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
           const db = supabaseAdmin as any;
           await db.from("router_commands").delete().lt("created_at", new Date(Date.now() - 120000).toISOString());
-          const { data: cmds } = await db.from("router_commands").select("id, router_id, owner_id, method, path, body").eq("status", "pending").order("created_at").limit(20);
+          const { data: cmds } = await db.from("router_commands").select("id, router_id, owner_id, method, path, body").eq("status", "pending").eq("owner_id", owner).order("created_at").limit(20);
           const out: string[] = [];
           for (const c of cmds ?? []) {
             const { data: upd } = await db.from("router_commands").update({ status: "running" }).eq("id", c.id).eq("status", "pending").select("id");
@@ -53,7 +45,7 @@ export const Route = createFileRoute("/api/public/radius/$action")({
         if (params.action !== "clients") return new Response("Not found", { status: 404 });
         // Lista de roteadores autorizados (clients.conf do FreeRADIUS)
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { data } = await supabaseAdmin.from("routers").select("id, name, base_url, radius_secret").eq("radius_enabled", true);
+        const { data } = await supabaseAdmin.from("routers").select("id, name, base_url, radius_secret").eq("radius_enabled", true).eq("owner_id", owner);
         const lines: string[] = [];
         for (const r of data ?? []) {
           let host = "";
@@ -66,7 +58,8 @@ export const Route = createFileRoute("/api/public/radius/$action")({
         return new Response(lines.join("\n") + "\n", { headers: { "Content-Type": "text/plain" } });
       },
       POST: async ({ request, params }) => {
-        if (!authorized(request)) return new Response("Unauthorized", { status: 403 });
+        const owner = await resolveOwner(request);
+        if (!owner) return new Response("Unauthorized", { status: 403 });
         const body = await request.json().catch(() => ({}));
 
         if (params.action === "result") {
@@ -75,7 +68,7 @@ export const Route = createFileRoute("/api/public/radius/$action")({
           let result = "";
           try { result = decodeURIComponent(escape(atob(String(body?.result ?? "")))); } catch { result = ""; }
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-          await (supabaseAdmin as any).from("router_commands").update({ status: "done", http_status: Number(body?.http_status) || 0, result: result.slice(0, 2_000_000), done_at: new Date().toISOString() }).eq("id", id).eq("status", "running");
+          await (supabaseAdmin as any).from("router_commands").update({ status: "done", http_status: Number(body?.http_status) || 0, result: result.slice(0, 2_000_000), done_at: new Date().toISOString() }).eq("id", id).eq("owner_id", owner).eq("status", "running");
           return new Response(null, { status: 204 });
         }
         if (params.action === "auth-master") {
@@ -89,6 +82,7 @@ export const Route = createFileRoute("/api/public/radius/$action")({
           const j: any = await r.json().catch(() => ({}));
           const uid = String(j?.user?.id ?? "");
           if (!uid) return new Response("Unauthorized", { status: 401 });
+          if (uid !== owner) return new Response("Forbidden", { status: 403 });
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
           const { data: team } = await (supabaseAdmin as any).from("user_roles").select("owner_id").eq("user_id", uid).not("owner_id", "is", null).neq("owner_id", uid).limit(1);
           if (team?.length) return new Response("Forbidden", { status: 403 });
@@ -99,7 +93,7 @@ export const Route = createFileRoute("/api/public/radius/$action")({
           const hostname = s(body?.hostname, 80).replace(/[^A-Za-z0-9._-]/g, "");
           if (!hostname) return new Response("Missing hostname", { status: 400 });
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-          await (supabaseAdmin as any).from("radius_appliances").upsert({ hostname, local_ip: s(body?.local_ip, 64), version: s(body?.version, 20), radius_ok: body?.radius_ok === true, uptime: s(body?.uptime, 80), last_seen_at: new Date().toISOString() });
+          await (supabaseAdmin as any).from("radius_appliances").upsert({ hostname, local_ip: s(body?.local_ip, 64), version: s(body?.version, 20), radius_ok: body?.radius_ok === true, uptime: s(body?.uptime, 80), owner_id: owner, last_seen_at: new Date().toISOString() });
           return Response.json({ version: AGENT_VERSION });
         }
         if (params.action === "accounting") {
@@ -110,7 +104,7 @@ export const Route = createFileRoute("/api/public/radius/$action")({
             const inB = n("Acct-Input-Gigawords") * 4294967296 + n("Acct-Input-Octets");
             const outB = n("Acct-Output-Gigawords") * 4294967296 + n("Acct-Output-Octets");
             const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-            await (supabaseAdmin as any).from("customers").update({ acct_input_bytes: inB, acct_output_bytes: outB, acct_session_time: n("Acct-Session-Time"), acct_updated_at: new Date().toISOString(), online: type !== "stop" }).eq("pppoe_username", user);
+            await (supabaseAdmin as any).from("customers").update({ acct_input_bytes: inB, acct_output_bytes: outB, acct_session_time: n("Acct-Session-Time"), acct_updated_at: new Date().toISOString(), online: type !== "stop" }).eq("pppoe_username", user).eq("owner_id", owner);
           }
           return new Response(null, { status: 204 });
         }
@@ -121,9 +115,9 @@ export const Route = createFileRoute("/api/public/radius/$action")({
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
         const cols = "id, owner_id, status, technology, pppoe_password, ipoe_ip, plans(upload_mbps, download_mbps)";
-        let { data: c } = await supabaseAdmin.from("customers").select(cols).eq("pppoe_username", user).in("technology", ["pppoe", "hotspot"]).maybeSingle();
+        let { data: c } = await supabaseAdmin.from("customers").select(cols).eq("pppoe_username", user).eq("owner_id", owner).in("technology", ["pppoe", "hotspot"]).maybeSingle();
         if (!c && MAC.test(user)) {
-          ({ data: c } = await supabaseAdmin.from("customers").select(cols).eq("mac_address", user.replace(/-/g, ":").toUpperCase()).eq("technology", "ipoe").maybeSingle());
+          ({ data: c } = await supabaseAdmin.from("customers").select(cols).eq("mac_address", user.replace(/-/g, ":").toUpperCase()).eq("owner_id", owner).eq("technology", "ipoe").maybeSingle());
         }
         if (!c || (c.status !== "active" && c.status !== "suspended")) return new Response(JSON.stringify({ "reply:Reply-Message": "Acesso negado" }), { status: 401, headers: { "Content-Type": "application/json" } });
 
