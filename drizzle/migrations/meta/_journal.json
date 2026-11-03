@@ -50,6 +50,13 @@
       "when": 1793652072324,
       "tag": "0006_configurable_new_account_trial",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793665651894,
+      "tag": "0007_radius_appliance_owner",
+      "breakpoints": true
     }
   ]
 }
