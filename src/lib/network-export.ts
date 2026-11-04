@@ -38,18 +38,28 @@ export function buildDxf(nodes: FtthNode[], customers: ExportCustomer[]) {
   const minX = xs.length ? Math.min(...xs) - 20 : 0, maxX = xs.length ? Math.max(...xs) + 20 : 100;
   const minY = ys.length ? Math.min(...ys) - 20 : 0, maxY = ys.length ? Math.max(...ys) + 20 : 100;
   const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2, size = Math.max(maxX - minX, maxY - minY) * 1.1;
-  w(0, "SECTION", 2, "HEADER", 9, "$ACADVER", 1, "AC1015", 9, "$INSUNITS", 70, 6,
+  // DXF R12 (AC1009): formato mais compatível (AutoCAD, BricsCAD, LibreCAD, QGIS).
+  w(0, "SECTION", 2, "HEADER", 9, "$ACADVER", 1, "AC1009",
     9, "$EXTMIN", 10, minX.toFixed(3), 20, minY.toFixed(3), 30, 0,
     9, "$EXTMAX", 10, maxX.toFixed(3), 20, maxY.toFixed(3), 30, 0,
     9, "$LIMMIN", 10, minX.toFixed(3), 20, minY.toFixed(3),
     9, "$LIMMAX", 10, maxX.toFixed(3), 20, maxY.toFixed(3), 0, "ENDSEC");
-  w(0, "SECTION", 2, "TABLES", 0, "TABLE", 2, "VPORT", 70, 1, 0, "VPORT", 2, "*ACTIVE", 70, 0,
-    10, 0, 20, 0, 11, 1, 21, 1, 12, cx.toFixed(3), 22, cy.toFixed(3), 40, size.toFixed(3), 41, 1.5, 0, "ENDTAB");
-  w(0, "TABLE", 2, "LAYER", 70, Object.keys(LAYERS).length);
+  w(0, "SECTION", 2, "TABLES");
+  w(0, "TABLE", 2, "VPORT", 70, 1, 0, "VPORT", 2, "*ACTIVE", 70, 0,
+    10, 0, 20, 0, 11, 1, 21, 1, 12, cx.toFixed(3), 22, cy.toFixed(3), 13, 0, 23, 0, 14, 1, 24, 1, 15, 0, 25, 0,
+    16, 0, 26, 0, 36, 1, 17, 0, 27, 0, 37, 0, 40, size.toFixed(3), 41, 1.5, 42, 50, 43, 0, 44, 0, 50, 0, 51, 0,
+    71, 0, 72, 100, 73, 1, 74, 3, 75, 0, 76, 0, 77, 0, 78, 0, 0, "ENDTAB");
+  w(0, "TABLE", 2, "LTYPE", 70, 1, 0, "LTYPE", 2, "CONTINUOUS", 70, 0, 3, "Solid line", 72, 65, 73, 0, 40, 0, 0, "ENDTAB");
+  w(0, "TABLE", 2, "LAYER", 70, Object.keys(LAYERS).length + 1, 0, "LAYER", 2, "0", 70, 0, 62, 7, 6, "CONTINUOUS");
   for (const [name, color] of Object.entries(LAYERS)) w(0, "LAYER", 2, name, 70, 0, 62, color, 6, "CONTINUOUS");
-  w(0, "ENDTAB", 0, "ENDSEC", 0, "SECTION", 2, "ENTITIES");
+  w(0, "ENDTAB");
+  w(0, "TABLE", 2, "STYLE", 70, 1, 0, "STYLE", 2, "STANDARD", 70, 0, 40, 0, 41, 1, 50, 0, 71, 0, 42, 2.5, 3, "txt", 4, "", 0, "ENDTAB");
+  w(0, "ENDSEC");
+  w(0, "SECTION", 2, "BLOCKS", 0, "ENDSEC");
+  w(0, "SECTION", 2, "ENTITIES");
   const byId = new Map(nodes.map((n) => [n.id, n]));
-  const clean = (s: string) => s.replace(/[\r\n]/g, " ");
+  // R12 só aceita ASCII seguro: remove acentos e caracteres de controle.
+  const clean = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\x20-\x7E]/g, " ").trim() || "-";
   for (const n of nodes) {
     const layer = n.node_type.toUpperCase();
     const { x, y } = P(n);
@@ -59,8 +69,9 @@ export function buildDxf(nodes: FtthNode[], customers: ExportCustomer[]) {
     if (parent) {
       const path = cablePath(n, parent).map(P);
       const color = FIBER_ACI[(Math.max(1, n.cable_fiber_number || 1) - 1) % 12] ?? 3;
-      w(0, "LWPOLYLINE", 8, "CABOS", 62, color, 90, path.length, 70, 0);
-      for (const p of path) w(10, p.x.toFixed(3), 20, p.y.toFixed(3));
+      w(0, "POLYLINE", 8, "CABOS", 62, color, 66, 1, 10, 0, 20, 0, 30, 0, 70, 0);
+      for (const p of path) w(0, "VERTEX", 8, "CABOS", 10, p.x.toFixed(3), 20, p.y.toFixed(3), 30, 0);
+      w(0, "SEQEND", 8, "CABOS");
       for (const a of n.cable_anchors ?? []) { const q = P(a); w(0, "POINT", 8, "ANCORAGENS", 10, q.x.toFixed(3), 20, q.y.toFixed(3), 30, 0); }
     }
   }
@@ -73,7 +84,7 @@ export function buildDxf(nodes: FtthNode[], customers: ExportCustomer[]) {
     if (cto) { const t = P(cto); w(0, "LINE", 8, "CLIENTES", 10, t.x.toFixed(3), 20, t.y.toFixed(3), 30, 0, 11, q.x.toFixed(3), 21, q.y.toFixed(3), 31, 0); }
   }
   w(0, "ENDSEC", 0, "EOF");
-  return out.join("\r\n");
+  return out.join("\r\n") + "\r\n";
 }
 
 export function buildGeoJson(nodes: FtthNode[], customers: ExportCustomer[]) {
