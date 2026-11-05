@@ -57,6 +57,13 @@
       "when": 1793665651894,
       "tag": "0007_radius_appliance_owner",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793891446424,
+      "tag": "0008_radius_appliance_per_owner_key",
+      "breakpoints": true
     }
   ]
 }

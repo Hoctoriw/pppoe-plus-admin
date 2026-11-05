@@ -801,8 +801,10 @@ export type Database = {
       radius_appliances: {
         Row: {
           hostname: string
+          id: string
           last_seen_at: string
           local_ip: string | null
+          machine_id: string
           owner_id: string | null
           radius_ok: boolean
           token_hash: string | null
@@ -811,8 +813,10 @@ export type Database = {
         }
         Insert: {
           hostname: string
+          id?: string
           last_seen_at?: string
           local_ip?: string | null
+          machine_id?: string
           owner_id?: string | null
           radius_ok?: boolean
           token_hash?: string | null
@@ -821,8 +825,10 @@ export type Database = {
         }
         Update: {
           hostname?: string
+          id?: string
           last_seen_at?: string
           local_ip?: string | null
+          machine_id?: string
           owner_id?: string | null
           radius_ok?: boolean
           token_hash?: string | null
