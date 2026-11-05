@@ -24,7 +24,7 @@ grep -v secret "$F" > /opt/nexora/routers.list 2>/dev/null; chmod 644 /opt/nexor
 # 2. Status para o painel
 OK=false; systemctl is-active --quiet freeradius && OK=true
 RESP=$(curl "${H[@]}" -X POST -H "Content-Type: application/json" "$API/heartbeat" \
-  -d "{\"hostname\":\"$(hostname)\",\"local_ip\":\"$(hostname -I | awk '{print $1}')\",\"version\":\"$CUR\",\"radius_ok\":$OK,\"uptime\":\"$(uptime -p)\"}" || true)
+  -d "{\"hostname\":\"$(hostname)\",\"machine_id\":\"$(cat /etc/machine-id 2>/dev/null)\",\"local_ip\":\"$(hostname -I | awk '{print $1}')\",\"version\":\"$CUR\",\"radius_ok\":$OK,\"uptime\":\"$(uptime -p)\"}" || true)
 
 # 3. Atualização automática
 NEW=$(echo "$RESP" | grep -o '"version":"[^"]*"' | cut -d'"' -f4)
