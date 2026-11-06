@@ -17,3 +17,10 @@ export function useNetworkModule() {
 export function NetworkModuleOnly({ children }: { children: ReactNode }) {
   return useNetworkModule() === "allowed" ? <>{children}</> : null;
 }
+
+export function SpeedtestModuleOnly({ children }: { children: ReactNode }) {
+  const fetchLicense = useServerFn(getMyLicense);
+  const [ok, setOk] = useState(false);
+  useEffect(() => { fetchLicense().then((l) => setOk(l.speedtest)).catch(() => setOk(false)); }, []);
+  return ok ? <>{children}</> : null;
+}
