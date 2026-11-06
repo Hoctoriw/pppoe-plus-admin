@@ -16,7 +16,7 @@ async function allowed(request: Request) {
 
 let CHUNK_CACHE: Uint8Array<ArrayBuffer> | null = null;
 function getChunk() {
-  if (!CHUNK_CACHE) { CHUNK_CACHE = new Uint8Array(65536); crypto.getRandomValues(CHUNK_CACHE); }
+  if (!CHUNK_CACHE) { const b = new Uint8Array(new ArrayBuffer(65536)); crypto.getRandomValues(b); CHUNK_CACHE = b; }
   return CHUNK_CACHE;
 }
 const noCache = { "Cache-Control": "no-store", "Content-Type": "application/octet-stream" };
