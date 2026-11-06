@@ -36,8 +36,8 @@ async function runTest(onLive: (phase: string, mbps: number) => void): Promise<R
     pings.push(performance.now() - t);
   }
   pings.sort((a, b) => a - b);
-  const ping = pings[0];
-  const jitter = pings.slice(1).reduce((s, p, i, arr) => s + Math.abs(p - (i ? arr[i - 1] : pings[0])), 0) / (pings.length - 1);
+  const ping = pings[0] ?? 0;
+  const jitter = pings.slice(1).reduce((s, p, i, arr) => s + Math.abs(p - (i ? arr[i - 1]! : ping)), 0) / (pings.length - 1);
 
   // Download: 4 conexões paralelas por ~8s
   let bytes = 0; const t0 = performance.now(); const until = t0 + 8000;
