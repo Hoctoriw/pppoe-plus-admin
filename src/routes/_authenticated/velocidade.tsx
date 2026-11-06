@@ -98,7 +98,7 @@ function SpeedPage() {
   return (
     <main className="mx-auto max-w-3xl space-y-6 p-6">
       <Link to="/dashboard" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />Voltar</Link>
-      <h1 className="flex items-center gap-2 text-2xl font-bold"><Gauge className="h-6 w-6 text-primary" />Teste de velocidade</h1>
+      <div className="flex items-center gap-3"><img src="/syncron-logo.png" alt="Syncron ISP" width={56} height={56} className="h-14 w-14" /><div><div className="text-sm font-extrabold tracking-wide">SYNCRON <span className="text-primary">ISP</span></div><h1 className="flex items-center gap-2 text-2xl font-bold"><Gauge className="h-6 w-6 text-primary" />Teste de velocidade</h1></div></div>
       {allowed === false ? (
         <p className="rounded-lg border p-4 text-sm text-muted-foreground">O teste de velocidade não está liberado para esta conta. Fale com o administrador do Syncron ISP.</p>
       ) : (
