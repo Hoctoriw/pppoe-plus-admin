@@ -14,7 +14,7 @@ async function allowed(request: Request) {
   return !error && !!(data as any)?.speedtest;
 }
 
-let CHUNK_CACHE: Uint8Array | null = null;
+let CHUNK_CACHE: Uint8Array<ArrayBuffer> | null = null;
 function getChunk() {
   if (!CHUNK_CACHE) { CHUNK_CACHE = new Uint8Array(65536); crypto.getRandomValues(CHUNK_CACHE); }
   return CHUNK_CACHE;
