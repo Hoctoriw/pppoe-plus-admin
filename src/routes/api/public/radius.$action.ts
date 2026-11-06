@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { freeIps } from "@/lib/ip-pool";
 import { createHash } from "crypto";
 import { resolveOwner } from "@/lib/radius-token.server";
+import { recordApplianceHeartbeat } from "@/lib/radius-appliance-registry";
 
 // rlm_rest envia { "User-Name": { "type": "string", "value": ["x"] }, ... }
 function attr(body: any, name: string): string {
@@ -93,7 +94,11 @@ export const Route = createFileRoute("/api/public/radius/$action")({
           const hostname = s(body?.hostname, 80).replace(/[^A-Za-z0-9._-]/g, "");
           if (!hostname) return new Response("Missing hostname", { status: 400 });
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-          await (supabaseAdmin as any).from("radius_appliances").upsert({ hostname, machine_id: s(body?.machine_id, 64).replace(/[^A-Za-z0-9-]/g, ""), local_ip: s(body?.local_ip, 64), version: s(body?.version, 20), radius_ok: body?.radius_ok === true, uptime: s(body?.uptime, 80), owner_id: owner, last_seen_at: new Date().toISOString() }, { onConflict: "owner_id,hostname,machine_id" });
+          try {
+            await recordApplianceHeartbeat(supabaseAdmin, { hostname, machine_id: s(body?.machine_id, 64).replace(/[^A-Za-z0-9-]/g, ""), local_ip: s(body?.local_ip, 64), version: s(body?.version, 20), radius_ok: body?.radius_ok === true, uptime: s(body?.uptime, 80), owner_id: owner, last_seen_at: new Date().toISOString() });
+          } catch {
+            return new Response("Unable to record heartbeat", { status: 500 });
+          }
           const { data: adm } = await (supabaseAdmin as any).from("user_roles").select("id").eq("user_id", owner).eq("role", "admin").limit(1);
           const { data: lic } = await (supabaseAdmin as any).from("licenses").select("expires_at, has_speedtest").eq("user_id", owner).maybeSingle();
           const speedtest = !!adm?.length || (!!lic?.has_speedtest && new Date(lic.expires_at) > new Date());

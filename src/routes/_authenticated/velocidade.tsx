@@ -82,7 +82,7 @@ function Dial({ value, label }: { value: number; label: string }) {
 function SpeedPage() {
   const lic = useServerFn(getMyLicense), apps = useServerFn(listRadiusAppliances);
   const [allowed, setAllowed] = useState<boolean | null>(null);
-  const [servers, setServers] = useState<{ hostname: string; local_ip: string | null }[]>([]);
+  const [servers, setServers] = useState<Awaited<ReturnType<typeof listRadiusAppliances>>>([]);
   const [live, setLive] = useState({ phase: "Pronto", mbps: 0 });
   const [res, setRes] = useState<Res | null>(null);
   const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
@@ -119,7 +119,7 @@ function SpeedPage() {
             <p className="text-sm text-muted-foreground">Mede a velocidade entre seu dispositivo e o servidor local, sem usar o link de internet. Abra estando conectado à rede do provedor.</p>
             {servers.filter((s) => s.local_ip).length === 0 ? <p className="text-sm text-muted-foreground">Nenhum servidor local encontrado.</p> :
               servers.filter((s) => s.local_ip).map((s) => (
-                <a key={s.hostname + s.local_ip} href={`http://${s.local_ip}/speedtest/`} target="_blank" rel="noreferrer" className="flex items-center justify-between rounded-lg border p-3 text-sm hover:border-primary"><span className="font-medium">{s.hostname}</span><span className="text-muted-foreground">http://{s.local_ip}/speedtest/</span></a>
+                <a key={s.id} href={`http://${s.local_ip}/speedtest/`} target="_blank" rel="noreferrer" className="flex items-center justify-between rounded-lg border p-3 text-sm hover:border-primary"><span className="font-medium">{s.hostname}</span><span className="text-muted-foreground">http://{s.local_ip}/speedtest/</span></a>
               ))}
           </section>
         </>

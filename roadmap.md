@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Corrigir duplicação de servidores RADIUS após atualização do agente e validar isolamento com testes de regressão
+
 - [x] Permitir ao administrador configurar dias de teste de novas contas e validar aplicação
 
 - [x] Adicionar pontos de ancoragem aos cabos da Rede FTTH

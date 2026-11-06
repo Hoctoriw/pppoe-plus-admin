@@ -28,7 +28,7 @@ function RadiusInstaller() {
 
     <div className="mt-4">
       <p className="font-semibold">Servidores conectados</p>
-      {apps.length ? <ul className="mt-2 space-y-2">{apps.map(a => <li key={a.hostname} className="flex flex-wrap items-center gap-2 rounded-md border p-3">
+      {apps.length ? <ul className="mt-2 space-y-2">{apps.map(a => <li key={a.id} className="flex flex-wrap items-center gap-2 rounded-md border p-3">
         {online(a.last_seen_at) && a.radius_ok ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <XCircle className="h-4 w-4 text-destructive" />}
         <span className="font-semibold">{a.hostname}</span><span className="font-mono text-xs">{a.local_ip}</span>
         <Badge variant="outline">v{a.version || "?"}</Badge>
@@ -208,7 +208,7 @@ function RadiusCard({ r, busy, apps, onSave, onApply, onTest }: { r: RouterRow; 
         <Input name="rhost" value={host} onChange={e => setHost(e.target.value)} placeholder="192.168.88.2" disabled={!enabled} />
         {apps.length > 0 && <select className="mt-1 h-8 w-full rounded-md border bg-background px-2 text-xs" value="" disabled={!enabled} onChange={e => { if (e.target.value) setHost(e.target.value); }}>
           <option value="">Usar IP local de um servidor conectado…</option>
-          {apps.map(a => <option key={a.hostname} value={a.local_ip ?? ""}>{a.hostname} — {a.local_ip}</option>)}
+          {apps.map(a => <option key={a.id} value={a.local_ip ?? ""}>{a.hostname} — {a.local_ip}</option>)}
         </select>}
         <p className="text-xs text-muted-foreground">Use o <b>IP local</b> do servidor RADIUS (o mesmo mostrado em “Servidores conectados” abaixo), como no MK-AUTH — o roteador fala com ele dentro da sua rede, sem IP público.</p>
       </F>
