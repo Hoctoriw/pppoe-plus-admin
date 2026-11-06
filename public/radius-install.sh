@@ -302,6 +302,11 @@ www-data ALL=(root) NOPASSWD: /bin/systemctl restart freeradius, /bin/systemctl 
 EOF
 chmod 440 /etc/sudoers.d/nexora-web
 chmod 640 /opt/nexora/env; chown root:www-data /opt/nexora/env
+mkdir -p /opt/nexora/speedtest
+head -c 26214400 /dev/urandom > /opt/nexora/speedtest/garbage.bin
+: > /opt/nexora/speedtest/ping.txt
+curl -fsSL "$PANEL_URL/speedtest-local.html" -o /opt/nexora/speedtest/index.html || true
+chmod -R a+rX /opt/nexora/speedtest
 PANEL_HOST=$(echo "$PANEL_URL" | sed -E 's#^https?://##;s#/.*##')
 cat > /etc/nginx/sites-available/nexora <<EOF
 server {
@@ -328,6 +333,14 @@ server {
   location @nexora401 {
     add_header WWW-Authenticate 'Basic realm="Syncron RADIUS - e-mail e senha do painel"' always;
     return 401;
+  }
+  # Teste de velocidade local (liberado pelo administrador do painel)
+  location = /speedtest { return 301 /speedtest/; }
+  location /speedtest/ {
+    if (!-f /opt/nexora/speedtest.enabled) { return 403; }
+    alias /opt/nexora/speedtest/;
+    add_header Cache-Control "no-store" always;
+    location = /speedtest/up { client_max_body_size 50m; client_body_buffer_size 1m; return 200 "ok"; }
   }
   # Painel completo (mesmo acesso do painel na nuvem)
   location / {

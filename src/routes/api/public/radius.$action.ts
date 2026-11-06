@@ -13,7 +13,7 @@ function attr(body: any, name: string): string {
 
 const MAC = /^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$/;
 
-export const AGENT_VERSION = "1.2.2";
+export const AGENT_VERSION = "1.3.0";
 
 export const Route = createFileRoute("/api/public/radius/$action")({
   server: {
@@ -94,7 +94,10 @@ export const Route = createFileRoute("/api/public/radius/$action")({
           if (!hostname) return new Response("Missing hostname", { status: 400 });
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
           await (supabaseAdmin as any).from("radius_appliances").upsert({ hostname, machine_id: s(body?.machine_id, 64).replace(/[^A-Za-z0-9-]/g, ""), local_ip: s(body?.local_ip, 64), version: s(body?.version, 20), radius_ok: body?.radius_ok === true, uptime: s(body?.uptime, 80), owner_id: owner, last_seen_at: new Date().toISOString() }, { onConflict: "owner_id,hostname,machine_id" });
-          return Response.json({ version: AGENT_VERSION });
+          const { data: adm } = await (supabaseAdmin as any).from("user_roles").select("id").eq("user_id", owner).eq("role", "admin").limit(1);
+          const { data: lic } = await (supabaseAdmin as any).from("licenses").select("expires_at, has_speedtest").eq("user_id", owner).maybeSingle();
+          const speedtest = !!adm?.length || (!!lic?.has_speedtest && new Date(lic.expires_at) > new Date());
+          return Response.json({ version: AGENT_VERSION, speedtest });
         }
         if (params.action === "accounting") {
           const user = attr(body, "User-Name").trim().slice(0, 128);
