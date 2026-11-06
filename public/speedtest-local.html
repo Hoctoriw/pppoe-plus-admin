@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Teste de velocidade local — Syncron ISP</title>
+<style>
+body{margin:0;font-family:system-ui,sans-serif;background:#0b1220;color:#e6edf7;display:flex;min-height:100vh;align-items:center;justify-content:center}
+.c{width:min(520px,92vw);background:#111a2e;border:1px solid #1f2b45;border-radius:16px;padding:24px;text-align:center}
+h1{font-size:20px;margin:0 0 4px}p{color:#8ea0c0;font-size:13px;margin:0 0 16px}
+.v{font-size:56px;font-weight:800;color:#22c3ee}.u{color:#8ea0c0}
+.g{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:18px 0}
+.g div{background:#0b1220;border-radius:10px;padding:10px}.g b{display:block;font-size:16px}.g span{font-size:11px;color:#8ea0c0}
+button{width:100%;padding:12px;border:0;border-radius:10px;background:#22c3ee;color:#04121a;font-weight:700;font-size:15px;cursor:pointer}
+button:disabled{opacity:.6}
+</style></head><body><div class="c">
+<h1>Syncron ISP — Teste de velocidade local</h1><p>Entre seu dispositivo e o servidor local, sem usar o link de internet.</p>
+<div class="v" id="v">0.0</div><div class="u" id="ph">Mbps · Pronto</div>
+<div class="g"><div><span>Ping</span><b id="p">—</b></div><div><span>Jitter</span><b id="j">—</b></div><div><span>Download</span><b id="d">—</b></div><div><span>Upload</span><b id="up">—</b></div></div>
+<button id="b">Iniciar teste</button></div>
+<script>
+const $=id=>document.getElementById(id),R=()=>Math.random();
+const show=(ph,m)=>{$('v').textContent=m.toFixed(1);$('ph').textContent='Mbps · '+ph};
+$('b').onclick=async()=>{const b=$('b');b.disabled=true;try{
+ const ps=[];for(let i=0;i<10;i++){const t=performance.now();await fetch('ping.txt?r='+R(),{cache:'no-store'});ps.push(performance.now()-t)}
+ let jit=0;for(let i=1;i<ps.length;i++)jit+=Math.abs(ps[i]-ps[i-1]);$('p').textContent=Math.min(...ps).toFixed(1)+' ms';$('j').textContent=(jit/(ps.length-1)).toFixed(1)+' ms';
+ let by=0;const t0=performance.now(),end=t0+8000;
+ const dl=async()=>{while(performance.now()<end){const rd=(await fetch('garbage.bin?r='+R(),{cache:'no-store'})).body.getReader();for(;;){const{done,value}=await rd.read();if(done)break;by+=value.length;show('Download',by*8/((performance.now()-t0)*1000));if(performance.now()>end){rd.cancel();break}}}};
+ await Promise.all([dl(),dl(),dl(),dl()]);const d=by*8/((performance.now()-t0)*1000);$('d').textContent=d.toFixed(1)+' Mbps';
+ const blob=new Uint8Array(8e6);let ub=0;const u0=performance.now(),ue=u0+8000;
+ const ul=async()=>{while(performance.now()<ue){await fetch('up?r='+R(),{method:'POST',body:blob});ub+=blob.length;show('Upload',ub*8/((performance.now()-u0)*1000))}};
+ await Promise.all([ul(),ul(),ul()]);const u=ub*8/((performance.now()-u0)*1000);$('up').textContent=u.toFixed(1)+' Mbps';show('Concluído',d);
+}catch(e){$('ph').textContent='Falha: '+e.message}b.disabled=false};
+</script></body></html>
