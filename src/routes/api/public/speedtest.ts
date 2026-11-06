@@ -14,7 +14,11 @@ async function allowed(request: Request) {
   return !error && !!(data as any)?.speedtest;
 }
 
-const CHUNK = (() => { const b = new Uint8Array(65536); crypto.getRandomValues(b); return b; })();
+let CHUNK_CACHE: Uint8Array | null = null;
+function getChunk() {
+  if (!CHUNK_CACHE) { CHUNK_CACHE = new Uint8Array(65536); crypto.getRandomValues(CHUNK_CACHE); }
+  return CHUNK_CACHE;
+}
 const noCache = { "Cache-Control": "no-store", "Content-Type": "application/octet-stream" };
 
 export const Route = createFileRoute("/api/public/speedtest")({
@@ -26,6 +30,7 @@ export const Route = createFileRoute("/api/public/speedtest")({
         if (url.searchParams.get("ping")) return new Response(null, { status: 204, headers: noCache });
         const total = Math.min(Math.max(Number(url.searchParams.get("bytes")) || 0, 0), 50_000_000);
         let sent = 0;
+        const CHUNK = getChunk();
         const stream = new ReadableStream({
           pull(c) {
             if (sent >= total) return c.close();
