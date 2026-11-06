@@ -28,6 +28,8 @@ import { Route as AuthenticatedPrecosRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedRedeRouteImport } from './routes/_authenticated/rede'
 import { Route as AuthenticatedSuporteRouteImport } from './routes/_authenticated/suporte'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
+import { Route as AuthenticatedVelocidadeRouteImport } from './routes/_authenticated/velocidade'
+import { Route as ApiPublicSpeedtestRouteImport } from './routes/api/public/speedtest'
 import { Route as ApiPublicHooksDailyBackupRouteImport } from './routes/api/public/hooks/daily-backup'
 import { Route as ApiPublicHooksSyncMikrotikRouteImport } from './routes/api/public/hooks/sync-mikrotik'
 import { Route as ApiPublicRadiusActionRouteImport } from './routes/api/public/radius.$action'
@@ -129,6 +131,16 @@ const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
   path: '/usuarios',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedVelocidadeRoute = AuthenticatedVelocidadeRouteImport.update({
+  id: '/velocidade',
+  path: '/velocidade',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const ApiPublicSpeedtestRoute = ApiPublicSpeedtestRouteImport.update({
+  id: '/api/public/speedtest',
+  path: '/api/public/speedtest',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHooksDailyBackupRoute =
   ApiPublicHooksDailyBackupRouteImport.update({
     id: '/api/public/hooks/daily-backup',
@@ -183,6 +195,8 @@ export interface FileRoutesByFullPath {
   '/rede': typeof AuthenticatedRedeRoute
   '/suporte': typeof AuthenticatedSuporteRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
+  '/velocidade': typeof AuthenticatedVelocidadeRoute
+  '/api/public/speedtest': typeof ApiPublicSpeedtestRoute
   '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
   '/api/public/hooks/sync-mikrotik': typeof ApiPublicHooksSyncMikrotikRoute
   '/api/public/radius/$action': typeof ApiPublicRadiusActionRoute
@@ -209,6 +223,8 @@ export interface FileRoutesByTo {
   '/rede': typeof AuthenticatedRedeRoute
   '/suporte': typeof AuthenticatedSuporteRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
+  '/velocidade': typeof AuthenticatedVelocidadeRoute
+  '/api/public/speedtest': typeof ApiPublicSpeedtestRoute
   '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
   '/api/public/hooks/sync-mikrotik': typeof ApiPublicHooksSyncMikrotikRoute
   '/api/public/radius/$action': typeof ApiPublicRadiusActionRoute
@@ -237,6 +253,8 @@ export interface FileRoutesById {
   '/_authenticated/rede': typeof AuthenticatedRedeRoute
   '/_authenticated/suporte': typeof AuthenticatedSuporteRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
+  '/_authenticated/velocidade': typeof AuthenticatedVelocidadeRoute
+  '/api/public/speedtest': typeof ApiPublicSpeedtestRoute
   '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
   '/api/public/hooks/sync-mikrotik': typeof ApiPublicHooksSyncMikrotikRoute
   '/api/public/radius/$action': typeof ApiPublicRadiusActionRoute
@@ -265,6 +283,8 @@ export interface FileRouteTypes {
     | '/rede'
     | '/suporte'
     | '/usuarios'
+    | '/velocidade'
+    | '/api/public/speedtest'
     | '/api/public/hooks/daily-backup'
     | '/api/public/hooks/sync-mikrotik'
     | '/api/public/radius/$action'
@@ -291,6 +311,8 @@ export interface FileRouteTypes {
     | '/rede'
     | '/suporte'
     | '/usuarios'
+    | '/velocidade'
+    | '/api/public/speedtest'
     | '/api/public/hooks/daily-backup'
     | '/api/public/hooks/sync-mikrotik'
     | '/api/public/radius/$action'
@@ -318,6 +340,8 @@ export interface FileRouteTypes {
     | '/_authenticated/rede'
     | '/_authenticated/suporte'
     | '/_authenticated/usuarios'
+    | '/_authenticated/velocidade'
+    | '/api/public/speedtest'
     | '/api/public/hooks/daily-backup'
     | '/api/public/hooks/sync-mikrotik'
     | '/api/public/radius/$action'
@@ -333,6 +357,7 @@ export interface RootRouteChildren {
   BloqueadoRoute: typeof BloqueadoRoute
   CentralRoute: typeof CentralRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiPublicSpeedtestRoute: typeof ApiPublicSpeedtestRoute
   ApiPublicHooksDailyBackupRoute: typeof ApiPublicHooksDailyBackupRoute
   ApiPublicHooksSyncMikrotikRoute: typeof ApiPublicHooksSyncMikrotikRoute
   ApiPublicRadiusActionRoute: typeof ApiPublicRadiusActionRoute
@@ -476,6 +501,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUsuariosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/velocidade': {
+      id: '/_authenticated/velocidade'
+      path: '/velocidade'
+      fullPath: '/velocidade'
+      preLoaderRoute: typeof AuthenticatedVelocidadeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/public/speedtest': {
+      id: '/api/public/speedtest'
+      path: '/api/public/speedtest'
+      fullPath: '/api/public/speedtest'
+      preLoaderRoute: typeof ApiPublicSpeedtestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/daily-backup': {
       id: '/api/public/hooks/daily-backup'
       path: '/api/public/hooks/daily-backup'
@@ -535,6 +574,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRedeRoute: typeof AuthenticatedRedeRoute
   AuthenticatedSuporteRoute: typeof AuthenticatedSuporteRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
+  AuthenticatedVelocidadeRoute: typeof AuthenticatedVelocidadeRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -551,6 +591,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRedeRoute: AuthenticatedRedeRoute,
   AuthenticatedSuporteRoute: AuthenticatedSuporteRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
+  AuthenticatedVelocidadeRoute: AuthenticatedVelocidadeRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -563,6 +604,7 @@ const rootRouteChildren: RootRouteChildren = {
   BloqueadoRoute: BloqueadoRoute,
   CentralRoute: CentralRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApiPublicSpeedtestRoute: ApiPublicSpeedtestRoute,
   ApiPublicHooksDailyBackupRoute: ApiPublicHooksDailyBackupRoute,
   ApiPublicHooksSyncMikrotikRoute: ApiPublicHooksSyncMikrotikRoute,
   ApiPublicRadiusActionRoute: ApiPublicRadiusActionRoute,

@@ -26,6 +26,9 @@ OK=false; systemctl is-active --quiet freeradius && OK=true
 RESP=$(curl "${H[@]}" -X POST -H "Content-Type: application/json" "$API/heartbeat" \
   -d "{\"hostname\":\"$(hostname)\",\"machine_id\":\"$(cat /etc/machine-id 2>/dev/null)\",\"local_ip\":\"$(hostname -I | awk '{print $1}')\",\"version\":\"$CUR\",\"radius_ok\":$OK,\"uptime\":\"$(uptime -p)\"}" || true)
 
+# Teste de velocidade local: liberado somente pelo administrador do painel
+if echo "$RESP" | grep -q '"speedtest":true'; then touch /opt/nexora/speedtest.enabled; else rm -f /opt/nexora/speedtest.enabled; fi
+
 # 3. Atualização automática
 NEW=$(echo "$RESP" | grep -o '"version":"[^"]*"' | cut -d'"' -f4)
 if [ -n "$NEW" ] && [ "$NEW" != "$CUR" ]; then

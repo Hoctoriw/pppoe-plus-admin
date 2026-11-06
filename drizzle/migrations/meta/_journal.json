@@ -64,6 +64,13 @@
       "when": 1793891446424,
       "tag": "0008_radius_appliance_per_owner_key",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793926486085,
+      "tag": "0009_speedtest_flag",
+      "breakpoints": true
     }
   ]
 }

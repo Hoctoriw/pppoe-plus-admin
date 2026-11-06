@@ -650,6 +650,7 @@ export type Database = {
           created_at: string
           expires_at: string
           has_network: boolean
+          has_speedtest: boolean
           updated_at: string
           user_id: string
         }
@@ -657,6 +658,7 @@ export type Database = {
           created_at?: string
           expires_at: string
           has_network?: boolean
+          has_speedtest?: boolean
           updated_at?: string
           user_id: string
         }
@@ -664,6 +666,7 @@ export type Database = {
           created_at?: string
           expires_at?: string
           has_network?: boolean
+          has_speedtest?: boolean
           updated_at?: string
           user_id?: string
         }

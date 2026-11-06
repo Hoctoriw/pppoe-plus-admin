@@ -73,7 +73,7 @@ export const getMyLicense = createServerFn({ method: "GET" })
     const { data, error } = await (context.supabase as any).rpc("my_license");
     if (error) throw new Error(error.message);
     const r = (data ?? {}) as any;
-    return { valid: !!r.valid, admin: !!r.admin, expires_at: (r.expires_at ?? null) as string | null, network: !!r.network };
+    return { valid: !!r.valid, admin: !!r.admin, expires_at: (r.expires_at ?? null) as string | null, network: !!r.network, speedtest: !!r.speedtest };
   });
 
 export const listLicenses = createServerFn({ method: "GET" })
@@ -81,8 +81,21 @@ export const listLicenses = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertAdmin(context);
     const db = await admin();
-    const { data } = await db.from("licenses").select("user_id, expires_at, has_network");
-    return (data ?? []).map((l: any) => ({ user_id: l.user_id as string, expires_at: l.expires_at as string, has_network: !!l.has_network }));
+    const { data } = await db.from("licenses").select("user_id, expires_at, has_network, has_speedtest");
+    return (data ?? []).map((l: any) => ({ user_id: l.user_id as string, expires_at: l.expires_at as string, has_network: !!l.has_network, has_speedtest: !!l.has_speedtest }));
+  });
+
+export const setLicenseSpeedtest = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ userId: z.string().uuid(), enabled: z.boolean() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const db = await admin();
+    const { data: cur } = await db.from("licenses").select("expires_at").eq("user_id", data.userId).maybeSingle();
+    const expires_at = (cur?.expires_at as string | undefined) ?? new Date().toISOString();
+    const { error } = await db.from("licenses").upsert({ user_id: data.userId, expires_at, has_speedtest: data.enabled } as any, { onConflict: "user_id" });
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
 
 export const setLicenseNetwork = createServerFn({ method: "POST" })
