@@ -2,7 +2,7 @@ import { Tr } from "@/lib/i18n";
 import { Save, Network, Gauge } from "lucide-react";
 import { geocodeCustomerAddress } from "@/lib/connections.functions";
 import { AdminOnly } from "@/components/AdminOnly";
-import { NetworkModuleOnly } from "@/components/NetworkModuleOnly";
+import { NetworkModuleOnly, SpeedtestModuleOnly } from "@/components/NetworkModuleOnly";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { freeIps, nextFreeIp } from "@/lib/ip-pool";
