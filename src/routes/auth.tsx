@@ -58,6 +58,10 @@ function AuthPage() {
       else navigate({ to: "/dashboard", replace: true });
     } else {
       const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: fullName }, emailRedirectTo: window.location.origin } });
+      if (!error) {
+        const w = window as unknown as { gtag?: (...args: unknown[]) => void };
+        w.gtag?.("event", "conversion", { send_to: "AW-18525794748/_WU_CKi-zbQdELzj5IFF", value: 1.0, currency: "BRL", transaction_id: data.user?.id });
+      }
       if (error) setMessage(error.message);
       else if (!data.session) setMessage("Confira seu e-mail para confirmar a conta.");
       else navigate({ to: "/dashboard", replace: true });
