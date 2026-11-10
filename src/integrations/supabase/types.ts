@@ -347,6 +347,39 @@ export type Database = {
           },
         ]
       }
+      demo_requests: {
+        Row: {
+          company: string
+          created_at: string
+          email: string
+          id: string
+          name: string
+          size: string
+          status: string
+          whatsapp: string
+        }
+        Insert: {
+          company: string
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          size: string
+          status?: string
+          whatsapp: string
+        }
+        Update: {
+          company?: string
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          size?: string
+          status?: string
+          whatsapp?: string
+        }
+        Relationships: []
+      }
       ftth_nodes: {
         Row: {
           cable_anchors: Json

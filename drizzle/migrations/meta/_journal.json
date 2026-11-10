@@ -71,6 +71,13 @@
       "when": 1793926486085,
       "tag": "0009_speedtest_flag",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794323060420,
+      "tag": "0010_demo_requests",
+      "breakpoints": true
     }
   ]
 }

@@ -25,7 +25,6 @@ export const Route = createFileRoute("/lovable/email/transactional/preview")({
           return Response.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        const templateNames = Object.keys(TEMPLATES)
         const results: Array<{
           templateName: string
           displayName: string
@@ -35,9 +34,7 @@ export const Route = createFileRoute("/lovable/email/transactional/preview")({
           errorMessage?: string
         }> = []
 
-        for (const name of templateNames) {
-          const entry = TEMPLATES[name]
-          if (!entry) continue
+        for (const [name, entry] of Object.entries(TEMPLATES)) {
           const displayName = entry.displayName || name
 
           if (!entry.previewData) {

@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Wifi, Router, Network, Receipt, Map, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SupportChat } from "@/components/SupportChat";
+import { DemoRequestDialog } from "@/components/DemoRequestDialog";
 
 const URL = "https://rede.syncrontelecom.com/";
 const TITLE = "Syncron ISP | Sistema para provedor de internet";
@@ -59,7 +60,7 @@ function Landing() {
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Button asChild size="lg"><Link to="/auth">Criar minha conta</Link></Button>
-            <Button asChild size="lg" variant="outline"><a href="#recursos">Ver recursos</a></Button>
+            <DemoRequestDialog variant="outline" />
           </div>
         </section>
         <section id="recursos" className="mx-auto max-w-6xl px-6 pb-20">

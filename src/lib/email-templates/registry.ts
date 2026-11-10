@@ -1,4 +1,6 @@
 import { template as backupTemplate } from './backup'
+import { template as demoWelcome } from './demo-welcome'
+import { template as demoLeadNotice } from './demo-lead-notice'
 import type { ComponentType } from 'react'
 
 export interface TemplateEntry {
@@ -20,5 +22,7 @@ export interface TemplateEntry {
  */
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'backup': backupTemplate,
+  'demo-welcome': demoWelcome,
+  'demo-lead-notice': demoLeadNotice,
   // 'welcome': welcomeTemplate,
 }
