@@ -20,7 +20,7 @@ const Email = ({ name, company, whatsapp, email, size }: Props) => (
 
 export const template = {
   component: Email,
-  subject: (d: Record<string, any>) => `Novo lead: ${d.company ?? 'provedor'}`,
+  subject: (d: Record<string, any>) => `Novo lead: ${d['company'] ?? 'provedor'}`,
   displayName: 'Aviso de novo lead',
   previewData: { name: 'Carlos', company: 'NetFibra', whatsapp: '11999999999', email: 'c@x.com', size: 'até 200' },
 } satisfies TemplateEntry
