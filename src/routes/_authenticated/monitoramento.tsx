@@ -71,9 +71,9 @@ function OltPanel() {
   const load = async () => { const { data } = await supabase.from("olts").select("*").order("name"); setOlts((data ?? []) as Olt[]); };
   useEffect(() => { load(); }, []);
   const add = async () => {
-    if (!f.name || !f.host) return toast.error("Informe nome e IP.");
+    if (!f.name || !f.host) { toast.error("Informe nome e IP."); return; }
     const { error } = await supabase.from("olts").insert({ ...f, model: f.model || null });
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("OLT cadastrada."); setF({ ...f, name: "", host: "", model: "" }); load();
   };
   const del = async (id: string) => { await supabase.from("olts").delete().eq("id", id); load(); };
