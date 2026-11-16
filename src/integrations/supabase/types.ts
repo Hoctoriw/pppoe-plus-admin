@@ -705,6 +705,51 @@ export type Database = {
         }
         Relationships: []
       }
+      olts: {
+        Row: {
+          created_at: string
+          host: string
+          id: string
+          model: string | null
+          name: string
+          notes: string | null
+          owner_id: string
+          pon_ports: number
+          snmp_community: string
+          snmp_port: number
+          updated_at: string
+          vendor: string
+        }
+        Insert: {
+          created_at?: string
+          host: string
+          id?: string
+          model?: string | null
+          name: string
+          notes?: string | null
+          owner_id?: string
+          pon_ports?: number
+          snmp_community?: string
+          snmp_port?: number
+          updated_at?: string
+          vendor?: string
+        }
+        Update: {
+          created_at?: string
+          host?: string
+          id?: string
+          model?: string | null
+          name?: string
+          notes?: string | null
+          owner_id?: string
+          pon_ports?: number
+          snmp_community?: string
+          snmp_port?: number
+          updated_at?: string
+          vendor?: string
+        }
+        Relationships: []
+      }
       onprem_pairings: {
         Row: {
           code: string
