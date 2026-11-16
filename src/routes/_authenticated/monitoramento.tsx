@@ -58,7 +58,7 @@ function RouterPanel({ id }: { id: string }) {
     </div>
     <div className="overflow-x-auto rounded-lg border bg-card">
       <table className="w-full text-sm"><thead><tr className="border-b text-left text-muted-foreground"><th className="p-3">Interface</th><th className="p-3">Status</th><th className="p-3">Download (Mbps)</th><th className="p-3">Upload (Mbps)</th></tr></thead>
-      <tbody>{s.interfaces!.map((i) => <tr key={i.name} className="border-b last:border-0"><td className="p-3 font-medium">{i.name}</td><td className="p-3"><span className={`inline-block h-2.5 w-2.5 rounded-full ${i.running ? "bg-success" : "bg-destructive"}`} /></td><td className="p-3">{mbps(i.rxBps)}</td><td className="p-3">{mbps(i.txBps)}</td></tr>)}</tbody></table>
+      <tbody>{s.interfaces!.map((i) => <tr key={i.name} className="border-b last:border-0"><td className="p-3 font-medium">{i.name}</td><td className="p-3"><span className={`inline-block h-2.5 w-2.5 rounded-full ${i.running ? "bg-primary" : "bg-destructive"}`} /></td><td className="p-3">{mbps(i.rxBps)}</td><td className="p-3">{mbps(i.txBps)}</td></tr>)}</tbody></table>
     </div>
   </div>;
 }
