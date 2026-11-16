@@ -78,6 +78,13 @@
       "when": 1794323060420,
       "tag": "0010_demo_requests",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794790060962,
+      "tag": "0011_migration",
+      "breakpoints": true
     }
   ]
 }
