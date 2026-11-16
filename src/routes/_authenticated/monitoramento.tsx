@@ -27,25 +27,28 @@ function Card({ icon, label, value }: { icon: React.ReactNode; label: string; va
   return <div className="rounded-lg border bg-card p-4"><div className="flex items-center gap-2 text-sm text-muted-foreground">{icon}{label}</div><div className="mt-1 text-2xl font-bold">{value}</div></div>;
 }
 
-function RouterPanel({ id }: { id: string }) {
+function RouterPanel({ id, live }: { id: string; live: boolean }) {
   const fetchStats = useServerFn(routerStats);
   const [s, setS] = useState<RouterStats | null>(null);
   const [hist, setHist] = useState<number[]>([]);
   const busy = useRef(false);
+  const tickRef = useRef<() => void>(() => {});
   useEffect(() => {
     let alive = true;
     const tick = async () => {
       if (busy.current) return; busy.current = true;
       try { const r = await fetchStats({ data: { id } }); if (alive) { setS(r); if (r.ok) setHist((h) => [...h.slice(-29), r.cpu ?? 0]); } } catch (e) { if (alive) setS({ ok: false, error: e instanceof Error ? e.message : "Falha ao consultar o roteador." }); } finally { busy.current = false; }
     };
-    tick(); const t = setInterval(tick, 5000);
-    return () => { alive = false; clearInterval(t); };
-  }, [id]);
+    tickRef.current = tick;
+    tick(); const t = live ? setInterval(tick, 5000) : undefined;
+    return () => { alive = false; if (t) clearInterval(t); };
+  }, [id, live]);
   if (!s) return <p className="text-muted-foreground">Consultando o roteador… (pode levar até 25s via servidor local)</p>;
-  if (!s.ok) return <p className="text-destructive">Sem resposta: {s.error} — nova tentativa automática a cada 5s.</p>;
+  const refresh = !live && <Button size="sm" variant="outline" onClick={() => tickRef.current()}>Atualizar agora</Button>;
+  if (!s.ok) return <div className="space-y-2"><p className="text-destructive">Sem resposta: {s.error}{live ? " — nova tentativa automática a cada 5s." : ""}</p>{refresh}</div>;
   const mem = s.memTotal ? Math.round((s.memUsed! / s.memTotal) * 100) : 0;
   return <div className="space-y-4">
-    <p className="text-sm text-muted-foreground">{s.identity} · RouterOS {s.version} · uptime {s.uptime} · atualiza a cada 5s</p>
+    <p className="text-sm text-muted-foreground">{s.identity} · RouterOS {s.version} · uptime {s.uptime} · {live ? "atualiza a cada 5s" : "pausado"}</p>{refresh}
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <Card icon={<Cpu className="h-4 w-4" />} label="CPU" value={`${s.cpu}%`} />
       <Card icon={<MemoryStick className="h-4 w-4" />} label="Memória" value={`${mem}%`} />
@@ -99,13 +102,14 @@ function MonitorPage() {
   const [routers, setRouters] = useState<{ id: string; name: string }[]>([]);
   const [sel, setSel] = useState<string>("");
   const [tab, setTab] = useState<"mk" | "olt">("mk");
+  const [live, setLive] = useState(true);
   useEffect(() => { fetchRouters().then((r) => { setRouters(r); if (r[0]) setSel(r[0].id); }).catch((e) => toast.error(e.message)); }, []);
   return <div className="mx-auto max-w-6xl space-y-5 p-4 md:p-8">
     <div className="flex items-center gap-3"><Link to="/dashboard"><Button variant="ghost" size="icon"><ArrowLeft /></Button></Link><Activity className="text-primary" /><h1 className="text-2xl font-extrabold">Monitoramento</h1></div>
-    <div className="flex gap-2"><Button variant={tab === "mk" ? "default" : "outline"} onClick={() => setTab("mk")}>MikroTik</Button><Button variant={tab === "olt" ? "default" : "outline"} onClick={() => setTab("olt")}>OLTs</Button></div>
+    <div className="flex gap-2"><Button variant={tab === "mk" ? "default" : "outline"} onClick={() => setTab("mk")}>MikroTik</Button><Button variant={tab === "olt" ? "default" : "outline"} onClick={() => setTab("olt")}>OLTs</Button>{tab === "mk" && <Button className="ml-auto" variant={live ? "default" : "outline"} onClick={() => setLive((v) => !v)}>{live ? "Monitoramento ativo · Pausar" : "Pausado · Ativar"}</Button>}</div>
     {tab === "mk" ? <>
       {routers.length > 1 && <select className="h-10 rounded-md border bg-background px-3 text-sm" value={sel} onChange={(e) => setSel(e.target.value)}>{routers.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}</select>}
-      {sel ? <RouterPanel key={sel} id={sel} /> : <p className="text-muted-foreground">Cadastre um MikroTik na aba MikroTik.</p>}
+      {sel ? <RouterPanel key={sel} id={sel} live={live} /> : <p className="text-muted-foreground">Cadastre um MikroTik na aba MikroTik.</p>}
     </> : <OltPanel />}
   </div>;
 }
