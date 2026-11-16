@@ -89,7 +89,7 @@ function MikrotikPage() {
     e.preventDefault(); const f = new FormData(e.currentTarget);
     await run(async () => { await save({ data: { name: String(f.get("name")), base_url: `${f.get("proto")}://${String(f.get("ip")).trim()}:${f.get("port")}`, connection_mode: "public_ip", via_agent: true, username: String(f.get("user")), password: String(f.get("pass")), dhcp_server: String(f.get("dhcp")) } }); setShowForm(false); await load(); });
   }
-  async function loadStatus(id: string) { setSelected(id); setConn(null); await run(async () => setConn(await status({ data: { id } }))); }
+  async function loadStatus(id: string) { setSelected(id); setConn(null); try { setConn(await status({ data: { id } })); } catch (e) { setConn({ error: (e as Error).message || "Falha ao consultar o roteador.", pppoe: [], ipoe: [] } as Status); } }
 
   return <div className="min-h-screen bg-background p-4 md:p-8">
     <div className="mx-auto max-w-6xl">
