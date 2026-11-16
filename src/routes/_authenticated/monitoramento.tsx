@@ -36,13 +36,13 @@ function RouterPanel({ id }: { id: string }) {
     let alive = true;
     const tick = async () => {
       if (busy.current) return; busy.current = true;
-      try { const r = await fetchStats({ data: { id } }); if (alive) { setS(r); if (r.ok) setHist((h) => [...h.slice(-29), r.cpu ?? 0]); } } finally { busy.current = false; }
+      try { const r = await fetchStats({ data: { id } }); if (alive) { setS(r); if (r.ok) setHist((h) => [...h.slice(-29), r.cpu ?? 0]); } } catch (e) { if (alive) setS({ ok: false, error: e instanceof Error ? e.message : "Falha ao consultar o roteador." }); } finally { busy.current = false; }
     };
     tick(); const t = setInterval(tick, 5000);
     return () => { alive = false; clearInterval(t); };
   }, [id]);
-  if (!s) return <p className="text-muted-foreground">Carregando…</p>;
-  if (!s.ok) return <p className="text-destructive">Sem resposta: {s.error}</p>;
+  if (!s) return <p className="text-muted-foreground">Consultando o roteador… (pode levar até 25s via servidor local)</p>;
+  if (!s.ok) return <p className="text-destructive">Sem resposta: {s.error} — nova tentativa automática a cada 5s.</p>;
   const mem = s.memTotal ? Math.round((s.memUsed! / s.memTotal) * 100) : 0;
   return <div className="space-y-4">
     <p className="text-sm text-muted-foreground">{s.identity} · RouterOS {s.version} · uptime {s.uptime} · atualiza a cada 5s</p>

@@ -19,12 +19,12 @@ export const routerStats = createServerFn({ method: "POST" })
     const { data: r } = await db.from("routers").select("*").eq("id", data.id).eq("owner_id", context.userId).single();
     if (!r) return { ok: false, error: "Roteador não encontrado." };
     try {
-      const [id, res, health, ppp, ifs] = await Promise.all([
-        ros<any>(r, "GET", "/system/identity"),
-        ros<any>(r, "GET", "/system/resource"),
+      const res = await ros<any>(r, "GET", "/system/resource");
+      const [id, health, ppp, ifs] = await Promise.all([
+        ros<any>(r, "GET", "/system/identity").catch(() => null),
         ros<any[]>(r, "GET", "/system/health").catch(() => []),
-        ros<any[]>(r, "GET", "/ppp/active").catch(() => []),
-        ros<any[]>(r, "GET", "/interface").catch(() => []),
+        ros<any[]>(r, "GET", "/ppp/active?.proplist=name").catch(() => []),
+        ros<any[]>(r, "GET", "/interface?.proplist=name,type,disabled,running").catch(() => []),
       ]);
       const running = (ifs ?? []).filter((i) => i.type !== "pppoe-in" && !i.disabled?.toString().startsWith("t")).slice(0, 12);
       let traffic: any[] = [];
