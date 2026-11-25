@@ -80,6 +80,13 @@ const ALLOWED: Record<string, string[]> = {
   invoices: ["id","customer_id","amount","due_date","paid_at","status","method","notes","bank_account_id","nosso_numero","linha_digitavel","barcode","boleto_url","provider_charge_id","boleto_status"],
 };
 const uuid = z.string().uuid();
+// Referências que precisam apontar para registros da própria conta.
+const REFS: Record<string, [string, string][]> = {
+  ftth_nodes: [["parent_id", "ftth_nodes"]],
+  customers: [["plan_id", "plans"], ["router_id", "routers"], ["cto_id", "ftth_nodes"]],
+  customer_equipment: [["customer_id", "customers"]],
+  invoices: [["customer_id", "customers"], ["bank_account_id", "bank_accounts"]],
+};
 
 export const restoreBackup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -110,6 +117,18 @@ export const restoreBackup = createServerFn({ method: "POST" })
         const { data: foreign, error: fe } = await db.from(table).select("id").in("id", ids.slice(i, i + 500)).neq("owner_id", owner).limit(1);
         if (fe) throw new Error(`Erro ao validar ${table}.`);
         if (foreign?.length) throw new Error(`Arquivo inválido: contém registros que não pertencem a esta conta (${table}).`);
+      }
+      const own = new Set(ids);
+      for (const [col, ref] of REFS[table] ?? []) {
+        const want = [...new Set(clean.map((r) => r[col]).filter((v) => v != null))] as string[];
+        if (want.some((v) => !uuid.safeParse(v).success)) throw new Error(`Arquivo inválido: referência inválida em ${table}.`);
+        const check = ref === table ? want.filter((v) => !own.has(v)) : want;
+        for (let i = 0; i < check.length; i += 500) {
+          const part = check.slice(i, i + 500);
+          const { data: found, error: re } = await db.from(ref).select("id").in("id", part).eq("owner_id", owner);
+          if (re) throw new Error(`Erro ao validar ${table}.`);
+          if ((found?.length ?? 0) !== part.length) throw new Error(`Arquivo inválido: ${table} referencia registros que não pertencem a esta conta.`);
+        }
       }
       const { error } = await db.from(table).upsert(clean, { onConflict: "id" });
       if (error) throw new Error(`Erro ao restaurar ${table}: ${error.message}`);
