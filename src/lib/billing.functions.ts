@@ -94,6 +94,7 @@ export const emitInvoiceBoleto = createServerFn({ method: "POST" })
       .single();
     if (error || !invoice) throw new Error("Cobrança não encontrada.");
     if (!invoice.customers) throw new Error("Cobrança sem cliente vinculado.");
+    if ((invoice.customers as { owner_id?: string }).owner_id !== context.userId) throw new Error("Cliente não encontrado nesta conta.");
     if (invoice.status === "paid" || invoice.status === "cancelled") throw new Error("Cobrança já paga ou cancelada.");
     if (invoice.provider_charge_id) throw new Error("Esta cobrança já tem boleto emitido.");
 
