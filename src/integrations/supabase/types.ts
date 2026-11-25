@@ -879,6 +879,42 @@ export type Database = {
         }
         Relationships: []
       }
+      prospects: {
+        Row: {
+          city: string
+          company: string
+          created_at: string
+          email: string
+          error: string | null
+          id: string
+          sent_at: string | null
+          status: string
+          uf: string
+        }
+        Insert: {
+          city?: string
+          company?: string
+          created_at?: string
+          email: string
+          error?: string | null
+          id?: string
+          sent_at?: string | null
+          status?: string
+          uf?: string
+        }
+        Update: {
+          city?: string
+          company?: string
+          created_at?: string
+          email?: string
+          error?: string | null
+          id?: string
+          sent_at?: string | null
+          status?: string
+          uf?: string
+        }
+        Relationships: []
+      }
       radius_appliances: {
         Row: {
           hostname: string

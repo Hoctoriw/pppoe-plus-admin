@@ -27,6 +27,7 @@ import { Route as AuthenticatedMikrotikRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedMonitoramentoRouteImport } from './routes/_authenticated/monitoramento'
 import { Route as AuthenticatedPlanosRouteImport } from './routes/_authenticated/planos'
 import { Route as AuthenticatedPrecosRouteImport } from './routes/_authenticated/precos'
+import { Route as AuthenticatedProspeccaoRouteImport } from './routes/_authenticated/prospeccao'
 import { Route as AuthenticatedRedeRouteImport } from './routes/_authenticated/rede'
 import { Route as AuthenticatedSuporteRouteImport } from './routes/_authenticated/suporte'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
@@ -129,6 +130,11 @@ const AuthenticatedPrecosRoute = AuthenticatedPrecosRouteImport.update({
   path: '/precos',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedProspeccaoRoute = AuthenticatedProspeccaoRouteImport.update({
+  id: '/prospeccao',
+  path: '/prospeccao',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedRedeRoute = AuthenticatedRedeRouteImport.update({
   id: '/rede',
   path: '/rede',
@@ -207,6 +213,7 @@ export interface FileRoutesByFullPath {
   '/monitoramento': typeof AuthenticatedMonitoramentoRoute
   '/planos': typeof AuthenticatedPlanosRoute
   '/precos': typeof AuthenticatedPrecosRoute
+  '/prospeccao': typeof AuthenticatedProspeccaoRoute
   '/rede': typeof AuthenticatedRedeRoute
   '/suporte': typeof AuthenticatedSuporteRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
@@ -237,6 +244,7 @@ export interface FileRoutesByTo {
   '/monitoramento': typeof AuthenticatedMonitoramentoRoute
   '/planos': typeof AuthenticatedPlanosRoute
   '/precos': typeof AuthenticatedPrecosRoute
+  '/prospeccao': typeof AuthenticatedProspeccaoRoute
   '/rede': typeof AuthenticatedRedeRoute
   '/suporte': typeof AuthenticatedSuporteRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
@@ -269,6 +277,7 @@ export interface FileRoutesById {
   '/_authenticated/monitoramento': typeof AuthenticatedMonitoramentoRoute
   '/_authenticated/planos': typeof AuthenticatedPlanosRoute
   '/_authenticated/precos': typeof AuthenticatedPrecosRoute
+  '/_authenticated/prospeccao': typeof AuthenticatedProspeccaoRoute
   '/_authenticated/rede': typeof AuthenticatedRedeRoute
   '/_authenticated/suporte': typeof AuthenticatedSuporteRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
@@ -301,6 +310,7 @@ export interface FileRouteTypes {
     | '/monitoramento'
     | '/planos'
     | '/precos'
+    | '/prospeccao'
     | '/rede'
     | '/suporte'
     | '/usuarios'
@@ -331,6 +341,7 @@ export interface FileRouteTypes {
     | '/monitoramento'
     | '/planos'
     | '/precos'
+    | '/prospeccao'
     | '/rede'
     | '/suporte'
     | '/usuarios'
@@ -362,6 +373,7 @@ export interface FileRouteTypes {
     | '/_authenticated/monitoramento'
     | '/_authenticated/planos'
     | '/_authenticated/precos'
+    | '/_authenticated/prospeccao'
     | '/_authenticated/rede'
     | '/_authenticated/suporte'
     | '/_authenticated/usuarios'
@@ -519,6 +531,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPrecosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/prospeccao': {
+      id: '/_authenticated/prospeccao'
+      path: '/prospeccao'
+      fullPath: '/prospeccao'
+      preLoaderRoute: typeof AuthenticatedProspeccaoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/rede': {
       id: '/_authenticated/rede'
       path: '/rede'
@@ -612,6 +631,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMonitoramentoRoute: typeof AuthenticatedMonitoramentoRoute
   AuthenticatedPlanosRoute: typeof AuthenticatedPlanosRoute
   AuthenticatedPrecosRoute: typeof AuthenticatedPrecosRoute
+  AuthenticatedProspeccaoRoute: typeof AuthenticatedProspeccaoRoute
   AuthenticatedRedeRoute: typeof AuthenticatedRedeRoute
   AuthenticatedSuporteRoute: typeof AuthenticatedSuporteRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
@@ -631,6 +651,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMonitoramentoRoute: AuthenticatedMonitoramentoRoute,
   AuthenticatedPlanosRoute: AuthenticatedPlanosRoute,
   AuthenticatedPrecosRoute: AuthenticatedPrecosRoute,
+  AuthenticatedProspeccaoRoute: AuthenticatedProspeccaoRoute,
   AuthenticatedRedeRoute: AuthenticatedRedeRoute,
   AuthenticatedSuporteRoute: AuthenticatedSuporteRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
