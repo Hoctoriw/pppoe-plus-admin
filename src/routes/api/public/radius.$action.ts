@@ -3,6 +3,7 @@ import { freeIps } from "@/lib/ip-pool";
 import { createHash } from "crypto";
 import { resolveOwner } from "@/lib/radius-token.server";
 import { recordApplianceHeartbeat } from "@/lib/radius-appliance-registry";
+import { cleanupOwnerCommands } from "@/lib/tenant-network-guards";
 
 // rlm_rest envia { "User-Name": { "type": "string", "value": ["x"] }, ... }
 function attr(body: any, name: string): string {
@@ -27,7 +28,7 @@ export const Route = createFileRoute("/api/public/radius/$action")({
           // Ponte local: entrega comandos pendentes (com credenciais) ao agente e marca como em execução
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
           const db = supabaseAdmin as any;
-          await db.from("router_commands").delete().lt("created_at", new Date(Date.now() - 120000).toISOString());
+          await cleanupOwnerCommands(db, owner);
           const { data: cmds } = await db.from("router_commands").select("id, router_id, owner_id, method, path, body").eq("status", "pending").eq("owner_id", owner).order("created_at").limit(20);
           const out: string[] = [];
           for (const c of cmds ?? []) {

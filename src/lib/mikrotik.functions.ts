@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { assertLicensed } from "./license.server";
+import { customerOwnedPlan } from "./tenant-network-guards";
 import { BLOCK_LIST, BLOCK_PROFILE, profileName, provisionOne, ros, upsert } from "./mikrotik.server";
 
 type Ctx = { supabase: any; userId: string };
@@ -213,11 +214,12 @@ export const provisionCustomer = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertStaff(context);
     const db = await admin();
-    const { data: c } = await db.from("customers").select("*, plans(*)").eq("id", data.id).eq("owner_id", context.userId).single();
+    const { data: c } = await db.from("customers").select("*").eq("id", data.id).eq("owner_id", context.userId).single();
     if (!c) throw new Error("Cliente não encontrado.");
     if (!c.router_id) throw new Error("Vincule um roteador ao cliente.");
     const r = await getRouter(c.router_id, context.userId);
-    return provisionOne(db, c, r);
+    const plan = await customerOwnedPlan(db, c);
+    return provisionOne(db, { ...c, plans: plan }, r);
   });
 
 export const connectionStatus = createServerFn({ method: "POST" })

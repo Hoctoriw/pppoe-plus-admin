@@ -1,3 +1,5 @@
+import { customerOwnedPlan } from "./tenant-network-guards";
+
 export type RouterCreds = { base_url: string; username: string; password: string; id?: string; owner_id?: string; via_agent?: boolean };
 
 export const BLOCK_PROFILE = "nexora-bloqueio";
@@ -73,11 +75,11 @@ export async function removeWhere(r: RouterCreds, path: string, filter: Record<s
 
 /** Provisiona um cliente no roteador e grava o resultado no banco. Usado pelo botão manual e pelo sincronismo automático. */
 export async function provisionOne(db: any, c: any, r: any): Promise<{ ok: boolean; error?: string }> {
-  const plan = c.plans;
   const suspended = c.status === "suspended";
   const disabled = c.status === "cancelled" ? "yes" : "no";
   const tag = `nexora:${c.id}`;
   try {
+    const plan = await customerOwnedPlan(db, c);
     if (c.technology === "pppoe") {
       if (!plan) throw new Error("Cliente sem plano.");
       await upsert(r, "/ppp/secret", { name: c.pppoe_username! }, {

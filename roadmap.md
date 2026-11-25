@@ -1,5 +1,8 @@
 # Roadmap
 
+- [x] Corrigir somente os quatro alertas selecionados: consulta de papéis, limpeza de comandos, licença FTTH e planos entre contas
+- [x] Testar as quatro proteções e atualizar os alertas selecionados
+
 - [x] Registrar envios aos usuários e permitir continuar atendimento pelo histórico
 - [x] Validar histórico, isolamento administrativo e continuidade de atendimento
 
