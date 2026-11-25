@@ -1098,6 +1098,59 @@ export type Database = {
         }
         Relationships: []
       }
+      user_messages: {
+        Row: {
+          body: string
+          created_at: string
+          error: string | null
+          id: string
+          parent_id: string | null
+          provider_message_id: string | null
+          recipient_email: string
+          recipient_id: string
+          recipient_name: string
+          sender_id: string
+          status: string
+          subject: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          parent_id?: string | null
+          provider_message_id?: string | null
+          recipient_email: string
+          recipient_id: string
+          recipient_name?: string
+          sender_id: string
+          status?: string
+          subject: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          parent_id?: string | null
+          provider_message_id?: string | null
+          recipient_email?: string
+          recipient_id?: string
+          recipient_name?: string
+          sender_id?: string
+          status?: string
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_messages_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "user_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           can_export_network: boolean
