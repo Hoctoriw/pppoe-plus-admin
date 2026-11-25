@@ -1,5 +1,8 @@
 # Roadmap
 
+- [ ] Restrict direct router destinations for the selected outbound-request finding — awaiting approval for master-managed destinations
+- [x] Revoke subscriber portal sessions after credentials or status change; validated handler flow and portal sign-in rejection
+
 - [x] Adicionar aba Automático com controle administrativo e lote diário pausado por padrão
 - [x] Validar configurações persistidas, reserva de contatos, horários e agendamento; primeiro disparo real depende de ativação
 
