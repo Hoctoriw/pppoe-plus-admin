@@ -18,6 +18,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedBackupRouteImport } from './routes/_authenticated/backup'
 import { Route as AuthenticatedClientesRouteImport } from './routes/_authenticated/clientes'
 import { Route as AuthenticatedConexoesRouteImport } from './routes/_authenticated/conexoes'
+import { Route as AuthenticatedContatarRouteImport } from './routes/_authenticated/contatar'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedEquipeRouteImport } from './routes/_authenticated/equipe'
 import { Route as AuthenticatedFinanceiroRouteImport } from './routes/_authenticated/financeiro'
@@ -82,6 +83,11 @@ const AuthenticatedClientesRoute = AuthenticatedClientesRouteImport.update({
 const AuthenticatedConexoesRoute = AuthenticatedConexoesRouteImport.update({
   id: '/conexoes',
   path: '/conexoes',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedContatarRoute = AuthenticatedContatarRouteImport.update({
+  id: '/contatar',
+  path: '/contatar',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
@@ -204,6 +210,7 @@ export interface FileRoutesByFullPath {
   '/backup': typeof AuthenticatedBackupRoute
   '/clientes': typeof AuthenticatedClientesRoute
   '/conexoes': typeof AuthenticatedConexoesRoute
+  '/contatar': typeof AuthenticatedContatarRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/equipe': typeof AuthenticatedEquipeRoute
   '/financeiro': typeof AuthenticatedFinanceiroRoute
@@ -235,6 +242,7 @@ export interface FileRoutesByTo {
   '/backup': typeof AuthenticatedBackupRoute
   '/clientes': typeof AuthenticatedClientesRoute
   '/conexoes': typeof AuthenticatedConexoesRoute
+  '/contatar': typeof AuthenticatedContatarRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/equipe': typeof AuthenticatedEquipeRoute
   '/financeiro': typeof AuthenticatedFinanceiroRoute
@@ -268,6 +276,7 @@ export interface FileRoutesById {
   '/_authenticated/backup': typeof AuthenticatedBackupRoute
   '/_authenticated/clientes': typeof AuthenticatedClientesRoute
   '/_authenticated/conexoes': typeof AuthenticatedConexoesRoute
+  '/_authenticated/contatar': typeof AuthenticatedContatarRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/equipe': typeof AuthenticatedEquipeRoute
   '/_authenticated/financeiro': typeof AuthenticatedFinanceiroRoute
@@ -301,6 +310,7 @@ export interface FileRouteTypes {
     | '/backup'
     | '/clientes'
     | '/conexoes'
+    | '/contatar'
     | '/dashboard'
     | '/equipe'
     | '/financeiro'
@@ -332,6 +342,7 @@ export interface FileRouteTypes {
     | '/backup'
     | '/clientes'
     | '/conexoes'
+    | '/contatar'
     | '/dashboard'
     | '/equipe'
     | '/financeiro'
@@ -364,6 +375,7 @@ export interface FileRouteTypes {
     | '/_authenticated/backup'
     | '/_authenticated/clientes'
     | '/_authenticated/conexoes'
+    | '/_authenticated/contatar'
     | '/_authenticated/dashboard'
     | '/_authenticated/equipe'
     | '/_authenticated/financeiro'
@@ -466,6 +478,13 @@ declare module '@tanstack/react-router' {
       path: '/conexoes'
       fullPath: '/conexoes'
       preLoaderRoute: typeof AuthenticatedConexoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/contatar': {
+      id: '/_authenticated/contatar'
+      path: '/contatar'
+      fullPath: '/contatar'
+      preLoaderRoute: typeof AuthenticatedContatarRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/dashboard': {
@@ -622,6 +641,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedBackupRoute: typeof AuthenticatedBackupRoute
   AuthenticatedClientesRoute: typeof AuthenticatedClientesRoute
   AuthenticatedConexoesRoute: typeof AuthenticatedConexoesRoute
+  AuthenticatedContatarRoute: typeof AuthenticatedContatarRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEquipeRoute: typeof AuthenticatedEquipeRoute
   AuthenticatedFinanceiroRoute: typeof AuthenticatedFinanceiroRoute
@@ -642,6 +662,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBackupRoute: AuthenticatedBackupRoute,
   AuthenticatedClientesRoute: AuthenticatedClientesRoute,
   AuthenticatedConexoesRoute: AuthenticatedConexoesRoute,
+  AuthenticatedContatarRoute: AuthenticatedContatarRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEquipeRoute: AuthenticatedEquipeRoute,
   AuthenticatedFinanceiroRoute: AuthenticatedFinanceiroRoute,
