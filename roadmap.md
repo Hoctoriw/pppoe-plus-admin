@@ -1,5 +1,8 @@
 # Roadmap
 
+- [x] Adicionar aba Automático com controle administrativo e lote diário pausado por padrão
+- [x] Validar configurações persistidas, reserva de contatos, horários e agendamento; primeiro disparo real depende de ativação
+
 - [x] Corrigir somente os quatro alertas selecionados: consulta de papéis, limpeza de comandos, licença FTTH e planos entre contas
 - [x] Testar as quatro proteções e atualizar os alertas selecionados
 

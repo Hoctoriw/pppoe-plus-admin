@@ -879,9 +879,46 @@ export type Database = {
         }
         Relationships: []
       }
+      prospect_automation: {
+        Row: {
+          daily_limit: number
+          enabled: boolean
+          id: number
+          last_error: string | null
+          last_failed: number
+          last_run_at: string | null
+          last_run_day: string | null
+          last_sent: number
+          uf: string
+        }
+        Insert: {
+          daily_limit?: number
+          enabled?: boolean
+          id?: number
+          last_error?: string | null
+          last_failed?: number
+          last_run_at?: string | null
+          last_run_day?: string | null
+          last_sent?: number
+          uf?: string
+        }
+        Update: {
+          daily_limit?: number
+          enabled?: boolean
+          id?: number
+          last_error?: string | null
+          last_failed?: number
+          last_run_at?: string | null
+          last_run_day?: string | null
+          last_sent?: number
+          uf?: string
+        }
+        Relationships: []
+      }
       prospects: {
         Row: {
           city: string
+          claimed_at: string | null
           company: string
           created_at: string
           email: string
@@ -893,6 +930,7 @@ export type Database = {
         }
         Insert: {
           city?: string
+          claimed_at?: string | null
           company?: string
           created_at?: string
           email: string
@@ -904,6 +942,7 @@ export type Database = {
         }
         Update: {
           city?: string
+          claimed_at?: string | null
           company?: string
           created_at?: string
           email?: string
@@ -1197,6 +1236,26 @@ export type Database = {
       }
       can_export_network: { Args: never; Returns: boolean }
       can_manage_network: { Args: never; Returns: boolean }
+      claim_prospect_automation: {
+        Args: never
+        Returns: {
+          daily_limit: number
+          enabled: boolean
+          id: number
+          last_error: string | null
+          last_failed: number
+          last_run_at: string | null
+          last_run_day: string | null
+          last_sent: number
+          uf: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "prospect_automation"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

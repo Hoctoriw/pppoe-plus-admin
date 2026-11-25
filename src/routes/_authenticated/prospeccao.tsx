@@ -5,6 +5,8 @@ import { ArrowLeft, Send, Upload } from "lucide-react";
 import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ProspectAutomation } from "@/components/ProspectAutomation";
 import { importProspects, prospectStats, sendProspectBatch, unsubscribeProspect } from "@/lib/prospects.functions";
 
 export const Route = createFileRoute("/_authenticated/prospeccao")({
@@ -56,14 +58,18 @@ function Page() {
         <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-muted"><Upload className="h-4 w-4" />Escolher arquivo .xlsx/.csv
           <input type="file" accept=".xlsx,.xls,.csv" className="hidden" disabled={busy} onChange={(e) => { const f = e.target.files?.[0]; if (f) void onFile(f); e.target.value = ""; }} /></label>
       </section>
-      <section className="space-y-3 rounded-lg border p-4">
+      <Tabs defaultValue="manual">
+        <TabsList><TabsTrigger value="manual">Manual</TabsTrigger><TabsTrigger value="automatico">Automático</TabsTrigger></TabsList>
+        <TabsContent value="automatico"><ProspectAutomation /></TabsContent>
+        <TabsContent value="manual"><section className="space-y-3 py-4">
         <h2 className="font-semibold">2. Enviar lote</h2>
         <div className="flex flex-wrap items-end gap-3">
           <div><p className="text-xs text-muted-foreground">Quantidade (máx. 100)</p><Input type="number" min={1} max={100} value={limit} onChange={(e) => setLimit(Math.max(1, Math.min(100, Number(e.target.value) || 1)))} className="w-28" /></div>
           <div><p className="text-xs text-muted-foreground">Estado (opcional)</p><Input value={uf} maxLength={2} placeholder="SP" onChange={(e) => setUf(e.target.value.toUpperCase())} className="w-20" /></div>
           <Button disabled={busy || !c?.["pendente"]} onClick={() => run(async () => { const r = await send({ data: { limit, ...(uf ? { uf } : {}) } }); return `Enviados: ${r.sent}. Falhas: ${r.failed}.${r.lastError ? " Último erro: " + r.lastError : ""}`; })}><Send />{busy ? "Enviando…" : "Enviar agora"}</Button>
         </div>
-      </section>
+      </section></TabsContent>
+      </Tabs>
       <section className="space-y-2 rounded-lg border p-4">
         <h2 className="font-semibold">Descadastrar (quem respondeu SAIR)</h2>
         <div className="flex gap-2"><Input value={out} onChange={(e) => setOut(e.target.value)} placeholder="email@provedor.com" className="max-w-xs" /><Button variant="outline" disabled={busy || !out} onClick={() => run(async () => { await unsub({ data: { email: out } }); setOut(""); return "Descadastrado."; })}>Descadastrar</Button></div>

@@ -35,6 +35,7 @@ import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedVelocidadeRouteImport } from './routes/_authenticated/velocidade'
 import { Route as ApiPublicSpeedtestRouteImport } from './routes/api/public/speedtest'
 import { Route as ApiPublicHooksDailyBackupRouteImport } from './routes/api/public/hooks/daily-backup'
+import { Route as ApiPublicHooksProspectDailyRouteImport } from './routes/api/public/hooks/prospect-daily'
 import { Route as ApiPublicHooksSyncMikrotikRouteImport } from './routes/api/public/hooks/sync-mikrotik'
 import { Route as ApiPublicRadiusActionRouteImport } from './routes/api/public/radius.$action'
 import { Route as ApiPublicWebhooksAsaasRouteImport } from './routes/api/public/webhooks/asaas'
@@ -172,6 +173,12 @@ const ApiPublicHooksDailyBackupRoute =
     path: '/api/public/hooks/daily-backup',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksProspectDailyRoute =
+  ApiPublicHooksProspectDailyRouteImport.update({
+    id: '/api/public/hooks/prospect-daily',
+    path: '/api/public/hooks/prospect-daily',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksSyncMikrotikRoute =
   ApiPublicHooksSyncMikrotikRouteImport.update({
     id: '/api/public/hooks/sync-mikrotik',
@@ -227,6 +234,7 @@ export interface FileRoutesByFullPath {
   '/velocidade': typeof AuthenticatedVelocidadeRoute
   '/api/public/speedtest': typeof ApiPublicSpeedtestRoute
   '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
+  '/api/public/hooks/prospect-daily': typeof ApiPublicHooksProspectDailyRoute
   '/api/public/hooks/sync-mikrotik': typeof ApiPublicHooksSyncMikrotikRoute
   '/api/public/radius/$action': typeof ApiPublicRadiusActionRoute
   '/api/public/webhooks/asaas': typeof ApiPublicWebhooksAsaasRoute
@@ -259,6 +267,7 @@ export interface FileRoutesByTo {
   '/velocidade': typeof AuthenticatedVelocidadeRoute
   '/api/public/speedtest': typeof ApiPublicSpeedtestRoute
   '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
+  '/api/public/hooks/prospect-daily': typeof ApiPublicHooksProspectDailyRoute
   '/api/public/hooks/sync-mikrotik': typeof ApiPublicHooksSyncMikrotikRoute
   '/api/public/radius/$action': typeof ApiPublicRadiusActionRoute
   '/api/public/webhooks/asaas': typeof ApiPublicWebhooksAsaasRoute
@@ -293,6 +302,7 @@ export interface FileRoutesById {
   '/_authenticated/velocidade': typeof AuthenticatedVelocidadeRoute
   '/api/public/speedtest': typeof ApiPublicSpeedtestRoute
   '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
+  '/api/public/hooks/prospect-daily': typeof ApiPublicHooksProspectDailyRoute
   '/api/public/hooks/sync-mikrotik': typeof ApiPublicHooksSyncMikrotikRoute
   '/api/public/radius/$action': typeof ApiPublicRadiusActionRoute
   '/api/public/webhooks/asaas': typeof ApiPublicWebhooksAsaasRoute
@@ -327,6 +337,7 @@ export interface FileRouteTypes {
     | '/velocidade'
     | '/api/public/speedtest'
     | '/api/public/hooks/daily-backup'
+    | '/api/public/hooks/prospect-daily'
     | '/api/public/hooks/sync-mikrotik'
     | '/api/public/radius/$action'
     | '/api/public/webhooks/asaas'
@@ -359,6 +370,7 @@ export interface FileRouteTypes {
     | '/velocidade'
     | '/api/public/speedtest'
     | '/api/public/hooks/daily-backup'
+    | '/api/public/hooks/prospect-daily'
     | '/api/public/hooks/sync-mikrotik'
     | '/api/public/radius/$action'
     | '/api/public/webhooks/asaas'
@@ -392,6 +404,7 @@ export interface FileRouteTypes {
     | '/_authenticated/velocidade'
     | '/api/public/speedtest'
     | '/api/public/hooks/daily-backup'
+    | '/api/public/hooks/prospect-daily'
     | '/api/public/hooks/sync-mikrotik'
     | '/api/public/radius/$action'
     | '/api/public/webhooks/asaas'
@@ -408,6 +421,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   ApiPublicSpeedtestRoute: typeof ApiPublicSpeedtestRoute
   ApiPublicHooksDailyBackupRoute: typeof ApiPublicHooksDailyBackupRoute
+  ApiPublicHooksProspectDailyRoute: typeof ApiPublicHooksProspectDailyRoute
   ApiPublicHooksSyncMikrotikRoute: typeof ApiPublicHooksSyncMikrotikRoute
   ApiPublicRadiusActionRoute: typeof ApiPublicRadiusActionRoute
   ApiPublicWebhooksAsaasRoute: typeof ApiPublicWebhooksAsaasRoute
@@ -599,6 +613,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksDailyBackupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/prospect-daily': {
+      id: '/api/public/hooks/prospect-daily'
+      path: '/api/public/hooks/prospect-daily'
+      fullPath: '/api/public/hooks/prospect-daily'
+      preLoaderRoute: typeof ApiPublicHooksProspectDailyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/sync-mikrotik': {
       id: '/api/public/hooks/sync-mikrotik'
       path: '/api/public/hooks/sync-mikrotik'
@@ -691,6 +712,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   ApiPublicSpeedtestRoute: ApiPublicSpeedtestRoute,
   ApiPublicHooksDailyBackupRoute: ApiPublicHooksDailyBackupRoute,
+  ApiPublicHooksProspectDailyRoute: ApiPublicHooksProspectDailyRoute,
   ApiPublicHooksSyncMikrotikRoute: ApiPublicHooksSyncMikrotikRoute,
   ApiPublicRadiusActionRoute: ApiPublicRadiusActionRoute,
   ApiPublicWebhooksAsaasRoute: ApiPublicWebhooksAsaasRoute,
