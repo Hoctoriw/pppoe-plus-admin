@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { applyRadius, connectionStatus, deleteRouter, getRadiusInstall, listRouters, saveRadiusConfig, saveRouter, syncPlans, testRadius, testRouter } from "@/lib/mikrotik.functions";
 import { listRadiusAppliances } from "@/lib/radius-appliance.functions";
+import { AdminOnly } from "@/components/AdminOnly";
+import { RouterDestinationApprovals } from "@/components/RouterDestinationApprovals";
 
 function RadiusInstaller() {
   const get = useServerFn(getRadiusInstall);
@@ -148,6 +150,7 @@ function MikrotikPage() {
           </TableBody></Table>}
       </section>}
 
+      <AdminOnly><RouterDestinationApprovals /></AdminOnly>
       <BlockPageCard />
 
     </div>

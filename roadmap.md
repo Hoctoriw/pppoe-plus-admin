@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Restrict direct router destinations for the selected outbound-request finding — awaiting approval for master-managed destinations
+- [x] Restrict direct router destinations with master approval; validated approval/revocation in the master UI and 11 tests; closed only the selected finding
 - [x] Revoke subscriber portal sessions after credentials or status change; validated handler flow and portal sign-in rejection
 
 - [x] Adicionar aba Automático com controle administrativo e lote diário pausado por padrão

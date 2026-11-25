@@ -1068,6 +1068,38 @@ export type Database = {
         }
         Relationships: []
       }
+      router_destination_approvals: {
+        Row: {
+          approved_at: string
+          approved_by: string
+          base_url: string
+          owner_id: string
+          router_id: string
+        }
+        Insert: {
+          approved_at?: string
+          approved_by: string
+          base_url: string
+          owner_id: string
+          router_id: string
+        }
+        Update: {
+          approved_at?: string
+          approved_by?: string
+          base_url?: string
+          owner_id?: string
+          router_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "router_destination_approvals_router_id_fkey"
+            columns: ["router_id"]
+            isOneToOne: true
+            referencedRelation: "routers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       routers: {
         Row: {
           active: boolean

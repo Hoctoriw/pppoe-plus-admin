@@ -1,4 +1,5 @@
-import { customerOwnedPlan, assertPublicRouterUrl } from "./tenant-network-guards";
+import { customerOwnedPlan } from "./tenant-network-guards";
+import { fetchApprovedRouter } from "./router-destination-guards";
 
 export type RouterCreds = { base_url: string; username: string; password: string; id?: string; owner_id?: string; via_agent?: boolean };
 
@@ -34,16 +35,10 @@ async function rosViaAgent<T>(r: RouterCreds, method: string, path: string, body
 
 export async function ros<T = any>(r: RouterCreds, method: string, path: string, body?: unknown): Promise<T> {
   if (r.via_agent) return rosViaAgent<T>(r, method, path, body);
-  assertPublicRouterUrl(r.base_url);
-  const url = r.base_url.replace(/\/+$/, "") + "/rest" + path;
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   let res: Response;
   try {
-    res = await fetch(url, {
-      method,
-      headers: { Authorization: "Basic " + btoa(`${r.username}:${r.password}`), "Content-Type": "application/json" },
-      body: body ? JSON.stringify(body) : null,
-      signal: AbortSignal.timeout(10000),
-    });
+    res = await fetchApprovedRouter(supabaseAdmin, r, method, path, body);
   } catch (e) {
     throw new Error("Roteador inacessível: " + (e instanceof Error ? e.message : String(e)));
   }
